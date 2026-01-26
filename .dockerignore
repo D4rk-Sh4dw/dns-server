@@ -1,0 +1,8 @@
+**/node_modules
+**/target
+control-plane/control-plane
+data-plane/target
+.git
+.idea
+.vscode
+.gemini

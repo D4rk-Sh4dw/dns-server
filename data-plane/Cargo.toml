@@ -1,0 +1,10 @@
+[package]
+name = "data-plane"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.32", features = ["full"] }
+anyhow = "1.0"
+# Using hickory-server (formerly trust-dns) for the heavy lifting
+hickory-server = { version = "0.24", features = ["dns-over-https", "dns-over-quic"] }
