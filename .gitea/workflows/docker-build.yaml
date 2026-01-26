@@ -19,6 +19,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Lowercase Registry Details
+        id: registry_case
+        run: |
+          # Use user provided variable OR fallback to repo owner, then lowercase it
+          RAW_PREFIX="${{ vars.DOCKER_IMAGE_PREFIX || github.repository_owner }}"
+          echo "IMAGE_PREFIX=${RAW_PREFIX,,}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -33,7 +40,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/dns-${{ matrix.service }}
+          images: ${{ env.REGISTRY }}/${{ steps.registry_case.outputs.IMAGE_PREFIX }}/dns-${{ matrix.service }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,format=short
