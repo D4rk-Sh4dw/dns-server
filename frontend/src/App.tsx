@@ -9,6 +9,7 @@ function App() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'tenants', label: 'Tenants', icon: Users },
     { id: 'policies', label: 'Policies', icon: Shield },
+    { id: 'blocklists', label: 'Blocklists', icon: Menu }, // Reusing Menu icon or List
     { id: 'logs', label: 'Query Logs', icon: Activity },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]
@@ -90,6 +91,7 @@ function App() {
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'tenants' && <TenantsView />}
           {activeTab === 'policies' && <PoliciesView />}
+          {activeTab === 'blocklists' && <BlocklistsView />}
           {activeTab === 'logs' && <QueryLogsView />}
           {activeTab === 'settings' && <SettingsView />}
         </div>
@@ -128,7 +130,7 @@ function StatCard({ title, value, trend, color = "blue" }: { title: string, valu
 }
 
 function TenantsView() {
-  const [tenants, setTenants] = useState<import('./lib/api').Tenant[]>([])
+  const [tenants, setTenants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [newTenantName, setNewTenantName] = useState('')
@@ -154,7 +156,7 @@ function TenantsView() {
     try {
       await import('./lib/api').then(m => m.createTenant(newTenantName))
       setNewTenantName('')
-      loadTenants() // Refresh list
+      loadTenants()
     } catch (e) {
       console.error(e)
     } finally {
@@ -223,6 +225,92 @@ function TenantsView() {
   )
 }
 
+function PoliciesView() {
+  return (
+    <div className="p-8 text-center text-gray-500">
+      <h2 className="text-lg font-medium text-white mb-2">Policies</h2>
+      <p>Configure DNS filtering rules and security policies here.</p>
+    </div>
+  )
+}
+
+function BlocklistsView() {
+  const [lists, setLists] = useState<any[]>([])
+  const [url, setUrl] = useState('')
+  const [name, setName] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  // Mock-ish api call wrapper or use real api if I update api.ts
+  const fetchLists = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/v1/blocklists')
+      // Fallback mock if fetch fails for demo
+      if (!res.ok) throw new Error("API not reachable")
+      const data = await res.json()
+      if (Array.isArray(data)) setLists(data)
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  useEffect(() => { fetchLists() }, [])
+
+  const addList = async () => {
+    if (!url || !name) return
+    setLoading(true)
+    try {
+      await fetch('http://localhost:8080/api/v1/blocklists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url })
+      })
+      setName(''); setUrl('')
+      fetchLists()
+    } catch (e) { console.error(e) } finally { setLoading(false) }
+  }
+
+  const triggerUpdate = async () => {
+    try { await fetch('http://localhost:8080/api/v1/blocklists/refresh', { method: 'POST' }) } catch (e) { }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-medium">Blocklists</h2>
+        <button onClick={triggerUpdate} className="text-blue-400 text-sm hover:underline">Trigger Update Now</button>
+      </div>
+
+      <div className="flex gap-2">
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name (e.g. StevenBlack)" className="bg-gray-800 border-gray-700 border rounded px-3 py-2 text-sm text-white" />
+        <input value={url} onChange={e => setUrl(e.target.value)} placeholder="URL" className="flex-1 bg-gray-800 border-gray-700 border rounded px-3 py-2 text-sm text-white" />
+        <button onClick={addList} disabled={loading} className="bg-blue-600 px-4 py-2 rounded text-white text-sm">Add</button>
+      </div>
+
+      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-750 text-gray-400 text-xs uppercase font-semibold">
+            <tr>
+              <th className="px-6 py-4">Name</th>
+              <th className="px-6 py-4">URL</th>
+              <th className="px-6 py-4">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-700">
+            {lists.map((l, i) => (
+              <tr key={i}>
+                <td className="px-6 py-4 text-white font-medium">{l.name}</td>
+                <td className="px-6 py-4 text-gray-400 text-xs truncate max-w-xs">{l.url}</td>
+                <td className="px-6 py-4"><span className="text-green-400 text-xs">Active</span></td>
+              </tr>
+            ))}
+            {lists.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-gray-500">No blocklists configured</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function QueryLogsView() {
   const [logs, setLogs] = useState<import('./lib/api').QueryLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -262,16 +350,16 @@ function QueryLogsView() {
                 </td>
                 <td className="px-6 py-3">
                   <span className={`px-2 py-0.5 rounded textxs font-medium border ${log.status === 'BLOCKED'
-                      ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                      : 'bg-green-500/10 text-green-400 border-green-500/20'
+                    ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                    : 'bg-green-500/10 text-green-400 border-green-500/20'
                     }`}>
                     {log.status}
                   </span>
                 </td>
-                <td className="px-6 py-3 text-gray-300 text-sm">{log.client_ip}</td>
-                <td className="px-6 py-3 text-white font-medium text-sm">{log.domain}</td>
-                <td className="px-6 py-3 text-gray-400 text-xs">{log.query_type}</td>
-                <td className="px-6 py-3 text-gray-400 text-xs">{log.duration_ms}ms</td>
+                <td className="px-6 py-3 text-gray-300 text-sm">{log.client_ip || 'N/A'}</td>
+                <td className="px-6 py-3 text-white font-medium text-sm">{log.domain || (log as any).query}</td>
+                <td className="px-6 py-3 text-gray-400 text-xs">{log.query_type || 'A'}</td>
+                <td className="px-6 py-3 text-gray-400 text-xs">{log.duration_ms || 0}ms</td>
               </tr>
             ))}
           </tbody>

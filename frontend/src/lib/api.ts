@@ -20,9 +20,13 @@ api.interceptors.response.use(
 
 export interface QueryLog {
     id: string;
-    query: string;
-    timestamp: string;
-    // Add other fields as per your log structure
+    client_ip?: string;
+    domain?: string;
+    query?: string; // fallback
+    query_type?: string;
+    status?: string;
+    duration_ms?: number;
+    timestamp: number | string;
 }
 
 // Fetch real logs from API

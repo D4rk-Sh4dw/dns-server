@@ -25,7 +25,7 @@ func RefreshBlocklists() error {
 	}
 
 	totalDomains := 0
-	ctx := database.Rdb.Context()
+	ctx := context.Background()
 	pipe := database.Rdb.Pipeline()
 
 	// 1. Clear current global set? Or maybe use a temp set and swap?
