@@ -1,9 +1,9 @@
 use hickory_server::authority::{
     Authority, LookupError, LookupOptions, MessageRequest, UpdateResult, ZoneType,
 };
+use hickory_server::store::forwarder::ForwardLookup;
 use hickory_server::server::RequestInfo;
 use hickory_resolver::TokioAsyncResolver;
-use hickory_resolver::lookup::Lookup;
 use hickory_proto::rr::{LowerName, Name, RecordType};
 use hickory_proto::op::ResponseCode;
 use std::sync::Arc;
@@ -26,22 +26,11 @@ impl DNSProxy {
             origin: LowerName::from(Name::root()),
         }
     }
-
-    /// Perform the actual forwarding lookup
-    async fn forward_lookup(&self, name: Name, record_type: RecordType) -> Result<Lookup, LookupError> {
-        match self.resolver.lookup(name.clone(), record_type).await {
-            Ok(lookup) => Ok(lookup),
-            Err(e) => {
-                error!("Resolution failed for {}: {}", name, e);
-                Err(LookupError::ResponseCode(ResponseCode::ServFail))
-            }
-        }
-    }
 }
 
 #[async_trait::async_trait]
 impl Authority for DNSProxy {
-    type Lookup = Lookup;
+    type Lookup = ForwardLookup;
 
     fn zone_type(&self) -> ZoneType {
         ZoneType::Forward
@@ -78,7 +67,13 @@ impl Authority for DNSProxy {
         }
 
         // Forward to Resolver
-        self.forward_lookup(name_converted, record_type).await
+        match self.resolver.lookup(name_converted, record_type).await {
+            Ok(lookup) => Ok(ForwardLookup::from(lookup)),
+            Err(e) => {
+                error!("Resolution failed for {}: {}", name, e);
+                Err(LookupError::ResponseCode(ResponseCode::ServFail))
+            }
+        }
     }
 
     async fn search(
@@ -94,7 +89,7 @@ impl Authority for DNSProxy {
         _name: &LowerName,
         _lookup_options: LookupOptions,
     ) -> Result<Self::Lookup, LookupError> {
-        // No DNSSEC for forwarding proxy
+        // No DNSSEC for forwarding proxy - return empty
         Err(LookupError::ResponseCode(ResponseCode::NoError))
     }
 }
