@@ -1,15 +1,17 @@
 use hickory_server::authority::{
-    Authority, LookupError, LookupOptions, LookupRecords, MessageRequest, UpdateResult, ZoneType,
+    Authority, LookupError, LookupOptions, MessageRequest, UpdateResult, ZoneType,
 };
 use hickory_server::server::RequestInfo;
 use hickory_resolver::TokioAsyncResolver;
-use hickory_proto::rr::{LowerName, Name, Record, RecordType};
+use hickory_resolver::lookup::Lookup;
+use hickory_proto::rr::{LowerName, Name, RecordType};
 use hickory_proto::op::ResponseCode;
 use std::sync::Arc;
 use crate::filter::{FilterEngine, FilterAction};
 use tracing::{debug, error};
 
 /// A custom Authority that forwards queries to a recursive resolver (Forwarder)
+/// with integrated filtering capability.
 pub struct DNSProxy {
     resolver: Arc<TokioAsyncResolver>,
     filter_engine: Arc<FilterEngine>,
@@ -24,11 +26,22 @@ impl DNSProxy {
             origin: LowerName::from(Name::root()),
         }
     }
+
+    /// Perform the actual forwarding lookup
+    async fn forward_lookup(&self, name: Name, record_type: RecordType) -> Result<Lookup, LookupError> {
+        match self.resolver.lookup(name.clone(), record_type).await {
+            Ok(lookup) => Ok(lookup),
+            Err(e) => {
+                error!("Resolution failed for {}: {}", name, e);
+                Err(LookupError::ResponseCode(ResponseCode::ServFail))
+            }
+        }
+    }
 }
 
 #[async_trait::async_trait]
 impl Authority for DNSProxy {
-    type Lookup = LookupRecords;
+    type Lookup = Lookup;
 
     fn zone_type(&self) -> ZoneType {
         ZoneType::Forward
@@ -39,7 +52,8 @@ impl Authority for DNSProxy {
     }
 
     async fn update(&self, _update: &MessageRequest) -> UpdateResult<bool> {
-        Err(LookupError::ResponseCode(ResponseCode::Refused))
+        // DNS updates not supported for forwarding proxy
+        Err(ResponseCode::Refused)
     }
 
     fn origin(&self) -> &LowerName {
@@ -50,11 +64,12 @@ impl Authority for DNSProxy {
         &self,
         name: &LowerName,
         record_type: RecordType,
-        lookup_options: LookupOptions,
+        _lookup_options: LookupOptions,
     ) -> Result<Self::Lookup, LookupError> {
+        let name_converted = Name::from(name.clone());
+        
         // Filter Check
-        let name_str = Name::from(name.clone());
-        match self.filter_engine.check(&name_str) {
+        match self.filter_engine.check(&name_converted) {
             FilterAction::Block => {
                 debug!("Blocked query: {}", name);
                 return Err(LookupError::ResponseCode(ResponseCode::Refused));
@@ -63,23 +78,7 @@ impl Authority for DNSProxy {
         }
 
         // Forward to Resolver
-        // resolver.lookup expects name: Name (or IntoName). LowerName can be converted?
-        // Note: hickory_resolver might expect just Name.
-        
-        match self.resolver.lookup(name_str, record_type).await {
-            Ok(lookup) => {
-                 let records: Vec<Record> = lookup.record_iter().cloned().collect();
-                 // Create LookupRecords
-                 // Note: new() might be different in 0.24, checking most standard init.
-                 // LookupRecords usually has a new(lookup_options, records).
-                 Ok(LookupRecords::new(lookup_options, Arc::new(records)))
-            }
-            Err(e) => {
-                 error!("Resolution failed for {}: {}", name, e);
-                 // If NotFound -> NXDomain
-                 Err(LookupError::ResponseCode(ResponseCode::ServFail))
-            }
-        }
+        self.forward_lookup(name_converted, record_type).await
     }
 
     async fn search(
@@ -87,7 +86,7 @@ impl Authority for DNSProxy {
         request_info: RequestInfo<'_>,
         lookup_options: LookupOptions,
     ) -> Result<Self::Lookup, LookupError> {
-         self.lookup(request_info.query.name(), request_info.query.query_type(), lookup_options).await
+        self.lookup(request_info.query.name(), request_info.query.query_type(), lookup_options).await
     }
 
     async fn get_nsec_records(
@@ -95,6 +94,7 @@ impl Authority for DNSProxy {
         _name: &LowerName,
         _lookup_options: LookupOptions,
     ) -> Result<Self::Lookup, LookupError> {
-        Ok(LookupRecords::default()) 
+        // No DNSSEC for forwarding proxy
+        Err(LookupError::ResponseCode(ResponseCode::NoError))
     }
 }
