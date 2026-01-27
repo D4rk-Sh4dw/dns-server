@@ -30,11 +30,11 @@ impl FilterEngine {
 
     pub fn load_blocklist(&self, domains: Vec<String>) {
         if let Ok(mut list) = self.exact_blocklist.write() {
+             list.clear(); // Complete reload
              for d in domains {
                  list.insert(d.to_lowercase());
              }
-             // Clear if full reload intended? For now, we append.
-             // To reload fully: list.clear();
+             tracing::info!("Blocklist reloaded with {} domains", list.len());
         }
     }
 
