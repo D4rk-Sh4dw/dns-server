@@ -39,7 +39,7 @@ impl Authority for DNSProxy {
     }
 
     async fn update(&self, _update: &MessageRequest) -> UpdateResult<bool> {
-        Err(LookupError::from(ResponseCode::Refused))
+        Err(LookupError::ResponseCode(ResponseCode::Refused))
     }
 
     fn origin(&self) -> &LowerName {
@@ -57,7 +57,7 @@ impl Authority for DNSProxy {
         match self.filter_engine.check(&name_str) {
             FilterAction::Block => {
                 debug!("Blocked query: {}", name);
-                return Err(LookupError::from(ResponseCode::Refused));
+                return Err(LookupError::ResponseCode(ResponseCode::Refused));
             }
             FilterAction::Allow => {}
         }
@@ -77,7 +77,7 @@ impl Authority for DNSProxy {
             Err(e) => {
                  error!("Resolution failed for {}: {}", name, e);
                  // If NotFound -> NXDomain
-                 Err(LookupError::from(ResponseCode::ServFail))
+                 Err(LookupError::ResponseCode(ResponseCode::ServFail))
             }
         }
     }

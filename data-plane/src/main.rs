@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
     // Register proxy authority for all zones (Root)
     catalog.upsert(
         hickory_proto::rr::LowerName::from(Name::root()), 
-        Box::new(proxy)
+        Box::new(Arc::new(proxy))
     );
 
     let mut server = ServerFuture::new(catalog);
