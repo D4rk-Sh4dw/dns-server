@@ -18,7 +18,7 @@ func main() {
 	database.InitRedis()
 
 	// Run Migrations
-	err := database.DB.AutoMigrate(&models.Tenant{}, &models.Policy{})
+	err := database.DB.AutoMigrate(&models.Tenant{}, &models.Policy{}, &models.Blocklist{})
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
