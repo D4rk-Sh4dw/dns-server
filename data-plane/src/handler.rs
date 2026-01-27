@@ -68,7 +68,7 @@ impl Authority for DNSProxy {
 
         // Forward to Resolver
         match self.resolver.lookup(name_converted, record_type).await {
-            Ok(lookup) => Ok(ForwardLookup::from(lookup)),
+            Ok(lookup) => Ok(ForwardLookup(lookup)),
             Err(e) => {
                 error!("Resolution failed for {}: {}", name, e);
                 Err(LookupError::ResponseCode(ResponseCode::ServFail))
