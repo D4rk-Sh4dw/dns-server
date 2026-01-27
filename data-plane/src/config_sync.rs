@@ -1,6 +1,5 @@
 use redis::AsyncCommands;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::{error, info};
 
 use crate::filter::FilterEngine;
@@ -22,7 +21,7 @@ impl ConfigSync {
         let filter_engine = self.filter_engine.clone();
         
         tokio::spawn(async move {
-            let mut con = match client.get_async_connection().await {
+            let con = match client.get_async_connection().await {
                 Ok(c) => c,
                 Err(e) => {
                     error!("Failed to connect to Redis for sync: {}", e);

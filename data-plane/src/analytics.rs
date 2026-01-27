@@ -1,8 +1,6 @@
 use redis::AsyncCommands;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use serde::{Serialize};
-use tracing::{error, debug};
+use tracing::error;
 
 #[derive(Serialize)]
 pub struct QueryLog {
@@ -28,7 +26,7 @@ impl StatsCollector {
     }
 
     pub async fn log_query(&self, log: QueryLog) {
-        let mut client = self.client.clone();
+        let client = self.client.clone();
         tokio::spawn(async move {
             let json = match serde_json::to_string(&log) {
                 Ok(j) => j,

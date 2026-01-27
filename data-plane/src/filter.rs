@@ -1,7 +1,4 @@
 use hickory_server::proto::rr::Name;
-use aho_corasick::AhoCorasick;
-use regex::RegexSet;
-use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterAction {
@@ -15,16 +12,16 @@ use std::sync::RwLock;
 pub struct FilterEngine {
     // Exact match for full domains (fastest)
     exact_blocklist: RwLock<std::collections::HashSet<String>>,
-    patterns: Option<AhoCorasick>, 
-    regexes: Option<RegexSet>,
+    _patterns: Option<AhoCorasick>, 
+    _regexes: Option<RegexSet>,
 }
 
 impl FilterEngine {
     pub fn new() -> Self {
         Self {
             exact_blocklist: RwLock::new(std::collections::HashSet::new()),
-            patterns: None,
-            regexes: None,
+            _patterns: None,
+            _regexes: None,
         }
     }
 
