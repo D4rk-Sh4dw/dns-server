@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # --- Frontend (Dashboard) ---
+  frontend:
+    image: gitea.vmhaus.de/marcel/dns-frontend:latest
+    container_name: dns-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      - API_URL=/api/v1 # Relative path if using reverse proxy, or absolute
+    networks:
+      - dns-net
+    depends_on:
+      - control-plane
+
+  # --- Control Plane (API & Manager) ---
+  control-plane:
+    image: gitea.vmhaus.de/marcel/dns-control-plane:latest
+    container_name: dns-control-plane
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=${DB_USER:-dns_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-secure_dns_password}
+      - DB_NAME=${DB_NAME:-dns_db}
+      - REDIS_HOST=redis
+      - GIN_MODE=release
+    networks:
+      - dns-net
+    depends_on:
+      - postgres
+      - redis
+
+  # --- Data Plane (DNS Engine) ---
+  data-plane:
+    image: gitea.vmhaus.de/marcel/dns-data-plane:latest
+    container_name: dns-data-plane
+    restart: unless-stopped
+    ports:
+      - "${DNS_PORT:-53}:1053/udp"
+      - "${DNS_PORT:-53}:1053/tcp"
+    environment:
+      - REDIS_HOST=redis
+    networks:
+      - dns-net
+    depends_on:
+      - redis
+
+  # --- Infrastructure ---
+  postgres:
+    image: postgres:15-alpine
+    container_name: dns-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER:-dns_admin}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-secure_dns_password}
+      - POSTGRES_DB=${DB_NAME:-dns_db}
+    volumes:
+      - dns_db_data:/var/lib/postgresql/data
+    networks:
+      - dns-net
+
+  redis:
+    image: redis:alpine
+    container_name: dns-redis
+    restart: unless-stopped
+    volumes:
+      - dns_redis_data:/data
+    networks:
+      - dns-net
+
+networks:
+  dns-net:
+    driver: bridge
+
+volumes:
+  dns_db_data:
+  dns_redis_data:
