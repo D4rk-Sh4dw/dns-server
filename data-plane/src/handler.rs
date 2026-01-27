@@ -1,109 +1,100 @@
-use hickory_server::authority::Catalog;
-use hickory_server::server::{Request, RequestHandler, ResponseHandler, ResponseInfo};
+use hickory_server::authority::{
+    Authority, LookupError, LookupOptions, LookupRecords, MessageRequest, UpdateResult, ZoneType,
+};
+use hickory_server::server::RequestInfo;
 use hickory_resolver::TokioAsyncResolver;
+use hickory_proto::rr::{LowerName, Name, Record, RecordType};
+use hickory_proto::op::ResponseCode;
 use std::sync::Arc;
-use tracing::{debug, error, info};
-
 use crate::filter::{FilterEngine, FilterAction};
+use tracing::{debug, error};
 
-/// A custom request handler that forwards queries to a recursive resolver
-#[derive(Clone)]
-pub struct ProxyHandler {
-    catalog: Arc<Catalog>,
+/// A custom Authority that forwards queries to a recursive resolver (Forwarder)
+pub struct DNSProxy {
     resolver: Arc<TokioAsyncResolver>,
     filter_engine: Arc<FilterEngine>,
+    origin: LowerName,
 }
 
-impl ProxyHandler {
-    pub fn new(catalog: Arc<Catalog>, resolver: Arc<TokioAsyncResolver>, filter_engine: Arc<FilterEngine>) -> Self {
-        Self { catalog, resolver, filter_engine }
+impl DNSProxy {
+    pub fn new(resolver: Arc<TokioAsyncResolver>, filter_engine: Arc<FilterEngine>) -> Self {
+        Self {
+            resolver,
+            filter_engine,
+            origin: LowerName::from(Name::root()),
+        }
     }
 }
 
 #[async_trait::async_trait]
-impl RequestHandler for ProxyHandler {
-    async fn handle_request<R: ResponseHandler>(
+impl Authority for DNSProxy {
+    type Lookup = LookupRecords;
+
+    fn zone_type(&self) -> ZoneType {
+        ZoneType::Forward
+    }
+
+    fn is_axfr_allowed(&self) -> bool {
+        false
+    }
+
+    async fn update(&self, _update: &MessageRequest) -> UpdateResult<bool> {
+        Err(LookupError::from(ResponseCode::Refused))
+    }
+
+    fn origin(&self) -> &LowerName {
+        &self.origin
+    }
+
+    async fn lookup(
         &self,
-        request: &Request,
-        mut response_handle: R,
-    ) -> ResponseInfo {
-        let query = request.request_info().query.original();
-        let name = query.name();
-        let record_type = query.query_type();
-
-        debug!("Received query: {} {}", name, record_type);
-
-        // 1. Check Authoritative Zones (Catalog) first
-        // If the catalog has the zone, it handles it. 
-        // Note: In a real implementation, we'd check if specific zones match. 
-        // For now, we assume if it's not in catalog, we forward.
-        // Simplified: We skip catalog check in this MVP stub and go straight to recursion for now
-        // unless we want to support local zones immediately.
-        
-        // 2. Filter Check
-        match self.filter_engine.check(&name) {
+        name: &LowerName,
+        record_type: RecordType,
+        lookup_options: LookupOptions,
+    ) -> Result<Self::Lookup, LookupError> {
+        // Filter Check
+        let name_str = Name::from(name.clone());
+        match self.filter_engine.check(&name_str) {
             FilterAction::Block => {
                 debug!("Blocked query: {}", name);
-                let mut response = hickory_server::authority::MessageResponseBuilder::new(Some(request.raw_query()));
-                // Use NXDOMAIN or REFUSED for blocking. 0.0.0.0 (A) is handled by rewriting, which we can add later.
-                // For now, let's return NXDOMAIN or Refused. AdGuard uses 0.0.0.0 usually (requires rewrite).
-                // Let's stick to NXDOMAIN for simplicity or creating a custom A record response is better UX.
-                // Simulating Refused for now.
-                let msg = response.error_msg(request.header(), hickory_server::proto::op::ResponseCode::Refused);
-                 match response_handle.send_response(msg).await {
-                     Ok(info) => return info,
-                     Err(_) => return ResponseInfo::from(request.header().clone()),
-                 }
-            },
-            FilterAction::Allow => {
-                // Proceed
+                return Err(LookupError::from(ResponseCode::Refused));
             }
+            FilterAction::Allow => {}
         }
 
-        // 3. Recursive / Forwarding Resolution
-        match self.resolver.lookup(name, record_type).await {
+        // Forward to Resolver
+        // resolver.lookup expects name: Name (or IntoName). LowerName can be converted?
+        // Note: hickory_resolver might expect just Name.
+        
+        match self.resolver.lookup(name_str, record_type).await {
             Ok(lookup) => {
-                // We got a response from upstream.
-                // We need to convert `lookup` (Lookup) back into a DNS response.
-                // This part is tricky because `hickory-resolver` returns interpreted records,
-                // but `hickory-server` expects us to build a `Message`.
-                
-                // For a proper transparent proxy, we might want to just forward the raw bytes using `MainClient`.
-                // However, since we want to FILTER later, we need to inspect the request.
-                // Re-constructing the response from `lookup` is one way.
-                
-                 let mut response = hickory_server::authority::MessageResponseBuilder::new(Some(request.raw_query()));
-                 
-                 let records: Vec<_> = lookup.record_iter().cloned().collect();
-                 
-                 // This is a simplification. A real proxy needs to handle Header flags, Authority section, Additional section etc.
-                 // But for MVP:
-                 let msg = response.build(
-                     *request.header(), 
-                     records.iter(), 
-                     std::iter::empty(), // ns
-                     std::iter::empty(), // additional
-                     std::iter::empty(), // additionals
-                 );
-                 
-                 match response_handle.send_response(msg).await {
-                     Ok(info) => return info,
-                     Err(e) => {
-                         error!("Failed to send response: {}", e);
-                         return ResponseInfo::from(request.header().clone()); // Fail safe
-                     }
-                 }
+                 let records: Vec<Record> = lookup.record_iter().cloned().collect();
+                 // Create LookupRecords
+                 // Note: new() might be different in 0.24, checking most standard init.
+                 // LookupRecords usually has a new(lookup_options, records).
+                 Ok(LookupRecords::new(lookup_options, Arc::new(records)))
             }
             Err(e) => {
-                error!("Resolution failed for {}: {}", name, e);
-                // Return SERVFAIL or similar
-                let mut response = hickory_server::authority::MessageResponseBuilder::new(Some(request.raw_query()));
-                let msg = response.error_msg(request.header(), hickory_server::proto::op::ResponseCode::ServFail);
-                 match response_handle.send_response(msg).await {
-                     Ok(info) => return info,
-                     Err(_) => return ResponseInfo::from(request.header().clone()),
-                 }
+                 error!("Resolution failed for {}: {}", name, e);
+                 // If NotFound -> NXDomain
+                 Err(LookupError::from(ResponseCode::ServFail))
             }
         }
+    }
+
+    async fn search(
+        &self,
+        request_info: RequestInfo<'_>,
+        lookup_options: LookupOptions,
+    ) -> Result<Self::Lookup, LookupError> {
+         self.lookup(request_info.query.name(), request_info.query.query_type(), lookup_options).await
+    }
+
+    async fn get_nsec_records(
+        &self,
+        _name: &LowerName,
+        _lookup_options: LookupOptions,
+    ) -> Result<Self::Lookup, LookupError> {
+        Ok(LookupRecords::default()) 
     }
 }

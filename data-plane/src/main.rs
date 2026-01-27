@@ -1,13 +1,12 @@
-use std::net::{IpAddr, SocketAddr, UdpSocket};
 use std::sync::Arc;
 use tokio::net::UdpSocket as TokioUdpSocket;
 use tokio::net::TcpListener;
-use analytics::StatsCollector;
 use hickory_server::authority::Catalog;
+use hickory_proto::rr::Name;
 use hickory_server::ServerFuture;
 use hickory_resolver::TokioAsyncResolver;
 use hickory_resolver::config::{ResolverConfig, ResolverOpts};
-use crate::handler::ProxyHandler;
+use crate::handler::DNSProxy;
 use crate::filter::FilterEngine;
 
 mod analytics; 
@@ -43,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
 
     // 4. Start Server
     // Initialize Filter Engine with sample data
-    let mut engine = FilterEngine::new();
+    let engine = FilterEngine::new();
     engine.load_blocklist(vec!["doubleclick.net".to_string(), "ads.google.com".to_string()]);
     let filter_engine = Arc::new(engine);
 
@@ -56,12 +55,19 @@ async fn main() -> anyhow::Result<()> {
         tracing::error!("Failed to initialize Redis client");
     }
 
-    // Use our custom ProxyHandler
-    let catalog = Arc::new(catalog);
-    let resolver = Arc::new(resolver);
-    let handler = ProxyHandler::new(catalog, resolver, filter_engine);
+    }
 
-    let mut server = ServerFuture::new(handler);
+    // Use our custom DNSProxy as Authority for the root zone "."
+    let resolver = Arc::new(resolver);
+    let proxy = DNSProxy::new(resolver, filter_engine);
+    
+    // Register proxy authority for all zones (Root)
+    catalog.upsert(
+        hickory_proto::rr::LowerName::from(Name::root()), 
+        Box::new(proxy)
+    );
+
+    let mut server = ServerFuture::new(catalog);
     server.register_socket(udp_socket);
     server.register_listener(tcp_listener, std::time::Duration::from_secs(10));
 
