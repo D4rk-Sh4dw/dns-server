@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # --- Frontend (Dashboard) ---
   frontend:
-    image: gitea.vmhaus.de/marcel/dns-frontend:latest
+    image: ghcr.io/d4rk-sh4dw/dns-frontend:latest
     container_name: dns-frontend
     restart: unless-stopped
     ports:
@@ -17,7 +17,7 @@ services:
 
   # --- Control Plane (API & Manager) ---
   control-plane:
-    image: gitea.vmhaus.de/marcel/dns-control-plane:latest
+    image: ghcr.io/d4rk-sh4dw/dns-control-plane:latest
     container_name: dns-control-plane
     restart: unless-stopped
     ports:
@@ -37,7 +37,7 @@ services:
 
   # --- Data Plane (DNS Engine) ---
   data-plane:
-    image: gitea.vmhaus.de/marcel/dns-data-plane:latest
+    image: ghcr.io/d4rk-sh4dw/dns-data-plane:latest
     container_name: dns-data-plane
     restart: unless-stopped
     ports:
