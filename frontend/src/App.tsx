@@ -90,8 +90,8 @@ function App() {
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'tenants' && <TenantsView />}
           {activeTab === 'policies' && <PoliciesView />}
-          {activeTab === 'logs' && <div className="text-gray-400">Logs Component Placeholder</div>}
-          {activeTab === 'settings' && <div className="text-gray-400">Settings Component Placeholder</div>}
+          {activeTab === 'logs' && <QueryLogsView />}
+          {activeTab === 'settings' && <SettingsView />}
         </div>
       </main>
     </div>
@@ -223,14 +223,99 @@ function TenantsView() {
   )
 }
 
-function PoliciesView() {
+function QueryLogsView() {
+  const [logs, setLogs] = useState<import('./lib/api').QueryLog[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    import('./lib/api').then(m => m.getQueryLogs()).then(data => {
+      setLogs(data)
+      setLoading(false)
+    })
+  }, [])
+
   return (
-    <div className="text-center py-20">
-      <Shield className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 className="text-lg font-medium text-gray-300">Policy Management</h3>
-      <p className="text-gray-500 max-w-sm mx-auto mt-2">
-        Configure global and tenant-specific filtering rules here.
-      </p>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-medium">Recent Queries</h2>
+        <button className="text-sm text-blue-400 hover:text-blue-300">Live View (Coming Soon)</button>
+      </div>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-750 text-gray-400 text-xs uppercase font-semibold border-b border-gray-700">
+            <tr>
+              <th className="px-6 py-3">Time</th>
+              <th className="px-6 py-3">Status</th>
+              <th className="px-6 py-3">Client</th>
+              <th className="px-6 py-3">Domain</th>
+              <th className="px-6 py-3">Type</th>
+              <th className="px-6 py-3">Duration</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-700">
+            {loading ? (
+              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">Loading logs...</td></tr>
+            ) : logs.map((log) => (
+              <tr key={log.id} className="hover:bg-gray-750/50 transition-colors">
+                <td className="px-6 py-3 text-gray-400 text-xs font-mono">
+                  {new Date(log.timestamp).toLocaleTimeString()}
+                </td>
+                <td className="px-6 py-3">
+                  <span className={`px-2 py-0.5 rounded textxs font-medium border ${log.status === 'BLOCKED'
+                      ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                      : 'bg-green-500/10 text-green-400 border-green-500/20'
+                    }`}>
+                    {log.status}
+                  </span>
+                </td>
+                <td className="px-6 py-3 text-gray-300 text-sm">{log.client_ip}</td>
+                <td className="px-6 py-3 text-white font-medium text-sm">{log.domain}</td>
+                <td className="px-6 py-3 text-gray-400 text-xs">{log.query_type}</td>
+                <td className="px-6 py-3 text-gray-400 text-xs">{log.duration_ms}ms</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function SettingsView() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <h3 className="text-lg font-medium mb-4">Network Configuration</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">DNS Listening Port</label>
+            <input type="text" disabled value="53 / 1053" className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-gray-500 cursor-not-allowed" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Upstream DNS</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
+              <option>Google (8.8.8.8)</option>
+              <option>Cloudflare (1.1.1.1)</option>
+              <option>Quad9 (9.9.9.9)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <h3 className="text-lg font-medium mb-4">Security</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-white font-medium">Safe Search</div>
+              <div className="text-xs text-gray-500">Enforce safe search on Google/Bing</div>
+            </div>
+            <div className="w-10 h-6 bg-green-600 rounded-full relative cursor-pointer">
+              <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
