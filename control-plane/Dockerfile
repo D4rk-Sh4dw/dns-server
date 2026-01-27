@@ -7,6 +7,7 @@ COPY go.mod ./
 RUN go mod download && go mod verify
 
 COPY . .
+RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o control-plane ./cmd/server
 
 # Run Stage
