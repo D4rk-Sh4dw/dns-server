@@ -8,6 +8,7 @@ use hickory_proto::rr::{LowerName, Name, RecordType};
 use hickory_proto::op::ResponseCode;
 use std::sync::Arc;
 use crate::filter::{FilterEngine, FilterAction};
+use crate::analytics::{StatsCollector, QueryLog};
 use tracing::{debug, error};
 
 /// A custom Authority that forwards queries to a recursive resolver (Forwarder)
@@ -15,14 +16,16 @@ use tracing::{debug, error};
 pub struct DNSProxy {
     resolver: Arc<TokioAsyncResolver>,
     filter_engine: Arc<FilterEngine>,
+    stats: Arc<StatsCollector>,
     origin: LowerName,
 }
 
 impl DNSProxy {
-    pub fn new(resolver: Arc<TokioAsyncResolver>, filter_engine: Arc<FilterEngine>) -> Self {
+    pub fn new(resolver: Arc<TokioAsyncResolver>, filter_engine: Arc<FilterEngine>, stats: Arc<StatsCollector>) -> Self {
         Self {
             resolver,
             filter_engine,
+            stats,
             origin: LowerName::from(Name::root()),
         }
     }
@@ -56,24 +59,42 @@ impl Authority for DNSProxy {
         _lookup_options: LookupOptions,
     ) -> Result<Self::Lookup, LookupError> {
         let name_converted = Name::from(name.clone());
-        
+        let start = std::time::Instant::now();
+        let mut status = "ALLOWED";
+
         // Filter Check
-        match self.filter_engine.check(&name_converted) {
+        let result = match self.filter_engine.check(&name_converted) {
             FilterAction::Block => {
                 debug!("Blocked query: {}", name);
-                return Err(LookupError::ResponseCode(ResponseCode::Refused));
+                status = "BLOCKED";
+                Err(LookupError::ResponseCode(ResponseCode::Refused))
             }
-            FilterAction::Allow => {}
-        }
+            FilterAction::Allow => {
+                // Forward to Resolver
+                match self.resolver.lookup(name_converted.clone(), record_type).await {
+                    Ok(lookup) => Ok(ForwardLookup(lookup)),
+                    Err(e) => {
+                         error!("Resolution failed for {}: {}", name, e);
+                         Err(LookupError::ResponseCode(ResponseCode::ServFail))
+                    }
+                }
+            }
+        };
 
-        // Forward to Resolver
-        match self.resolver.lookup(name_converted, record_type).await {
-            Ok(lookup) => Ok(ForwardLookup(lookup)),
-            Err(e) => {
-                error!("Resolution failed for {}: {}", name, e);
-                Err(LookupError::ResponseCode(ResponseCode::ServFail))
-            }
-        }
+        // Async Logging
+        let duration = start.elapsed().as_millis() as u64;
+        let log_entry = QueryLog {
+            client_ip: "0.0.0.0".to_string(), // Placeholder, real IP is in search(), assuming direct call doesn't have it easily without RequestInfo
+            domain: name.to_string(),
+            query_type: record_type.to_string(),
+            status: status.to_string(),
+            duration_ms: duration,
+            timestamp: chrono::Utc::now().timestamp(),
+        };
+        // Trigger log (fire and forget)
+        self.stats.log_query(log_entry).await;
+
+        result
     }
 
     async fn search(

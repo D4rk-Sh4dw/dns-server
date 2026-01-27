@@ -8,6 +8,7 @@ use hickory_resolver::TokioAsyncResolver;
 use hickory_resolver::config::{ResolverConfig, ResolverOpts};
 use crate::handler::DNSProxy;
 use crate::filter::FilterEngine;
+use crate::analytics::StatsCollector;
 
 mod analytics; 
 mod handler;
@@ -55,11 +56,21 @@ async fn main() -> anyhow::Result<()> {
         tracing::error!("Failed to initialize Redis client");
     }
 
-
+    // Initialize Stats Collector
+    let stats = match StatsCollector::new() {
+        Ok(s) => Arc::new(s),
+        Err(e) => {
+            tracing::error!("Failed to initialize StatsCollector: {}", e);
+            // Fallback to a dummy or fail? For now, we panic or handle gracefully.
+            // Simplified: panic if we can't log is strict, but maybe allow running without logs.
+            // Let's assume strict for now to catch issues.
+            return Err(anyhow::anyhow!("Stats init failed: {}", e));
+        }
+    };
 
     // Use our custom DNSProxy as Authority for the root zone "."
     let resolver = Arc::new(resolver);
-    let proxy = DNSProxy::new(resolver, filter_engine);
+    let proxy = DNSProxy::new(resolver, filter_engine, stats);
     
     // Register proxy authority for all zones (Root)
     catalog.upsert(
