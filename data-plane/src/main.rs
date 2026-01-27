@@ -55,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
         tracing::error!("Failed to initialize Redis client");
     }
 
-    }
+
 
     // Use our custom DNSProxy as Authority for the root zone "."
     let resolver = Arc::new(resolver);
