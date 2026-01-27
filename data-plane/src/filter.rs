@@ -1,4 +1,6 @@
 use hickory_server::proto::rr::Name;
+use aho_corasick::AhoCorasick;
+use regex::RegexSet;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterAction {
