@@ -9,6 +9,7 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		v1.POST("/tenants", CreateTenant)
 		v1.GET("/tenants", GetTenants)
+		v1.GET("/logs", GetLogs)
 		// Todo: Add policy routes
 	}
 }

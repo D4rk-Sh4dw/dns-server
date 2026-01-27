@@ -18,6 +18,24 @@ api.interceptors.response.use(
     }
 );
 
+export interface QueryLog {
+    id: string;
+    query: string;
+    timestamp: string;
+    // Add other fields as per your log structure
+}
+
+// Fetch real logs from API
+export const getQueryLogs = async (): Promise<QueryLog[]> => {
+    try {
+        const response = await api.get<QueryLog[]>('/logs');
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch logs", error);
+        return [];
+    }
+};
+
 export interface Tenant {
     id: string;
     name: string;
