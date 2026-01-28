@@ -20,9 +20,7 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - "[/lan.local/]dns-technitium:53"  # Forward local domains to Technitium
-    - https://dns.cloudflare.com/dns-query
-    - https://dns.google/dns-query
+    - dns-technitium:53  # Technitium handles ALL DNS resolution
   upstream_dns_file: ""
   bootstrap_dns:
     - 1.1.1.1
