@@ -7,20 +7,50 @@ import * as adguard from '@/lib/adguard';
 export async function GET() {
     try {
         // Get zones from Technitium and forwarding rules from AdGuard
-        const [techZones, forwardedDomains] = await Promise.all([
+        const [techZones, dnsConfig] = await Promise.all([
             technitium.listZones().catch(() => ({ zones: [] })),
-            adguard.getForwardedDomains().catch(() => []),
+            adguard.getDnsConfig().catch(() => ({ upstream_dns: [] })),
         ]);
 
-        // Merge the data - mark which zones are properly configured
-        const zones = (techZones.zones || []).map((zone: any) => ({
+        // Parse forwarding rules to extract domains and their targets
+        const forwardingRules: { domain: string; target: string; isAD: boolean }[] = [];
+        const upstreams: string[] = dnsConfig.upstream_dns || [];
+
+        for (const upstream of upstreams) {
+            const match = upstream.match(/\[\/([^/]+)\/\](.+)/);
+            if (match) {
+                const domains = match[1].split('/').filter(Boolean);
+                const target = match[2];
+                const isAD = !target.includes('10.10.10.3'); // If not pointing to Technitium, it's AD/external
+
+                for (const domain of domains) {
+                    forwardingRules.push({ domain, target, isAD });
+                }
+            }
+        }
+
+        // Merge zones with forwarding info
+        const technitiumZones = (techZones.zones || []).map((zone: any) => ({
             ...zone,
-            forwardingEnabled: forwardedDomains.some(d =>
-                d === zone.name || zone.name.endsWith(`.${d}`)
-            ),
+            source: 'technitium',
+            forwardingEnabled: forwardingRules.some(r => r.domain === zone.name),
         }));
 
-        return NextResponse.json({ zones, forwardedDomains });
+        // Add AD-only zones (forwarding rules not backed by Technitium zones)
+        const adZones = forwardingRules
+            .filter(r => r.isAD && !technitiumZones.some((z: any) => z.name === r.domain))
+            .map(r => ({
+                name: r.domain,
+                type: 'Forwarder',
+                source: 'active-directory',
+                forwardingEnabled: true,
+                dcServers: r.target,
+            }));
+
+        return NextResponse.json({
+            zones: [...technitiumZones, ...adZones],
+            forwardingRules,
+        });
     } catch (error) {
         console.error('Unified zones error:', error);
         return NextResponse.json({ error: 'Failed to fetch zones' }, { status: 500 });
@@ -30,32 +60,46 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { action, zone, type, isActiveDirectory } = body;
+        const { action, zone, type, isActiveDirectory, dcServers } = body;
 
         switch (action) {
             case 'create':
-                // 1. Create zone in Technitium
-                await technitium.createZone(zone, type || 'Primary');
+                if (isActiveDirectory && dcServers) {
+                    // AD Domain: Just add forwarding rule to DC's DNS - no Technitium zone needed
+                    const servers = dcServers.split(',').map((s: string) => s.trim()).filter(Boolean);
+                    if (servers.length === 0) {
+                        return NextResponse.json({ error: 'At least one DC IP is required' }, { status: 400 });
+                    }
 
-                // 2. Add forwarding rule in AdGuard
-                await adguard.addZoneForwarding(zone);
+                    // Add forwarding rule for each DC (AdGuard will load-balance)
+                    await adguard.addZoneForwarding(zone, servers[0], servers.slice(1));
 
-                // 3. If Active Directory, add standard AD records
-                if (isActiveDirectory) {
-                    await createADRecords(zone);
+                    return NextResponse.json({
+                        success: true,
+                        message: `AD domain ${zone} forwarding to ${servers.join(', ')}`
+                    });
+                } else {
+                    // Regular zone: Create in Technitium + add forwarding in AdGuard
+                    await technitium.createZone(zone, type || 'Primary');
+                    await adguard.addZoneForwarding(zone);
+
+                    return NextResponse.json({
+                        success: true,
+                        message: `Zone ${zone} created and forwarding configured`
+                    });
                 }
 
-                return NextResponse.json({
-                    success: true,
-                    message: `Zone ${zone} created and forwarding configured`
-                });
-
             case 'delete':
-                // 1. Remove forwarding rule from AdGuard
+                // Remove forwarding rule from AdGuard
                 await adguard.removeZoneForwarding(zone);
 
-                // 2. Delete zone from Technitium
-                await technitium.deleteZone(zone);
+                // Try to delete zone from Technitium (might not exist for AD-only zones)
+                try {
+                    await technitium.deleteZone(zone);
+                } catch (err) {
+                    // Ignore if zone doesn't exist in Technitium
+                    console.log(`Zone ${zone} not found in Technitium (probably AD-only)`);
+                }
 
                 return NextResponse.json({
                     success: true,
@@ -70,74 +114,5 @@ export async function POST(request: Request) {
         return NextResponse.json({
             error: error instanceof Error ? error.message : 'Action failed'
         }, { status: 500 });
-    }
-}
-
-// Create standard Active Directory DNS records for a domain
-async function createADRecords(domain: string) {
-    const dcName = 'dc1'; // Default DC name
-    const dcIp = '10.0.0.1'; // Placeholder - should be configurable
-
-    // These are the essential AD DNS records
-    const adRecords = [
-        // Domain Controller A record
-        { name: dcName, type: 'A', value: dcIp },
-
-        // LDAP SRV record
-        {
-            name: `_ldap._tcp.${domain}`,
-            type: 'SRV',
-            value: `${dcName}.${domain}`,
-            options: { priority: '0', weight: '100', port: '389' }
-        },
-
-        // Kerberos SRV record
-        {
-            name: `_kerberos._tcp.${domain}`,
-            type: 'SRV',
-            value: `${dcName}.${domain}`,
-            options: { priority: '0', weight: '100', port: '88' }
-        },
-
-        // Kerberos UDP SRV record
-        {
-            name: `_kerberos._udp.${domain}`,
-            type: 'SRV',
-            value: `${dcName}.${domain}`,
-            options: { priority: '0', weight: '100', port: '88' }
-        },
-
-        // GC (Global Catalog) SRV record
-        {
-            name: `_gc._tcp.${domain}`,
-            type: 'SRV',
-            value: `${dcName}.${domain}`,
-            options: { priority: '0', weight: '100', port: '3268' }
-        },
-
-        // LDAP DC SRV record
-        {
-            name: `_ldap._tcp.dc._msdcs.${domain}`,
-            type: 'SRV',
-            value: `${dcName}.${domain}`,
-            options: { priority: '0', weight: '100', port: '389' }
-        },
-    ];
-
-    console.log(`Creating AD records for ${domain}...`);
-
-    for (const record of adRecords) {
-        try {
-            await technitium.addRecord(
-                record.name.includes(domain) ? record.name : `${record.name}.${domain}`,
-                record.type,
-                record.value,
-                3600,
-                record.options || {}
-            );
-            console.log(`Created ${record.type} record: ${record.name}`);
-        } catch (err) {
-            console.error(`Failed to create ${record.type} record ${record.name}:`, err);
-        }
     }
 }

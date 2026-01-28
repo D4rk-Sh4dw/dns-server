@@ -114,19 +114,29 @@ export async function setDnsConfig(config: any) {
 }
 
 // Add a zone forwarding rule to AdGuard
-// This tells AdGuard to forward all requests for this domain to Technitium
-export async function addZoneForwarding(domain: string, technitiumIp: string = '10.10.10.3') {
+// For regular zones: forwards to Technitium (10.10.10.3)
+// For AD zones: forwards to DC DNS servers
+export async function addZoneForwarding(
+    domain: string,
+    primaryServer: string = '10.10.10.3',
+    additionalServers: string[] = []
+) {
     const dnsInfo = await getDnsConfig();
     const currentUpstreams: string[] = dnsInfo.upstream_dns || [];
-
-    // Create the forwarding rule: [/domain.com/]ip:53
-    const forwardRule = `[/${domain}/]${technitiumIp}:53`;
 
     // Check if rule already exists
     if (currentUpstreams.some(u => u.includes(`[/${domain}/]`))) {
         console.log(`Forwarding rule for ${domain} already exists`);
         return;
     }
+
+    // Create the forwarding rules
+    // Format: [/domain.com/]ip:53 or [/domain.com/]ip1:53 ip2:53 (for load balancing)
+    const servers = [primaryServer, ...additionalServers].map(s =>
+        s.includes(':') ? s : `${s}:53`
+    );
+
+    const forwardRule = `[/${domain}/]${servers.join(' ')}`;
 
     // Add the new rule at the beginning (before default upstreams)
     const newUpstreams = [forwardRule, ...currentUpstreams];
@@ -135,8 +145,9 @@ export async function addZoneForwarding(domain: string, technitiumIp: string = '
         upstream_dns: newUpstreams,
     });
 
-    console.log(`Added forwarding rule for ${domain} -> ${technitiumIp}`);
+    console.log(`Added forwarding rule for ${domain} -> ${servers.join(', ')}`);
 }
+
 
 // Remove a zone forwarding rule from AdGuard
 export async function removeZoneForwarding(domain: string) {
