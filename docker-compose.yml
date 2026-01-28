@@ -2,8 +2,10 @@ version: '3.8'
 
 services:
   # --- Central Management Dashboard (Our new app) ---
+  # --- Central Management Dashboard (Our new app) ---
   dashboard:
-    build: ./dashboard
+    image: ghcr.io/d4rk-sh4dw/dns-frontend:latest
+    # build: ./frontend
     container_name: dns-dashboard
     ports:
       - "3000:3000"
