@@ -2,7 +2,7 @@ http:
   pprof:
     port: 6060
     enabled: false
-  address: 0.0.0.0:3001
+  address: 0.0.0.0:3000
   session_ttl: 720h
 users:
   - name: admin
@@ -20,7 +20,7 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - "[/local/lan/home/internal/]127.0.0.1:5353"  # Technitium on localhost:5353
+    - "[/local/lan/home/internal/]dns-technitium:53"  # Technitium for local domains
     - https://dns.cloudflare.com/dns-query        # Cloudflare DoH
     - https://dns.google/dns-query                # Google DoH
   upstream_dns_file: ""

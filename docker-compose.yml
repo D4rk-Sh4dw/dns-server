@@ -9,38 +9,63 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - ADGUARD_URL=http://localhost:3001
+      - ADGUARD_URL=http://dns-adguard:3000
       - ADGUARD_USER=admin
       - ADGUARD_PASS=admin123
-      - TECHNITIUM_URL=http://localhost:5380
+      - TECHNITIUM_URL=http://dns-technitium:5380
       - TECHNITIUM_PASSWORD=admin123
-    network_mode: host
     depends_on:
-      - adguard
-      - technitium
+      adguard:
+        condition: service_healthy
+      technitium:
+        condition: service_healthy
+    networks:
+      - dns-net
 
   # --- AdGuard Home (Recursive DNS & AdBlocking) ---
   adguard:
     image: adguard/adguardhome:latest
     container_name: dns-adguard
     restart: unless-stopped
-    network_mode: host # Uses host network directly - solves DNS routing issues
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "3001:3000/tcp"
     volumes:
       - ./data/adguard/work:/opt/adguardhome/work
       - ./config/adguard:/opt/adguardhome/conf
+    networks:
+      - dns-net
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/control/status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # --- Technitium DNS (Authoritative DNS) ---
   technitium:
     image: technitium/dns-server:latest
     container_name: dns-technitium
     restart: unless-stopped
-    network_mode: host # Uses host network directly
+    ports:
+      - "5380:5380/tcp"
     environment:
       - DNS_SERVER_DOMAIN=dns.local
       - DNS_SERVER_ADMIN_PASSWORD=admin123
       - DNS_SERVER_PREFER_IPV6=false
       - DNS_SERVER_FORWARDERS=1.1.1.1,8.8.8.8
-      - DNS_SERVER_WEB_SERVICE_HTTP_PORT=5380
-      - DNS_SERVER_OPTIONAL_PROTOCOL_DNS_OVER_UDP=5353 # Avoid port 53 conflict with AdGuard
     volumes:
       - ./data/technitium:/etc/dns
+    networks:
+      - dns-net
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:5380/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+networks:
+  dns-net:
+    driver: bridge
