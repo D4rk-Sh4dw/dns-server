@@ -21,14 +21,15 @@ dns:
   refuse_any: true
   upstream_dns:
     - "[/local/lan/home/internal/]172.28.0.3:53"  # Technitium for local domains
-    - 1.1.1.1:53      # Cloudflare (plain DNS - no hostname resolution needed)
-    - 1.0.0.1:53      # Cloudflare Secondary
-    - 8.8.8.8:53      # Google
-    - 8.8.4.4:53      # Google Secondary
+    - https://dns.cloudflare.com/dns-query        # Cloudflare DoH
+    - https://dns.google/dns-query                # Google DoH
   upstream_dns_file: ""
-  bootstrap_dns: []   # Not needed with plain DNS
+  bootstrap_dns:
+    - 1.1.1.1
+    - 8.8.8.8
   fallback_dns:
-    - 9.9.9.9:53      # Quad9 fallback
+    - 9.9.9.9
+
 
   all_servers: false
   fastest_addr: false
