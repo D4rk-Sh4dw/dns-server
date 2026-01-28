@@ -1,65 +1,60 @@
 version: '3.8'
 
 services:
-  control-plane:
-    build:
-      context: ./control-plane
-      dockerfile: Dockerfile
+  # --- Central Management Dashboard (Our new app) ---
+  dashboard:
+    build: ./dashboard
+    container_name: dns-dashboard
     ports:
-      - "8080:8080"
+      - "3000:3000"
     environment:
-      - PORT=8080
-      - DB_HOST=db
-      - REDIS_HOST=redis
+      - ADGUARD_URL=http://dns-adguard:80 # Port 80 inside container maps to 3001 outside? No, wait. 
+      # AdGuard image usually exposes 80 inside. 
+      # Let's check adguard documentation mapping. 
+      # "3001:80/tcp" means host 3001 -> container 80.
+      # So internal URL is http://dns-adguard:80
+      - TECHNITIUM_URL=http://dns-technitium:5380
     depends_on:
-      - db
-      - redis
-    restart: unless-stopped
+      - adguard
+      - technitium
+    networks:
+      - dns-management-net
 
-  data-plane:
-    build:
-      context: ./data-plane
-      dockerfile: Dockerfile
+  # --- AdGuard Home (Recursive DNS & AdBlocking) ---
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: dns-adguard
+    restart: unless-stopped
     ports:
-      - "53:1053/udp"
-      - "53:1053/tcp"
-    environment:
-      - RUST_LOG=info
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    depends_on:
-      - control-plane
-    restart: unless-stopped
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: unified_dns
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "3001:80/tcp" # AdGuard Web Interface
+      - "3001:3000/tcp" # AdGuard Setup (Initial)
     volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U admin -d unified_dns" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - ./data/adguard/work:/opt/adguardhome/work
+      - ./data/adguard/conf:/opt/adguardhome/conf
+    networks:
+      - dns-management-net
 
-  redis:
-    image: redis:alpine
+  # --- Technitium DNS (Authoritative DNS) ---
+  technitium:
+    image: technitium/dns-server:latest
+    container_name: dns-technitium
+    restart: unless-stopped
     ports:
-      - "6379:6379"
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "5380:5380/tcp" # Technitium Web Console
+      # Note: Port 53 is taken by AdGuard. 
+      # Technitium will run on a different internal port or interface.
+      # For now, we just expose the management port.
+      # In a real setup, we might forward specific high-level domains to it
+      # or expose it on a secondary IP.
+    environment:
+      - DNS_SERVER_DOMAIN=dns-server # Optional
+    volumes:
+      - ./data/technitium:/etc/dns
+    networks:
+      - dns-management-net
 
-volumes:
-  db_data:
+networks:
+  dns-management-net:
+    driver: bridge
