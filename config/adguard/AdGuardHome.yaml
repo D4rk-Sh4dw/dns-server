@@ -6,9 +6,9 @@ http:
   session_ttl: 720h
 users:
   - name: admin
-    password: $2a$10$rKxKqNKQ7vZK8fN4VKjZzOpPTLMWL3iF3n2K7u/.nKxPKxIxK8xKq  # admin123 (change in production!)
+    password: $2y$10$Oc8AJhBPFtAhj7r5k5y5T.kQ3z1aCcVxHbv3tN7m8cB5Y8XgS6MUu
 auth_attempts: 5
-block_auth_min: 15
+block_auth_min: 1
 dns:
   bind_hosts:
     - 0.0.0.0
