@@ -10,10 +10,10 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - ADGUARD_URL=http://10.10.10.2:3000
+      - ADGUARD_URL=http://dns-adguard:3000
       - ADGUARD_USER=admin
       - ADGUARD_PASS=admin123
-      - TECHNITIUM_URL=http://10.10.10.3:5380
+      - TECHNITIUM_URL=http://dns-technitium:5380
       - TECHNITIUM_PASSWORD=admin123
     depends_on:
       adguard:
@@ -21,8 +21,9 @@ services:
       technitium:
         condition: service_healthy
     networks:
-      dns-management-net:
-        ipv4_address: 10.10.10.4
+      - dns-net
+    dns:
+      - 1.1.1.1 # Use external DNS for dashboard (not AdGuard to avoid circular dependency)
 
   # --- AdGuard Home (Recursive DNS & AdBlocking) ---
   adguard:
@@ -37,8 +38,11 @@ services:
       - ./data/adguard/work:/opt/adguardhome/work
       - ./config/adguard:/opt/adguardhome/conf
     networks:
-      dns-management-net:
-        ipv4_address: 10.10.10.2
+      - dns-net
+    dns:
+      - 1.1.1.1 # External DNS for AdGuard to download filter lists
+    extra_hosts:
+      - "dns-technitium:172.28.0.3" # Static mapping for Technitium
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/control/status" ]
       interval: 10s
@@ -61,8 +65,8 @@ services:
     volumes:
       - ./data/technitium:/etc/dns
     networks:
-      dns-management-net:
-        ipv4_address: 10.10.10.3
+      dns-net:
+        ipv4_address: 172.28.0.3
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:5380/" ]
       interval: 10s
@@ -71,9 +75,8 @@ services:
       start_period: 60s
 
 networks:
-  dns-management-net:
+  dns-net:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.10.10.0/24
-          gateway: 10.10.10.1
+        - subnet: 172.28.0.0/16

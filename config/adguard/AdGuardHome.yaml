@@ -20,14 +20,16 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - "[/local/lan/home/internal/]10.10.10.3:53"  # Technitium for local domains
-    - https://dns.cloudflare.com/dns-query       # Cloudflare DoH for everything else
-    - https://dns.google/dns-query               # Google DoH fallback
+    - "[/local/lan/home/internal/]172.28.0.3:53"  # Technitium for local domains
+    - 1.1.1.1:53      # Cloudflare (plain DNS - no hostname resolution needed)
+    - 1.0.0.1:53      # Cloudflare Secondary
+    - 8.8.8.8:53      # Google
+    - 8.8.4.4:53      # Google Secondary
   upstream_dns_file: ""
-  bootstrap_dns:
-    - 1.1.1.1
-    - 8.8.8.8
-  fallback_dns: []
+  bootstrap_dns: []   # Not needed with plain DNS
+  fallback_dns:
+    - 9.9.9.9:53      # Quad9 fallback
+
   all_servers: false
   fastest_addr: false
   fastest_timeout: 1s
