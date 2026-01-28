@@ -20,7 +20,9 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - 10.10.10.3:53  # Technitium (static IP) handles ALL DNS resolution
+    - "[/local/lan/home/internal/]10.10.10.3:53"  # Technitium for local domains
+    - https://dns.cloudflare.com/dns-query       # Cloudflare DoH for everything else
+    - https://dns.google/dns-query               # Google DoH fallback
   upstream_dns_file: ""
   bootstrap_dns:
     - 1.1.1.1
