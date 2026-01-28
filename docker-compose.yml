@@ -1,24 +1,25 @@
 version: '3.8'
 
 services:
-  # --- Central Management Dashboard (Our new app) ---
-  # --- Central Management Dashboard (Our new app) ---
+  # --- Central Management Dashboard ---
   dashboard:
     image: ghcr.io/d4rk-sh4dw/dns-frontend:latest
     # build: ./frontend
     container_name: dns-dashboard
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - ADGUARD_URL=http://dns-adguard:80 # Port 80 inside container maps to 3001 outside? No, wait. 
-      # AdGuard image usually exposes 80 inside. 
-      # Let's check adguard documentation mapping. 
-      # "3001:80/tcp" means host 3001 -> container 80.
-      # So internal URL is http://dns-adguard:80
+      - ADGUARD_URL=http://dns-adguard:80
+      - ADGUARD_USER=admin
+      - ADGUARD_PASS=admin123
       - TECHNITIUM_URL=http://dns-technitium:5380
+      - TECHNITIUM_TOKEN=auto # Will be fetched on first run
     depends_on:
-      - adguard
-      - technitium
+      adguard:
+        condition: service_healthy
+      technitium:
+        condition: service_healthy
     networks:
       - dns-management-net
 
@@ -30,13 +31,18 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "3001:80/tcp" # AdGuard Web Interface
-      - "3001:3000/tcp" # AdGuard Setup (Initial)
+      - "3001:80/tcp"
     volumes:
       - ./data/adguard/work:/opt/adguardhome/work
-      - ./data/adguard/conf:/opt/adguardhome/conf
+      - ./config/adguard:/opt/adguardhome/conf
     networks:
       - dns-management-net
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:80/control/status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # --- Technitium DNS (Authoritative DNS) ---
   technitium:
@@ -44,18 +50,23 @@ services:
     container_name: dns-technitium
     restart: unless-stopped
     ports:
-      - "5380:5380/tcp" # Technitium Web Console
-      # Note: Port 53 is taken by AdGuard. 
-      # Technitium will run on a different internal port or interface.
-      # For now, we just expose the management port.
-      # In a real setup, we might forward specific high-level domains to it
-      # or expose it on a secondary IP.
+      - "5380:5380/tcp"
+      - "5353:53/udp" # Secondary DNS port for internal queries from AdGuard
+      - "5353:53/tcp"
     environment:
-      - DNS_SERVER_DOMAIN=dns-server # Optional
+      - DNS_SERVER_DOMAIN=dns.local
+      - DNS_SERVER_ADMIN_PASSWORD=admin123
+      - DNS_SERVER_PREFER_IPV6=false
     volumes:
       - ./data/technitium:/etc/dns
     networks:
       - dns-management-net
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:5380/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 networks:
   dns-management-net:
