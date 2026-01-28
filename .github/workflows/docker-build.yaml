@@ -16,7 +16,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [control-plane, data-plane, frontend]
+        service: [frontend]
     
     steps:
       - name: Checkout repository
