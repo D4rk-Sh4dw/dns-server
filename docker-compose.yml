@@ -4,79 +4,43 @@ services:
   # --- Central Management Dashboard ---
   dashboard:
     image: ghcr.io/d4rk-sh4dw/dns-frontend:latest
-    # build: ./frontend
     container_name: dns-dashboard
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - ADGUARD_URL=http://dns-adguard:3000
+      - ADGUARD_URL=http://localhost:3001
       - ADGUARD_USER=admin
       - ADGUARD_PASS=admin123
-      - TECHNITIUM_URL=http://dns-technitium:5380
+      - TECHNITIUM_URL=http://localhost:5380
       - TECHNITIUM_PASSWORD=admin123
+    network_mode: host
     depends_on:
-      adguard:
-        condition: service_healthy
-      technitium:
-        condition: service_healthy
-    networks:
-      - dns-net
-    dns:
-      - 1.1.1.1 # Use external DNS for dashboard (not AdGuard to avoid circular dependency)
+      - adguard
+      - technitium
 
   # --- AdGuard Home (Recursive DNS & AdBlocking) ---
   adguard:
     image: adguard/adguardhome:latest
     container_name: dns-adguard
     restart: unless-stopped
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "3001:3000/tcp"
+    network_mode: host # Uses host network directly - solves DNS routing issues
     volumes:
       - ./data/adguard/work:/opt/adguardhome/work
       - ./config/adguard:/opt/adguardhome/conf
-    networks:
-      - dns-net
-    dns:
-      - 1.1.1.1 # External DNS for AdGuard to download filter lists
-    extra_hosts:
-      - "dns-technitium:172.28.0.3" # Static mapping for Technitium
-    healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/control/status" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
 
   # --- Technitium DNS (Authoritative DNS) ---
   technitium:
     image: technitium/dns-server:latest
     container_name: dns-technitium
     restart: unless-stopped
-    ports:
-      - "5380:5380/tcp"
+    network_mode: host # Uses host network directly
     environment:
       - DNS_SERVER_DOMAIN=dns.local
       - DNS_SERVER_ADMIN_PASSWORD=admin123
       - DNS_SERVER_PREFER_IPV6=false
       - DNS_SERVER_FORWARDERS=1.1.1.1,8.8.8.8
+      - DNS_SERVER_WEB_SERVICE_HTTP_PORT=5380
+      - DNS_SERVER_OPTIONAL_PROTOCOL_DNS_OVER_UDP=5353 # Avoid port 53 conflict with AdGuard
     volumes:
       - ./data/technitium:/etc/dns
-    networks:
-      dns-net:
-        ipv4_address: 172.28.0.3
-    healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:5380/" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-
-networks:
-  dns-net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16
