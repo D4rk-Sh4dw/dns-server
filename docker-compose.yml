@@ -10,18 +10,19 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - ADGUARD_URL=http://dns-adguard:3000
+      - ADGUARD_URL=http://10.10.10.2:3000
       - ADGUARD_USER=admin
       - ADGUARD_PASS=admin123
-      - TECHNITIUM_URL=http://dns-technitium:5380
-      - TECHNITIUM_TOKEN=auto # Will be fetched on first run
+      - TECHNITIUM_URL=http://10.10.10.3:5380
+      - TECHNITIUM_PASSWORD=admin123
     depends_on:
       adguard:
         condition: service_healthy
       technitium:
         condition: service_healthy
     networks:
-      - dns-management-net
+      dns-management-net:
+        ipv4_address: 10.10.10.4
 
   # --- AdGuard Home (Recursive DNS & AdBlocking) ---
   adguard:
@@ -31,12 +32,13 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "3001:3000/tcp" # AdGuard Web Interface (port 3000 inside container)
+      - "3001:3000/tcp"
     volumes:
       - ./data/adguard/work:/opt/adguardhome/work
       - ./config/adguard:/opt/adguardhome/conf
     networks:
-      - dns-management-net
+      dns-management-net:
+        ipv4_address: 10.10.10.2
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/control/status" ]
       interval: 10s
@@ -51,23 +53,27 @@ services:
     restart: unless-stopped
     ports:
       - "5380:5380/tcp"
-      - "5353:53/udp" # Secondary DNS port for internal queries from AdGuard
-      - "5353:53/tcp"
     environment:
       - DNS_SERVER_DOMAIN=dns.local
       - DNS_SERVER_ADMIN_PASSWORD=admin123
       - DNS_SERVER_PREFER_IPV6=false
+      - DNS_SERVER_FORWARDERS=1.1.1.1,8.8.8.8
     volumes:
       - ./data/technitium:/etc/dns
     networks:
-      - dns-management-net
+      dns-management-net:
+        ipv4_address: 10.10.10.3
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:5380/" ]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 60s
 
 networks:
   dns-management-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24
+          gateway: 10.10.10.1

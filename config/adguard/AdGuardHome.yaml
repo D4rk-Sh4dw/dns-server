@@ -20,7 +20,7 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - dns-technitium:53  # Technitium handles ALL DNS resolution
+    - 10.10.10.3:53  # Technitium (static IP) handles ALL DNS resolution
   upstream_dns_file: ""
   bootstrap_dns:
     - 1.1.1.1
