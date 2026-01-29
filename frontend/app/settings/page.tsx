@@ -105,12 +105,67 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                {/* Configuration Placeholder */}
+                {/* Configuration Backup & Restore */}
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                    <h2 className="text-xl font-semibold text-white mb-6">Backup & Restore</h2>
-                    <div className="text-center py-12 text-gray-500 bg-gray-800/30 rounded-lg border border-dashed border-gray-700">
-                        <Save className="mx-auto mb-3 opacity-50" size={32} />
-                        <p>Backup functionality coming soon.</p>
+                    <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                        <Save className="text-purple-500" size={24} />
+                        Backup & Restore
+                    </h2>
+
+                    <div className="space-y-6">
+                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-800">
+                            <h3 className="text-white font-medium mb-2">Export Configuration</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Download a backup of AdGuard and Technitium configurations.
+                            </p>
+                            <a
+                                href="/api/system/backup"
+                                target="_blank"
+                                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                <Save size={18} />
+                                Download Backup
+                            </a>
+                        </div>
+
+                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-800">
+                            <h3 className="text-white font-medium mb-2">Import Configuration</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Restore configuration from a previous backup file.
+                                <br />
+                                <span className="text-red-400 text-xs">Warning: This will overwrite current settings and restart services.</span>
+                            </p>
+                            <label className="inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors">
+                                <Database size={18} />
+                                Select Backup File
+                                <input
+                                    type="file"
+                                    accept=".tar.gz"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        if (!confirm('This will overwrite current settings and restart services. Are you sure?')) return;
+
+                                        const formData = new FormData();
+                                        formData.append('backup', file);
+
+                                        setLoading(true);
+                                        try {
+                                            const res = await fetch('/api/system/restore', {
+                                                method: 'POST',
+                                                body: formData
+                                            });
+                                            if (!res.ok) throw new Error('Restore failed');
+                                            alert('Restore started. System will restart shortly.');
+                                        } catch (err) {
+                                            alert('Failed to restore backup');
+                                        }
+                                        setLoading(false);
+                                    }}
+                                />
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>

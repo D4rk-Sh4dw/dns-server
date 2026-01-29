@@ -14,6 +14,9 @@ services:
       - ADGUARD_PASS=admin123
       - TECHNITIUM_URL=http://dns-technitium:5380
       - TECHNITIUM_PASSWORD=admin123
+    volumes:
+      - ./config:/app/config_mount
+      - ./data:/app/data_mount
     depends_on:
       - adguard
       - technitium
