@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, RefreshCw, Trash2, Check } from 'lucide-react';
+import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface DnsRecord {
