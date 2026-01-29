@@ -203,3 +203,50 @@ export async function getForwardedDomains(): Promise<string[]> {
 
     return domains;
 }
+
+// ==================== Protection Settings ====================
+
+// Parental Control
+export async function getParentalStatus() {
+    return adguardFetch('/control/parental/status');
+}
+
+export async function setParentalEnabled(enabled: boolean) {
+    const endpoint = enabled ? '/control/parental/enable' : '/control/parental/disable';
+    return adguardFetch(endpoint, { method: 'POST' });
+}
+
+// Safe Browsing
+export async function getSafeBrowsingStatus() {
+    return adguardFetch('/control/safebrowsing/status');
+}
+
+export async function setSafeBrowsingEnabled(enabled: boolean) {
+    const endpoint = enabled ? '/control/safebrowsing/enable' : '/control/safebrowsing/disable';
+    return adguardFetch(endpoint, { method: 'POST' });
+}
+
+// Overall DNS Protection (enables/disables all filtering)
+export async function setProtectionEnabled(enabled: boolean) {
+    return adguardFetch('/control/dns_config', {
+        method: 'POST',
+        body: JSON.stringify({ protection_enabled: enabled }),
+    });
+}
+
+// Get all protection settings in one call
+export async function getAllProtectionStatus() {
+    const [status, parental, safeBrowsing, safeSearch] = await Promise.all([
+        getStatus(),
+        getParentalStatus(),
+        getSafeBrowsingStatus(),
+        getSafeSearchStatus(),
+    ]);
+
+    return {
+        protectionEnabled: status.protection_enabled,
+        parentalEnabled: parental.enabled,
+        safeBrowsingEnabled: safeBrowsing.enabled,
+        safeSearchEnabled: safeSearch.enabled,
+    };
+}

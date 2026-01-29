@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, Plus, Trash2, Check, X } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, Check, X, Shield, ShieldCheck, Baby, Search } from 'lucide-react';
 
 interface FilterList {
     id: number;
@@ -18,9 +18,16 @@ interface FilteringStatus {
     user_rules: string[];
 }
 
+interface ProtectionStatus {
+    protectionEnabled: boolean;
+    parentalEnabled: boolean;
+    safeBrowsingEnabled: boolean;
+    safeSearchEnabled: boolean;
+}
+
 export default function FilteringPage() {
     const [filtering, setFiltering] = useState<FilteringStatus | null>(null);
-    const [safeSearch, setSafeSearch] = useState(true);
+    const [protection, setProtection] = useState<ProtectionStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newList, setNewList] = useState({ name: '', url: '' });
@@ -31,15 +38,16 @@ export default function FilteringPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/adguard/filtering');
-            const data = await res.json();
-            setFiltering(data);
-
-            const adguardRes = await fetch('/api/adguard');
-            const adguard = await adguardRes.json();
-            setSafeSearch(adguard.safeSearch?.enabled ?? true);
+            const [filterRes, protectionRes] = await Promise.all([
+                fetch('/api/adguard/filtering'),
+                fetch('/api/adguard/protection'),
+            ]);
+            const filterData = await filterRes.json();
+            const protectionData = await protectionRes.json();
+            setFiltering(filterData);
+            setProtection(protectionData);
         } catch (err) {
-            console.error('Failed to fetch filtering data:', err);
+            console.error('Failed to fetch data:', err);
         }
         setLoading(false);
     };
@@ -54,6 +62,31 @@ export default function FilteringPage() {
             body: JSON.stringify({ action: 'refresh' }),
         });
         await fetchData();
+    };
+
+    const toggleProtection = async (setting: string, enabled: boolean) => {
+        // Optimistically update UI
+        setProtection(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                [`${setting}Enabled`]: enabled,
+            };
+        });
+
+        try {
+            const res = await fetch('/api/adguard/protection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ setting, enabled }),
+            });
+            const data = await res.json();
+            setProtection(data);
+        } catch (err) {
+            console.error('Failed to toggle protection:', err);
+            // Revert on error
+            fetchData();
+        }
     };
 
     const handleAddList = async () => {
@@ -106,8 +139,8 @@ export default function FilteringPage() {
         <div className="p-8 space-y-8">
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Filtering & Blocklists</h1>
-                    <p className="text-gray-400">Manage global blocking rules and AdGuard blocklists.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Filtering & Protection</h1>
+                    <p className="text-gray-400">Manage global protection settings and AdGuard blocklists.</p>
                 </div>
                 <button
                     onClick={handleRefresh}
@@ -117,24 +150,70 @@ export default function FilteringPage() {
                 </button>
             </div>
 
+            {/* Protection Switches */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                <h3 className="text-lg font-medium text-white mb-4">Global Switches</h3>
-                <div className="flex items-center justify-between py-4 border-b border-gray-800">
-                    <div>
-                        <div className="text-white font-medium">Safe Search</div>
-                        <div className="text-sm text-gray-500">Enforce safe search on Google, Bing, and YouTube</div>
+                <h3 className="text-lg font-medium text-white mb-4">Protection Settings</h3>
+
+                <div className="space-y-1">
+                    {/* Overall Protection */}
+                    <div className="flex items-center justify-between py-4 border-b border-gray-800">
+                        <div className="flex items-center gap-3">
+                            <Shield className="text-blue-400" size={20} />
+                            <div>
+                                <div className="text-white font-medium">DNS Protection</div>
+                                <div className="text-sm text-gray-500">Enable DNS filtering and blocking</div>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={protection?.protectionEnabled ?? false}
+                            onChange={(v) => toggleProtection('protection', v)}
+                        />
                     </div>
-                    <Switch checked={safeSearch} onChange={async (v) => {
-                        setSafeSearch(v);
-                        // TODO: Call API to toggle safe search
-                    }} />
-                </div>
-                <div className="flex items-center justify-between py-4">
-                    <div>
-                        <div className="text-white font-medium">Protection Enabled</div>
-                        <div className="text-sm text-gray-500">Block domains from all enabled filter lists</div>
+
+                    {/* Parental Control */}
+                    <div className="flex items-center justify-between py-4 border-b border-gray-800">
+                        <div className="flex items-center gap-3">
+                            <Baby className="text-pink-400" size={20} />
+                            <div>
+                                <div className="text-white font-medium">Parental Control</div>
+                                <div className="text-sm text-gray-500">Block adult content (pornography, etc.)</div>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={protection?.parentalEnabled ?? false}
+                            onChange={(v) => toggleProtection('parental', v)}
+                        />
                     </div>
-                    <Switch checked={filtering?.enabled ?? false} onChange={() => { }} />
+
+                    {/* Safe Browsing */}
+                    <div className="flex items-center justify-between py-4 border-b border-gray-800">
+                        <div className="flex items-center gap-3">
+                            <ShieldCheck className="text-green-400" size={20} />
+                            <div>
+                                <div className="text-white font-medium">Safe Browsing</div>
+                                <div className="text-sm text-gray-500">Block malware and phishing domains</div>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={protection?.safeBrowsingEnabled ?? false}
+                            onChange={(v) => toggleProtection('safeBrowsing', v)}
+                        />
+                    </div>
+
+                    {/* Safe Search */}
+                    <div className="flex items-center justify-between py-4">
+                        <div className="flex items-center gap-3">
+                            <Search className="text-yellow-400" size={20} />
+                            <div>
+                                <div className="text-white font-medium">Safe Search</div>
+                                <div className="text-sm text-gray-500">Enforce safe search on Google, Bing, YouTube</div>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={protection?.safeSearchEnabled ?? false}
+                            onChange={(v) => toggleProtection('safeSearch', v)}
+                        />
+                    </div>
                 </div>
             </div>
 
