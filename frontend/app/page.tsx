@@ -15,6 +15,7 @@ interface AdGuardStats {
   num_dns_queries: number;
   num_blocked_filtering: number;
   avg_processing_time: number;
+  dns_queries: number[]; // History array
 }
 
 interface DashboardData {
@@ -123,8 +124,8 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h3 className="text-lg font-medium text-white mb-4">Query Volume (24h)</h3>
-          <div className="h-64 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-800 rounded-lg">
-            Chart coming soon...
+          <div className="h-64">
+            <QueryChart data={stats?.dns_queries} />
           </div>
         </div>
 
@@ -150,6 +151,61 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+function QueryChart({ data }: { data?: any[] }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-800 rounded-lg">
+        No data available
+      </div>
+    );
+  }
+
+  // AdGuard returns stats as array of { domain, queries } or similar depending on the endpoint.
+  // For the main /stats endpoint, dns_queries might be a total number or a timeseries.
+  // Let's assume for now we need a timeseries. If AdGuard /stats only returns a number, 
+  // we might need to fetch /control/stats/history.
+  // Assuming 'data' passed here is actually the timeseries array if available.
+
+  // Actually, AdGuard /control/stats returns:
+  // { "dns_queries": [...numbers...], "time_units": "hours" }
+  // Users want to see the volume over time.
+
+  const chartData = data.map((value, index) => ({
+    time: `${index}h`,
+    queries: value,
+  }));
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={chartData}>
+        <defs>
+          <linearGradient id="colorQueries" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+        <XAxis dataKey="time" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+        <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#fff' }}
+          itemStyle={{ color: '#3B82F6' }}
+        />
+        <Area
+          type="monotone"
+          dataKey="queries"
+          stroke="#3B82F6"
+          fillOpacity={1}
+          fill="url(#colorQueries)"
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 
