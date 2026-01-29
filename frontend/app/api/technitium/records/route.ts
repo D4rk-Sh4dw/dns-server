@@ -37,6 +37,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Technitium record action error:', error);
-        return NextResponse.json({ error: 'Action failed' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Action failed';
+        // Extract meaningful error from Technitium API error message
+        const match = message.match(/Technitium API error: (.+)/);
+        const userMessage = match ? match[1] : message;
+        return NextResponse.json({ error: userMessage }, { status: 500 });
     }
 }

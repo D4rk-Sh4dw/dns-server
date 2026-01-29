@@ -7,20 +7,27 @@ const execAsync = util.promisify(exec);
 
 export async function GET() {
     try {
-        // Create a tarball of the config and data directories
-        // We exclude the dashboard's own data if needed, but mainly we want AdGuard/Technitium configs
-        // Using 'tar' command which should be present in the node image (usually based on debian/alpine)
+        // Check if the mounted directories exist
+        const configExists = fs.existsSync('/app/config_mount');
+        const dataExists = fs.existsSync('/app/data_mount');
 
-        // This command creates a tar.gz stream to stdout
-        const tarCommand = 'tar -czf - -C /app config_mount data_mount';
+        if (!configExists && !dataExists) {
+            return NextResponse.json({
+                error: 'Backup not available - config and data volumes not mounted'
+            }, { status: 503 });
+        }
 
-        // Next.js (Node) streaming response is a bit tricky with child_process stdout
-        // We'll use a ReadableStream
+        // Build tar command only for existing directories
+        const dirs: string[] = [];
+        if (configExists) dirs.push('config_mount');
+        if (dataExists) dirs.push('data_mount');
 
-        const { stdout, stderr } = await execAsync(tarCommand, { encoding: 'buffer', maxBuffer: 50 * 1024 * 1024 }); // 50MB buffer limit for simplicity
+        const tarCommand = `tar -czf - -C /app ${dirs.join(' ')}`;
 
-        // Ideally we would stream it, but for simplicity/reliability in this context, buffering is safer unless backup is huge.
-        // Given text configs, it should be small.
+        const { stdout } = await execAsync(tarCommand, {
+            encoding: 'buffer',
+            maxBuffer: 50 * 1024 * 1024
+        });
 
         return new NextResponse(stdout, {
             headers: {
