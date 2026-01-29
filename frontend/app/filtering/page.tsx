@@ -25,6 +25,9 @@ export default function FilteringPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newList, setNewList] = useState({ name: '', url: '' });
 
+    const [showRuleModal, setShowRuleModal] = useState(false);
+    const [newRule, setNewRule] = useState('');
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -76,6 +79,29 @@ export default function FilteringPage() {
         await fetchData();
     };
 
+    const handleAddRule = async () => {
+        if (!newRule) return;
+
+        await fetch('/api/adguard/filtering', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'addRule', rule: newRule }),
+        });
+
+        setNewRule('');
+        setShowRuleModal(false);
+        await fetchData();
+    };
+
+    const handleRemoveRule = async (rule: string) => {
+        await fetch('/api/adguard/filtering', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'removeRule', rule }),
+        });
+        await fetchData();
+    };
+
     return (
         <div className="p-8 space-y-8">
             <div className="flex justify-between items-start">
@@ -112,6 +138,47 @@ export default function FilteringPage() {
                 </div>
             </div>
 
+            {/* --- Custom Rules Section --- */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 className="text-lg font-medium text-white">Custom Rules</h3>
+                        <p className="text-sm text-gray-500">
+                            Manually block or allow domains.
+                            <br />
+                            <span className="text-xs text-blue-400">Example: ||example.com^ (Block) or @@||example.com^ (Allow)</span>
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setShowRuleModal(true)}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                    >
+                        <Plus size={18} />
+                        Add Rule
+                    </button>
+                </div>
+
+                <div className="space-y-2 font-mono text-sm max-h-96 overflow-y-auto bg-gray-950/30 p-4 rounded-lg border border-gray-800">
+                    {filtering?.user_rules?.map((rule, idx) => (
+                        <div key={idx} className="flex justify-between items-center p-2 hover:bg-gray-800 rounded group">
+                            <span className={rule.startsWith('@@') ? 'text-green-400' : 'text-red-400'}>
+                                {rule}
+                            </span>
+                            <button
+                                onClick={() => handleRemoveRule(rule)}
+                                className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    ))}
+                    {!filtering?.user_rules?.length && (
+                        <div className="text-gray-500 text-center py-4">No custom rules defined.</div>
+                    )}
+                </div>
+            </div>
+
+            {/* --- Blocklists Section --- */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-medium text-white">Blocklists</h3>
@@ -212,6 +279,48 @@ export default function FilteringPage() {
                     </div>
                 </div>
             )}
+
+            {/* Add Rule Modal */}
+            {showRuleModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-md">
+                        <h3 className="text-lg font-medium text-white mb-4">Add Custom Rule</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Rule</label>
+                                <input
+                                    type="text"
+                                    value={newRule}
+                                    onChange={(e) => setNewRule(e.target.value)}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                                    placeholder="||example.com^"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Start with <code>@@</code> to allow (whitelist).
+                                    <br />
+                                    Use <code>||domain.com^</code> to block domain and subdomains.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                onClick={() => setShowRuleModal(false)}
+                                className="px-4 py-2 text-gray-400 hover:text-white"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAddRule}
+                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                            >
+                                <Check size={18} />
+                                Add Rule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

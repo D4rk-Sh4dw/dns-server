@@ -91,13 +91,30 @@ export async function refreshFilters() {
     });
 }
 
-export async function addCustomRule(rule: string) {
+export async function getCustomRules() {
     const status = await getFiltering();
-    const currentRules = status.user_rules || [];
+    return status.user_rules || [];
+}
+
+export async function addCustomRule(rule: string) {
+    const currentRules = await getCustomRules();
+
+    // Avoid duplicates
+    if (currentRules.includes(rule)) return;
 
     return adguardFetch('/control/filtering/set_rules', {
         method: 'POST',
         body: JSON.stringify({ rules: [...currentRules, rule] }),
+    });
+}
+
+export async function removeCustomRule(rule: string) {
+    const currentRules = await getCustomRules();
+    const newRules = currentRules.filter((r: string) => r !== rule);
+
+    return adguardFetch('/control/filtering/set_rules', {
+        method: 'POST',
+        body: JSON.stringify({ rules: newRules }),
     });
 }
 

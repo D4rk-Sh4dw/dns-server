@@ -29,6 +29,9 @@ export async function POST(request: Request) {
             case 'addRule':
                 await adguard.addCustomRule(rule);
                 break;
+            case 'removeRule':
+                await adguard.removeCustomRule(rule);
+                break;
             default:
                 return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }
