@@ -19,6 +19,8 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { setting, enabled } = body;
 
+        console.log(`Protection toggle: ${setting} = ${enabled}`);
+
         switch (setting) {
             case 'parental':
                 await adguard.setParentalEnabled(enabled);
@@ -39,13 +41,18 @@ export async function POST(request: Request) {
                 );
         }
 
+        // Wait a moment for AdGuard to persist the change
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // Return updated status
         const protection = await adguard.getAllProtectionStatus();
+        console.log('Updated protection status:', protection);
         return NextResponse.json(protection);
     } catch (error) {
         console.error('Protection update error:', error);
+        const message = error instanceof Error ? error.message : 'Failed to update protection setting';
         return NextResponse.json(
-            { error: 'Failed to update protection setting' },
+            { error: message },
             { status: 500 }
         );
     }

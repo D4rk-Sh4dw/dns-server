@@ -49,9 +49,20 @@ export async function getFiltering() {
 }
 
 export async function toggleSafeSearch(enabled: boolean) {
+    // AdGuard requires setting each search engine individually
+    const config = {
+        enabled,
+        bing: enabled,
+        duckduckgo: enabled,
+        ecosia: enabled,
+        google: enabled,
+        pixabay: enabled,
+        yandex: enabled,
+        youtube: enabled,
+    };
     return adguardFetch('/control/safesearch/settings', {
         method: 'PUT',
-        body: JSON.stringify({ enabled }),
+        body: JSON.stringify(config),
     });
 }
 
