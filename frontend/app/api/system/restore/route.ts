@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
-import { util } from 'util';
+import util from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 
