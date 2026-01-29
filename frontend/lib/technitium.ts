@@ -6,9 +6,10 @@ const TECHNITIUM_PASSWORD = process.env.TECHNITIUM_PASSWORD || 'admin123';
 
 let cachedToken: string | null = null;
 
-async function getToken(): Promise<string> {
-    if (cachedToken) return cachedToken;
+async function getToken(forceRefresh = false): Promise<string> {
+    if (cachedToken && !forceRefresh) return cachedToken;
 
+    console.log('Fetching new Technitium token...');
     const response = await fetch(`${TECHNITIUM_URL}/api/user/login?user=admin&pass=${TECHNITIUM_PASSWORD}`);
     const data = await response.json();
 
@@ -21,18 +22,47 @@ async function getToken(): Promise<string> {
 }
 
 async function technitiumFetch(endpoint: string, params: Record<string, string> = {}) {
-    const token = await getToken();
-    const queryParams = new URLSearchParams({ token, ...params });
-    const url = `${TECHNITIUM_URL}${endpoint}?${queryParams}`;
+    try {
+        const token = await getToken();
+        const queryParams = new URLSearchParams({ token, ...params });
+        const url = `${TECHNITIUM_URL}${endpoint}?${queryParams}`;
 
-    const response = await fetch(url);
-    const data = await response.json();
+        const response = await fetch(url);
+        const data = await response.json();
 
-    if (data.status !== 'ok') {
-        throw new Error(`Technitium API error: ${data.errorMessage}`);
+        // Check for session expiry or invalid token
+        if (data.status === 'error' && (
+            data.errorMessage?.includes('session expired') ||
+            data.errorMessage?.includes('invalid token')
+        )) {
+            console.log('Technitium token expired, retrying with fresh token...');
+
+            // Clear cache and get new token
+            cachedToken = null;
+            const newToken = await getToken(true);
+
+            // Retry the request
+            const retryParams = new URLSearchParams({ token: newToken, ...params });
+            const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
+
+            const retryResponse = await fetch(retryUrl);
+            const retryData = await retryResponse.json();
+
+            if (retryData.status !== 'ok') {
+                throw new Error(`Technitium API error after retry: ${retryData.errorMessage}`);
+            }
+            return retryData.response;
+        }
+
+        if (data.status !== 'ok') {
+            throw new Error(`Technitium API error: ${data.errorMessage}`);
+        }
+
+        return data.response;
+    } catch (error) {
+        console.error(`Technitium API call failed for ${endpoint}:`, error);
+        throw error;
     }
-
-    return data.response;
 }
 
 // Zone Management
