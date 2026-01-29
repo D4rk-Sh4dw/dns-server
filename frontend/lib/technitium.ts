@@ -104,12 +104,16 @@ export async function addRecord(
             params.ipAddress = value;
             break;
         case 'CNAME':
-        case 'NS':
-        case 'PTR':
             params.cname = value;
             break;
+        case 'NS':
+            params.nameServer = value; // Correct parameter name
+            break;
+        case 'PTR':
+            params.ptrName = value; // Correct parameter name
+            break;
         case 'MX':
-            params.exchange = value;
+            params.mailExchange = value; // Correct parameter name
             params.preference = options.preference || '10';
             break;
         case 'TXT':
@@ -146,9 +150,17 @@ export async function deleteRecord(
             params.ipAddress = value;
             break;
         case 'CNAME':
-        case 'NS':
-        case 'PTR':
             params.cname = value;
+            break;
+        case 'NS':
+            params.nameServer = value; // Correct parameter name
+            break;
+        case 'PTR':
+            params.ptrName = value; // Correct parameter name
+            break;
+        case 'MX':
+            params.mailExchange = value; // Correct parameter name
+            params.preference = '0'; // Delete requires finding exact record, assuming 0/omitted might work or just value Match
             break;
         case 'TXT':
             params.text = value;

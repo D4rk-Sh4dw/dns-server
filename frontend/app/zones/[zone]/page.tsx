@@ -58,8 +58,11 @@ export default function ZoneDetailPage() {
 
     useEffect(() => { fetchRecords(); }, [zone]);
 
+    const [error, setError] = useState<string | null>(null); // New state for errors
+
     const handleAddRecord = async () => {
         const domain = newRecord.name ? `${newRecord.name}.${zone}` : zone;
+        setError(null); // Clear previous errors
 
         const options: Record<string, string> = {};
         if (newRecord.type === 'MX') options.preference = newRecord.priority.toString();
@@ -69,22 +72,32 @@ export default function ZoneDetailPage() {
             options.port = newRecord.port.toString();
         }
 
-        await fetch('/api/technitium/records', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'add',
-                domain,
-                type: newRecord.type,
-                value: newRecord.value,
-                ttl: newRecord.ttl,
-                options,
-            }),
-        });
+        try {
+            const res = await fetch('/api/technitium/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'add',
+                    domain,
+                    type: newRecord.type,
+                    value: newRecord.value,
+                    ttl: newRecord.ttl,
+                    options,
+                }),
+            });
 
-        setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0 });
-        setShowAddModal(false);
-        await fetchRecords();
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                throw new Error(data.error || 'Failed to add record');
+            }
+
+            setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0 });
+            setShowAddModal(false);
+            await fetchRecords();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+        }
     };
 
     const handleDeleteRecord = async (record: DnsRecord) => {
@@ -172,11 +185,11 @@ export default function ZoneDetailPage() {
                                 <td className="px-6 py-4 text-white font-mono text-sm">{record.name}</td>
                                 <td className="px-6 py-4">
                                     <span className={`text-xs font-medium px-2 py-1 rounded ${record.type === 'A' ? 'bg-blue-500/20 text-blue-400' :
-                                            record.type === 'AAAA' ? 'bg-purple-500/20 text-purple-400' :
-                                                record.type === 'CNAME' ? 'bg-green-500/20 text-green-400' :
-                                                    record.type === 'MX' ? 'bg-orange-500/20 text-orange-400' :
-                                                        record.type === 'TXT' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                            'bg-gray-500/20 text-gray-400'
+                                        record.type === 'AAAA' ? 'bg-purple-500/20 text-purple-400' :
+                                            record.type === 'CNAME' ? 'bg-green-500/20 text-green-400' :
+                                                record.type === 'MX' ? 'bg-orange-500/20 text-orange-400' :
+                                                    record.type === 'TXT' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-gray-500/20 text-gray-400'
                                         }`}>
                                         {record.type}
                                     </span>
@@ -211,6 +224,14 @@ export default function ZoneDetailPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-lg">
                         <h3 className="text-lg font-medium text-white mb-4">Add DNS Record</h3>
+
+                        {error && (
+                            <div className="mb-4 bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-start gap-2">
+                                <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={16} />
+                                <p className="text-red-400 text-sm">{error}</p>
+                            </div>
+                        )}
+
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
