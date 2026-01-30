@@ -172,8 +172,8 @@ export default function ZonesPage() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`text-xs font-medium px-2 py-1 rounded ${zone.source === 'active-directory'
-                                            ? 'text-purple-400 bg-purple-400/10'
-                                            : 'text-blue-400 bg-blue-400/10'
+                                        ? 'text-purple-400 bg-purple-400/10'
+                                        : 'text-blue-400 bg-blue-400/10'
                                         }`}>
                                         {zone.source === 'active-directory' ? 'Active Directory' : zone.type || 'Primary'}
                                     </span>
@@ -181,7 +181,7 @@ export default function ZonesPage() {
                                 <td className="px-6 py-4 text-gray-400 text-sm font-mono">
                                     {zone.source === 'active-directory'
                                         ? zone.dcServers
-                                        : 'Technitium (10.10.10.3)'}
+                                        : 'Technitium (docker)'}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`flex items-center gap-2 text-xs font-medium ${zone.forwardingEnabled ? 'text-green-400' : 'text-yellow-400'
@@ -229,8 +229,8 @@ export default function ZonesPage() {
                             <button
                                 onClick={() => setNewZone(prev => ({ ...prev, isActiveDirectory: false }))}
                                 className={`flex-1 p-4 rounded-lg border-2 transition-all ${!newZone.isActiveDirectory
-                                        ? 'border-blue-500 bg-blue-500/10'
-                                        : 'border-gray-700 hover:border-gray-600'
+                                    ? 'border-blue-500 bg-blue-500/10'
+                                    : 'border-gray-700 hover:border-gray-600'
                                     }`}
                             >
                                 <Globe size={24} className={!newZone.isActiveDirectory ? 'text-blue-400' : 'text-gray-500'} />
@@ -246,8 +246,8 @@ export default function ZonesPage() {
                             <button
                                 onClick={() => setNewZone(prev => ({ ...prev, isActiveDirectory: true }))}
                                 className={`flex-1 p-4 rounded-lg border-2 transition-all ${newZone.isActiveDirectory
-                                        ? 'border-purple-500 bg-purple-500/10'
-                                        : 'border-gray-700 hover:border-gray-600'
+                                    ? 'border-purple-500 bg-purple-500/10'
+                                    : 'border-gray-700 hover:border-gray-600'
                                     }`}
                             >
                                 <Server size={24} className={newZone.isActiveDirectory ? 'text-purple-400' : 'text-gray-500'} />
@@ -340,8 +340,8 @@ export default function ZonesPage() {
                                 onClick={handleCreateZone}
                                 disabled={creating || !newZone.name || (newZone.isActiveDirectory && !newZone.dcServers)}
                                 className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium ${newZone.isActiveDirectory
-                                        ? 'bg-purple-600 hover:bg-purple-500 disabled:bg-purple-600/50'
-                                        : 'bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50'
+                                    ? 'bg-purple-600 hover:bg-purple-500 disabled:bg-purple-600/50'
+                                    : 'bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50'
                                     }`}
                             >
                                 {creating ? (

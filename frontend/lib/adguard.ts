@@ -148,11 +148,11 @@ export async function setDnsConfig(config: any) {
 }
 
 // Add a zone forwarding rule to AdGuard
-// For regular zones: forwards to Technitium (10.10.10.3)
+// For regular zones: forwards to Technitium (dns-technitium Docker hostname)
 // For AD zones: forwards to DC DNS servers
 export async function addZoneForwarding(
     domain: string,
-    primaryServer: string = '10.10.10.3',
+    primaryServer: string = 'dns-technitium',
     additionalServers: string[] = []
 ) {
     const dnsInfo = await getDnsConfig();

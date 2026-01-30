@@ -21,7 +21,7 @@ export async function GET() {
             if (match) {
                 const domains = match[1].split('/').filter(Boolean);
                 const target = match[2];
-                const isAD = !target.includes('10.10.10.3'); // If not pointing to Technitium, it's AD/external
+                const isAD = !target.includes('dns-technitium'); // If not pointing to Technitium, it's AD/external
 
                 for (const domain of domains) {
                     forwardingRules.push({ domain, target, isAD });
