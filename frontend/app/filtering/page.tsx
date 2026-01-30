@@ -66,6 +66,7 @@ export default function FilteringPage() {
 
     const toggleProtection = async (setting: string, enabled: boolean) => {
         // Optimistically update UI
+        const previousState = protection;
         setProtection(prev => {
             if (!prev) return prev;
             return {
@@ -81,11 +82,21 @@ export default function FilteringPage() {
                 body: JSON.stringify({ setting, enabled }),
             });
             const data = await res.json();
+
+            if (!res.ok) {
+                console.error('Protection toggle failed:', data.error);
+                alert(`Failed to toggle ${setting}: ${data.error || 'Unknown error'}`);
+                // Revert on error
+                setProtection(previousState);
+                return;
+            }
+
             setProtection(data);
         } catch (err) {
             console.error('Failed to toggle protection:', err);
+            alert(`Failed to toggle ${setting}: Network error`);
             // Revert on error
-            fetchData();
+            setProtection(previousState);
         }
     };
 

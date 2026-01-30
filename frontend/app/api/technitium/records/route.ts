@@ -10,8 +10,9 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Zone parameter required' }, { status: 400 });
         }
 
-        const records = await technitium.listRecords(zone);
-        return NextResponse.json(records);
+        const response = await technitium.listRecords(zone);
+        console.log('Technitium records response for zone', zone, ':', JSON.stringify(response, null, 2));
+        return NextResponse.json(response);
     } catch (error) {
         console.error('Technitium records error:', error);
         return NextResponse.json({ error: 'Failed to fetch records' }, { status: 500 });
