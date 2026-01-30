@@ -46,12 +46,20 @@ export default function ZoneDetailPage() {
 
     const fetchRecords = async () => {
         setLoading(true);
+        setError(null);
         try {
             const res = await fetch(`/api/technitium/records?zone=${encodeURIComponent(zone)}`);
             const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to fetch records');
+            }
+
+            console.log('Fetched records:', data);
             setRecords(data.records || []);
         } catch (err) {
             console.error('Failed to fetch records:', err);
+            setError(err instanceof Error ? err.message : 'Failed to fetch records');
         }
         setLoading(false);
     };
