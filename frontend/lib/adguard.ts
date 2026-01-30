@@ -12,11 +12,17 @@ function getAuthHeader() {
 
 async function adguardFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${ADGUARD_URL}${endpoint}`;
-    const headers = {
+    const headers: Record<string, string> = {
         'Authorization': getAuthHeader(),
-        'Content-Type': 'application/json',
-        ...options.headers,
     };
+
+    // Only set Content-Type if there's a body
+    if (options.body) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    // Merge with any custom headers
+    Object.assign(headers, options.headers);
 
     const response = await fetch(url, { ...options, headers });
 
