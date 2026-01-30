@@ -78,9 +78,38 @@ export async function deleteZone(zone: string) {
     return technitiumFetch('/api/zones/delete', { zone });
 }
 
+// Helper to normalize keys to camelCase
+function normalizeRecord(record: any): any {
+    const normalized: any = {};
+    for (const key in record) {
+        // Convert KeyName to keyName
+        const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+
+        // Handle RData specifically
+        if (key === 'RData' || key === 'rData') { // Handle both cases just to be safe
+            const rData: any = {};
+            for (const rKey in record[key]) {
+                const camelRKey = rKey.charAt(0).toLowerCase() + rKey.slice(1);
+                rData[camelRKey] = record[key][rKey];
+            }
+            normalized.rData = rData;
+        } else {
+            normalized[camelKey] = record[key];
+        }
+    }
+    return normalized;
+}
+
 // Record Management
 export async function listRecords(zone: string) {
-    return technitiumFetch('/api/zones/records/get', { domain: zone });
+    const response = await technitiumFetch('/api/zones/records/get', { domain: zone });
+
+    // Normalize records to camelCase if needed
+    if (response && response.records) {
+        response.records = response.records.map(normalizeRecord);
+    }
+
+    return response;
 }
 
 export async function addRecord(
