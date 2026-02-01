@@ -225,3 +225,11 @@ export async function getTopClients() {
 export async function getTopDomains() {
     return technitiumFetch('/api/dashboard/stats/getTopDomains');
 }
+
+export async function getServerStatus() {
+    return technitiumFetch('/api/server/status');
+}
+
+export async function getSummary() {
+    return technitiumFetch('/api/dashboard/summary');
+}

@@ -62,22 +62,22 @@ export async function getFiltering() {
     return adguardFetch('/control/filtering/status');
 }
 
-export async function toggleSafeSearch(enabled: boolean) {
-    // AdGuard requires setting each search engine individually
-    const config = {
-        enabled,
-        bing: enabled,
-        duckduckgo: enabled,
-        ecosia: enabled,
-        google: enabled,
-        pixabay: enabled,
-        yandex: enabled,
-        youtube: enabled,
-    };
+// Toggles global SafeSearch or individual engines
+// config example: { enabled: true, google: true, bing: false, ... }
+export async function setSafeSearchConfig(config: any) {
     return adguardFetch('/control/safesearch/settings', {
         method: 'PUT',
         body: JSON.stringify(config),
     });
+}
+
+export async function toggleSafeSearch(enabled: boolean) {
+    const current = await getSafeSearchStatus();
+    const config = {
+        ...current,
+        enabled,
+    };
+    return setSafeSearchConfig(config);
 }
 
 export async function getSafeSearchStatus() {
@@ -131,24 +131,39 @@ export async function setBlockedServicesSchedule(schedule: any) {
     });
 }
 
-export async function addFilterList(name: string, url: string) {
-    return adguardFetch('/control/filtering/add_url', {
-        method: 'POST',
-        body: JSON.stringify({ name, url, whitelist: false }),
-    });
-}
-
-export async function removeFilterList(url: string) {
-    return adguardFetch('/control/filtering/remove_url', {
-        method: 'POST',
-        body: JSON.stringify({ url, whitelist: false }),
-    });
-}
-
-export async function refreshFilters() {
+export async function refreshFilters(whitelist = false) {
     return adguardFetch('/control/filtering/refresh', {
         method: 'POST',
-        body: JSON.stringify({ whitelist: false }),
+        body: JSON.stringify({ whitelist }),
+    });
+}
+
+export async function addFilterList(name: string, url: string, whitelist = false) {
+    return adguardFetch('/control/filtering/add_url', {
+        method: 'POST',
+        body: JSON.stringify({ name, url, whitelist }),
+    });
+}
+
+export async function removeFilterList(url: string, whitelist = false) {
+    return adguardFetch('/control/filtering/remove_url', {
+        method: 'POST',
+        body: JSON.stringify({ url, whitelist }),
+    });
+}
+
+export async function updateFilterList(url: string, name: string, newUrl: string, whitelist = false) {
+    // AdGuard doesn't have a direct "update" for URL/Name, so we delete and re-add
+    // Note: This might reset some stats for that list
+    await removeFilterList(url, whitelist);
+    return addFilterList(name, newUrl, whitelist);
+}
+
+export async function toggleFilterList(url: string, enabled: boolean, whitelist = false) {
+    const action = enabled ? 'enable' : 'disable';
+    return adguardFetch(`/control/filtering/${action}_url`, {
+        method: 'POST',
+        body: JSON.stringify({ url, whitelist }),
     });
 }
 
@@ -354,4 +369,35 @@ export async function getAllProtectionStatus() {
         safeBrowsingEnabled: safeBrowsing.enabled,
         safeSearchEnabled: safeSearch.enabled,
     };
+}
+
+// ==================== DHCP Management ====================
+export async function getDhcpStatus() {
+    return adguardFetch('/control/dhcp/status');
+}
+
+export async function getDhcpLeases() {
+    // This returns both dynamic and static leases
+    return adguardFetch('/control/dhcp/status'); // Includes leases in latest versions
+}
+
+export async function setDhcpConfig(config: any) {
+    return adguardFetch('/control/dhcp/set_config', {
+        method: 'POST',
+        body: JSON.stringify(config),
+    });
+}
+
+export async function addStaticLease(lease: { mac: string; ip: string; hostname: string }) {
+    return adguardFetch('/control/dhcp/add_static_lease', {
+        method: 'POST',
+        body: JSON.stringify(lease),
+    });
+}
+
+export async function removeStaticLease(lease: { mac: string; ip: string; hostname: string }) {
+    return adguardFetch('/control/dhcp/remove_static_lease', {
+        method: 'POST',
+        body: JSON.stringify(lease),
+    });
 }

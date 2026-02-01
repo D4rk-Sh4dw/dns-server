@@ -31,8 +31,16 @@ interface DashboardData {
 }
 
 export default function Home() {
-  const [data, setData] = useState<DashboardData>({
+  const [data, setData] = useState<{
+    adguard: any;
+    technitium: any;
+    apiStatus: string;
+    loading: boolean;
+    error: string | null;
+  }>({
     adguard: null,
+    technitium: null,
+    apiStatus: 'Operational',
     loading: true,
     error: null,
   });
@@ -40,18 +48,26 @@ export default function Home() {
   const fetchData = async () => {
     setData(prev => ({ ...prev, loading: true }));
     try {
-      const adguardRes = await fetch('/api/adguard');
-      if (!adguardRes.ok) throw new Error('Failed to fetch AdGuard data');
+      const [adguardRes, techRes] = await Promise.all([
+        fetch('/api/adguard'),
+        fetch('/api/technitium/status')
+      ]);
+
       const adguard = await adguardRes.json();
+      const technitium = await techRes.json();
 
       setData({
         adguard,
+        technitium,
+        apiStatus: 'Operational',
         loading: false,
         error: null,
       });
     } catch (err) {
       setData({
         adguard: null,
+        technitium: null,
+        apiStatus: 'Degraded',
         loading: false,
         error: err instanceof Error ? err.message : 'Unknown error',
       });
@@ -168,18 +184,18 @@ export default function Home() {
             <div className="space-y-4">
               <ServiceStatus
                 name="AdGuard Home"
-                status={data.adguard ? 'Operational' : 'Checking...'}
-                version="Primary DNS / Filter"
+                status={data.adguard?.status ? 'Operational' : 'Disconnected'}
+                version={data.adguard?.status?.version || 'Primary DNS / Filter'}
               />
               <ServiceStatus
                 name="Technitium DNS"
-                status="Operational"
-                version="Recursive Resolver"
+                status={data.technitium?.summary ? 'Operational' : 'Disconnected'}
+                version={data.technitium?.summary?.version || 'Recursive Resolver'}
               />
               <ServiceStatus
                 name="Dashboard API"
-                status="Operational"
-                version="Next.js Backend"
+                status={data.apiStatus}
+                version="v1.1.0 (Next.js)"
               />
             </div>
           </div>

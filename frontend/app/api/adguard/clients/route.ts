@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import * as adguard from '@/lib/adguard';
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const getServices = searchParams.get('services') === 'true';
+
     try {
+        if (getServices) {
+            const services = await adguard.getAllBlockedServices();
+            return NextResponse.json(services);
+        }
         const data = await adguard.getClients();
         return NextResponse.json(data);
     } catch (error) {
         console.error('AdGuard API error:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch clients' },
+            { error: 'Failed to fetch data' },
             { status: 500 }
         );
     }

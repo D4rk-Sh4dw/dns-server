@@ -3,8 +3,14 @@ import * as adguard from '@/lib/adguard';
 
 export async function GET() {
     try {
-        const protection = await adguard.getAllProtectionStatus();
-        return NextResponse.json(protection);
+        const [protection, safeSearch] = await Promise.all([
+            adguard.getAllProtectionStatus(),
+            adguard.getSafeSearchStatus()
+        ]);
+        return NextResponse.json({
+            ...protection,
+            safeSearchConfig: safeSearch
+        });
     } catch (error) {
         console.error('Protection status error:', error);
         return NextResponse.json(
@@ -31,6 +37,9 @@ export async function POST(request: Request) {
             case 'safeSearch':
                 await adguard.toggleSafeSearch(enabled);
                 break;
+            case 'safeSearchConfig':
+                await adguard.setSafeSearchConfig(body.config);
+                break;
             case 'protection':
                 await adguard.setProtectionEnabled(enabled);
                 break;
@@ -45,9 +54,14 @@ export async function POST(request: Request) {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // Return updated status
-        const protection = await adguard.getAllProtectionStatus();
-        console.log('Updated protection status:', protection);
-        return NextResponse.json(protection);
+        const [protection, safeSearch] = await Promise.all([
+            adguard.getAllProtectionStatus(),
+            adguard.getSafeSearchStatus()
+        ]);
+        return NextResponse.json({
+            ...protection,
+            safeSearchConfig: safeSearch
+        });
     } catch (error) {
         console.error('Protection update error:', error);
         const message = error instanceof Error ? error.message : 'Failed to update protection setting';

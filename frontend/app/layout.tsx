@@ -66,7 +66,9 @@ export default function RootLayout({
             </div>
             <NavItem href="/filtering" icon={Shield} label="Filtering & Blocklists" active={pathname === '/filtering'} />
             <NavItem href="/services" icon={Menu} label="Service Blocking" active={pathname === '/services'} />
+            <NavItem href="/clients" icon={Users} label="Client Management" active={pathname === '/clients'} />
             <NavItem href="/logs" icon={FileText} label="Query Log" active={pathname === '/logs'} />
+            <NavItem href="/dhcp" icon={Wifi} label="DHCP Server" active={pathname === '/dhcp'} />
 
             <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Technitium Controls
@@ -74,8 +76,6 @@ export default function RootLayout({
             <NavItem href="/zones" icon={Globe} label="Zones & Records" active={pathname.startsWith('/zones')} />
 
             <div className="mt-auto pt-4 border-t border-gray-900/50">
-              <NavItem href="/clients" icon={Users} label="Clients" active={pathname === '/clients'} />
-              <NavItem href="/settings/dhcp" icon={Wifi} label="DHCP" active={pathname === '/settings/dhcp'} />
               <NavItem href="/settings" icon={Settings} label="Settings" active={pathname === '/settings'} />
             </div>
           </nav>

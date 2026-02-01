@@ -104,289 +104,314 @@ export default function LogsPage() {
         } catch (err) {
             alert('Failed to clear logs');
         }
-    };
+        const handleWhitelist = async (domain: string) => {
+            const rule = `@@||${domain}^`;
+            try {
+                const res = await fetch('/api/adguard/filtering', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'addRule', rule })
+                });
+                if (!res.ok) throw new Error('Failed to add whitelist rule');
+                alert(`Whitelist rule added for ${domain}`);
+                fetchLogs(true);
+            } catch (err) {
+                alert(err instanceof Error ? err.message : 'Failed to whitelist domain');
+            }
+        };
 
-    return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Query Log</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Real-time DNS query inspection.</p>
-                </div>
-                <div className="flex gap-2 self-end sm:self-auto">
-                    <button
-                        onClick={handleClearLogs}
-                        className="p-2 rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 transition-colors"
-                        title="Clear Logs"
-                    >
-                        <Trash2 size={20} />
-                    </button>
-                    <button
-                        onClick={() => fetchLogs(true)}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                        title="Refresh"
-                    >
-                        <RotateCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
-
-
-            {/* Filters */}
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search domain, client IP, or answer..."
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                </div>
-                <select
-                    className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 min-w-[200px]"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                    <option value="">All Queries</option>
-                    <option value="blocked">Blocked</option>
-                    <option value="blocked_services">Blocked Services</option>
-                    <option value="safe_browsing">Blocked Threats</option>
-                    <option value="parental">Blocked by Parental</option>
-                    <option value="processed">Processed</option>
-                    <option value="filtered">Filtered</option>
-                    <option value="rewritten">Rewritten</option>
-                    <option value="safe_search">Safe Search</option>
-                </select>
-            </div>
-
-            {/* Logs Table */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-950/50 text-gray-500 uppercase font-medium">
-                        <tr>
-                            <th className="px-6 py-4"></th>
-                            <th className="px-6 py-4">Time</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Client</th>
-                            <th className="px-6 py-4">Domain</th>
-                            <th className="px-6 py-4">Answer / Upstream</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                        {logs.map((log, idx) => (
-                            <>
-                                <tr key={idx}
-                                    className={`group transition-colors font-mono cursor-pointer ${isBlocked(log)
-                                        ? 'bg-red-950/20 hover:bg-red-950/30 border-l-2 border-l-red-500'
-                                        : 'hover:bg-gray-800/50 border-l-2 border-l-transparent'
-                                        }`}
-                                    onClick={() => setExpandedLog(expandedLog === idx ? null : idx)}
-                                >
-                                    <td className="px-6 py-4 text-gray-500">
-                                        {expandedLog === idx ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-400 whitespace-nowrap">
-                                        {new Date(log.time).toLocaleTimeString()}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <StatusBadge log={log} />
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-300">{log.client}</td>
-                                    <td className="px-6 py-4 text-white">
-                                        {log.question.name}
-                                        <span className="ml-2 text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
-                                            {log.question.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-400 max-w-xs truncate">
-                                        {log.upstream ? (
-                                            <span className="flex items-center gap-1 text-xs">
-                                                <ArrowRight size={12} /> {log.upstream}
-                                            </span>
-                                        ) : (
-                                            log.answer?.[0]?.value
-                                        )}
-                                        {log.elapsedMs && <span className="ml-2 text-xs text-gray-600">({parseFloat(log.elapsedMs).toFixed(1)}ms)</span>}
-                                    </td>
-                                </tr>
-                                {expandedLog === idx && (
-                                    <tr className={
-                                        isBlocked(log)
-                                            ? 'bg-red-950/10'
-                                            : 'bg-gray-950/30'
-                                    }>
-                                        <td colSpan={6} className="px-0 py-4 cursor-auto">
-                                            <div className="bg-gray-950 rounded-xl border-y border-gray-800 p-4 md:p-6 space-y-6 min-w-[600px] md:min-w-0">
-                                                {/* Header Info */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Details</h4>
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">IP Address:</span>
-                                                                <span className="text-white font-mono cursor-pointer hover:text-blue-400" onClick={(e) => { e.stopPropagation(); setFilter(log.client); }}>{log.client}</span>
-                                                            </div>
-                                                            {/* @ts-ignore */}
-                                                            {log.client_info?.name && (
-                                                                <div className="flex items-center justify-between text-sm">
-                                                                    <span className="text-gray-400">Hostname:</span>
-                                                                    {/* @ts-ignore */}
-                                                                    <span className="text-white">{log.client_info.name}</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Proto:</span>
-                                                                {/* @ts-ignore */}
-                                                                <span className="text-white">{log.client_proto || 'UDP'}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Response Info</h4>
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Status:</span>
-                                                                <span className="text-white">{log.status}</span>
-                                                            </div>
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Elapsed:</span>
-                                                                {/* @ts-ignore */}
-                                                                <span className="text-white">{log.elapsedMs ? `${parseFloat(log.elapsedMs).toFixed(2)} ms` : log.elapsed}</span>
-                                                            </div>
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Upstream:</span>
-                                                                <span className="text-blue-400 font-mono text-xs truncate max-w-[200px]">{log.upstream}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* DNS Question */}
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Question</h4>
-                                                    <div className="bg-gray-900 rounded-lg p-3 text-sm font-mono flex gap-4 text-white">
-                                                        <span className="text-purple-400">[{log.question.type}]</span>
-                                                        <span className="text-purple-400">[{log.question.class || 'IN'}]</span>
-                                                        <span>{log.question.name}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Blocking Rules */}
-                                                {log.rules && log.rules.length > 0 && (
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Matched Rules</h4>
-                                                        <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-3 space-y-2">
-                                                            {log.rules.map((rule, i) => (
-                                                                <div key={i} className="font-mono text-sm text-red-300 break-all">
-                                                                    {rule.text}
-                                                                    {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">(List ID: {rule.filter_list_id})</span>}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* DNS Answers */}
-                                                {log.answer && log.answer.length > 0 && (
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Answer</h4>
-                                                        <div className="overflow-hidden rounded-lg border border-gray-800">
-                                                            <table className="w-full text-sm">
-                                                                <thead className="bg-gray-900 text-gray-400">
-                                                                    <tr>
-                                                                        <th className="px-4 py-2 text-left">Type</th>
-                                                                        <th className="px-4 py-2 text-left">Value</th>
-                                                                        <th className="px-4 py-2 text-right">TTL</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y divide-gray-800 bg-gray-900/50">
-                                                                    {log.answer.map((ans, i) => (
-                                                                        <tr key={i}>
-                                                                            <td className="px-4 py-2 font-mono text-yellow-400">{ans.type}</td>
-                                                                            <td className="px-4 py-2 font-mono text-white break-all">{ans.value}</td>
-                                                                            <td className="px-4 py-2 font-mono text-gray-400 text-right">{ans.ttl}</td>
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Raw JSON Toggle (Optional, maybe hidden or bottom) */}
-                                                <div className="pt-4 border-t border-gray-800">
-                                                    <details className="text-xs text-gray-600 cursor-pointer">
-                                                        <summary className="hover:text-gray-400 font-medium">View Raw JSON</summary>
-                                                        <pre className="mt-2 text-green-500 font-mono overflow-auto p-2 bg-black rounded max-h-60">
-                                                            {JSON.stringify(log, null, 2)}
-                                                        </pre>
-                                                    </details>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </>
-                        ))}
-                    </tbody>
-                </table>
-                {!loading && logs.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                        No logs found matching your criteria.
+        return (
+            <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Query Log</h1>
+                        <p className="text-gray-400 text-sm md:text-base">Real-time DNS query inspection.</p>
                     </div>
-                )}
-                {logs.length > 0 && (
-                    <div className="p-4 flex justify-center border-t border-gray-800">
+                    <div className="flex gap-2 self-end sm:self-auto">
                         <button
-                            onClick={loadMore}
-                            disabled={loading}
-                            className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                            onClick={handleClearLogs}
+                            className="p-2 rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 transition-colors"
+                            title="Clear Logs"
                         >
-                            {loading ? 'Loading...' : 'Load More Logs'}
+                            <Trash2 size={20} />
+                        </button>
+                        <button
+                            onClick={() => fetchLogs(true)}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            title="Refresh"
+                        >
+                            <RotateCw size={20} className={loading ? 'animate-spin' : ''} />
                         </button>
                     </div>
-                )}
-            </div>
-        </div >
-    );
-}
+                </div>
 
-function StatusBadge({ log }: { log: QueryLogItem }) {
-    const status = log.status;
-    const reason = log.reason;
-    const blocked = isBlocked(log);
 
-    if (blocked) {
-        return (
-            <div className="flex flex-col items-start gap-1">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500">
-                    <Shield size={12} />
-                    Blocked
-                </span>
-                {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[150px] truncate">{reason || status}</span>}
-                {log.rules && log.rules.length > 0 && (
-                    <span className="text-[10px] text-red-400 font-mono max-w-[150px] truncate" title={log.rules[0].text}>
-                        {log.rules[0].text}
-                    </span>
-                )}
-            </div>
+                {/* Filters */}
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search domain, client IP, or answer..."
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                    </div>
+                    <select
+                        className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 min-w-[200px]"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="">All Queries</option>
+                        <option value="blocked">Blocked</option>
+                        <option value="blocked_services">Blocked Services</option>
+                        <option value="safe_browsing">Blocked Threats</option>
+                        <option value="parental">Blocked by Parental</option>
+                        <option value="processed">Processed</option>
+                        <option value="filtered">Filtered</option>
+                        <option value="rewritten">Rewritten</option>
+                        <option value="safe_search">Safe Search</option>
+                    </select>
+                </div>
+
+                {/* Logs Table */}
+                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-950/50 text-gray-500 uppercase font-medium">
+                            <tr>
+                                <th className="px-6 py-4"></th>
+                                <th className="px-6 py-4">Time</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Client</th>
+                                <th className="px-6 py-4">Domain</th>
+                                <th className="px-6 py-4">Answer / Upstream</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                            {logs.map((log, idx) => (
+                                <>
+                                    <tr key={idx}
+                                        className={`group transition-colors font-mono cursor-pointer ${isBlocked(log)
+                                            ? 'bg-red-950/20 hover:bg-red-950/30 border-l-2 border-l-red-500'
+                                            : 'hover:bg-gray-800/50 border-l-2 border-l-transparent'
+                                            }`}
+                                        onClick={() => setExpandedLog(expandedLog === idx ? null : idx)}
+                                    >
+                                        <td className="px-6 py-4 text-gray-500">
+                                            {expandedLog === idx ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-400 whitespace-nowrap">
+                                            {new Date(log.time).toLocaleTimeString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge log={log} />
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-300">{log.client}</td>
+                                        <td className="px-6 py-4 text-white">
+                                            {log.question.name}
+                                            <span className="ml-2 text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
+                                                {log.question.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-400 max-w-xs truncate">
+                                            {log.upstream ? (
+                                                <span className="flex items-center gap-1 text-xs">
+                                                    <ArrowRight size={12} /> {log.upstream}
+                                                </span>
+                                            ) : (
+                                                log.answer?.[0]?.value
+                                            )}
+                                            {log.elapsedMs && <span className="ml-2 text-xs text-gray-600">({parseFloat(log.elapsedMs).toFixed(1)}ms)</span>}
+                                        </td>
+                                    </tr>
+                                    {expandedLog === idx && (
+                                        <tr className={
+                                            isBlocked(log)
+                                                ? 'bg-red-950/10'
+                                                : 'bg-gray-950/30'
+                                        }>
+                                            <td colSpan={6} className="px-0 py-4 cursor-auto">
+                                                <div className="bg-gray-950 rounded-xl border-y border-gray-800 p-4 md:p-6 space-y-6 min-w-[600px] md:min-w-0">
+                                                    {/* Header Info */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div>
+                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Details</h4>
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-gray-400">IP Address:</span>
+                                                                    <span className="text-white font-mono cursor-pointer hover:text-blue-400" onClick={(e) => { e.stopPropagation(); setFilter(log.client); }}>{log.client}</span>
+                                                                </div>
+                                                                {/* @ts-ignore */}
+                                                                {log.client_info?.name && (
+                                                                    <div className="flex items-center justify-between text-sm">
+                                                                        <span className="text-gray-400">Hostname:</span>
+                                                                        {/* @ts-ignore */}
+                                                                        <span className="text-white">{log.client_info.name}</span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-gray-400">Proto:</span>
+                                                                    {/* @ts-ignore */}
+                                                                    <span className="text-white">{log.client_proto || 'UDP'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Response Info</h4>
+                                                                {isBlocked(log) && (
+                                                                    <button
+                                                                        onClick={() => handleWhitelist(log.question.name)}
+                                                                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded transition-colors"
+                                                                    >
+                                                                        <Shield size={10} />
+                                                                        Whitelist
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-gray-400">Status:</span>
+                                                                    <span className="text-white">{log.status}</span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-gray-400">Elapsed:</span>
+                                                                    {/* @ts-ignore */}
+                                                                    <span className="text-white">{log.elapsedMs ? `${parseFloat(log.elapsedMs).toFixed(2)} ms` : log.elapsed}</span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-gray-400">Upstream:</span>
+                                                                    <span className="text-blue-400 font-mono text-xs truncate max-w-[200px]">{log.upstream}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* DNS Question */}
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Question</h4>
+                                                        <div className="bg-gray-900 rounded-lg p-3 text-sm font-mono flex gap-4 text-white">
+                                                            <span className="text-purple-400">[{log.question.type}]</span>
+                                                            <span className="text-purple-400">[{log.question.class || 'IN'}]</span>
+                                                            <span>{log.question.name}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Blocking Rules */}
+                                                    {log.rules && log.rules.length > 0 && (
+                                                        <div>
+                                                            <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Matched Rules</h4>
+                                                            <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-3 space-y-2">
+                                                                {log.rules.map((rule, i) => (
+                                                                    <div key={i} className="font-mono text-sm text-red-300 break-all">
+                                                                        {rule.text}
+                                                                        {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">(List ID: {rule.filter_list_id})</span>}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* DNS Answers */}
+                                                    {log.answer && log.answer.length > 0 && (
+                                                        <div>
+                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Answer</h4>
+                                                            <div className="overflow-hidden rounded-lg border border-gray-800">
+                                                                <table className="w-full text-sm">
+                                                                    <thead className="bg-gray-900 text-gray-400">
+                                                                        <tr>
+                                                                            <th className="px-4 py-2 text-left">Type</th>
+                                                                            <th className="px-4 py-2 text-left">Value</th>
+                                                                            <th className="px-4 py-2 text-right">TTL</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-gray-800 bg-gray-900/50">
+                                                                        {log.answer.map((ans, i) => (
+                                                                            <tr key={i}>
+                                                                                <td className="px-4 py-2 font-mono text-yellow-400">{ans.type}</td>
+                                                                                <td className="px-4 py-2 font-mono text-white break-all">{ans.value}</td>
+                                                                                <td className="px-4 py-2 font-mono text-gray-400 text-right">{ans.ttl}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Raw JSON Toggle (Optional, maybe hidden or bottom) */}
+                                                    <div className="pt-4 border-t border-gray-800">
+                                                        <details className="text-xs text-gray-600 cursor-pointer">
+                                                            <summary className="hover:text-gray-400 font-medium">View Raw JSON</summary>
+                                                            <pre className="mt-2 text-green-500 font-mono overflow-auto p-2 bg-black rounded max-h-60">
+                                                                {JSON.stringify(log, null, 2)}
+                                                            </pre>
+                                                        </details>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
+                            ))}
+                        </tbody>
+                    </table>
+                    {!loading && logs.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                            No logs found matching your criteria.
+                        </div>
+                    )}
+                    {logs.length > 0 && (
+                        <div className="p-4 flex justify-center border-t border-gray-800">
+                            <button
+                                onClick={loadMore}
+                                disabled={loading}
+                                className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                            >
+                                {loading ? 'Loading...' : 'Load More Logs'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div >
         );
     }
-    if (status === 'Filtered') {
+
+    function StatusBadge({ log }: { log: QueryLogItem }) {
+        const status = log.status;
+        const reason = log.reason;
+        const blocked = isBlocked(log);
+
+        if (blocked) {
+            return (
+                <div className="flex flex-col items-start gap-1">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500">
+                        <Shield size={12} />
+                        Blocked
+                    </span>
+                    {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[150px] truncate">{reason || status}</span>}
+                    {log.rules && log.rules.length > 0 && (
+                        <span className="text-[10px] text-red-400 font-mono max-w-[150px] truncate" title={log.rules[0].text}>
+                            {log.rules[0].text}
+                        </span>
+                    )}
+                </div>
+            );
+        }
+        if (status === 'Filtered') {
+            return (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500">
+                    <AlertTriangle size={12} />
+                    Filtered
+                </span>
+            );
+        }
         return (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500">
-                <AlertTriangle size={12} />
-                Filtered
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
+                <Check size={12} />
+                Allowed
             </span>
         );
     }
-    return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
-            <Check size={12} />
-            Allowed
-        </span>
-    );
-}

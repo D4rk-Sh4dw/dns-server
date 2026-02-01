@@ -14,17 +14,23 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { action, name, url, rule } = body;
+        const { action, name, url, newUrl, rule, whitelist, enabled } = body;
 
         switch (action) {
             case 'add':
-                await adguard.addFilterList(name, url);
+                await adguard.addFilterList(name, url, whitelist);
                 break;
             case 'remove':
-                await adguard.removeFilterList(url);
+                await adguard.removeFilterList(url, whitelist);
+                break;
+            case 'update':
+                await adguard.updateFilterList(url, name, newUrl, whitelist);
+                break;
+            case 'toggle':
+                await adguard.toggleFilterList(url, enabled, whitelist);
                 break;
             case 'refresh':
-                await adguard.refreshFilters();
+                await adguard.refreshFilters(whitelist);
                 break;
             case 'addRule':
                 await adguard.addCustomRule(rule);
@@ -39,6 +45,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('AdGuard filtering action error:', error);
-        return NextResponse.json({ error: 'Action failed' }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Action failed' }, { status: 500 });
     }
 }
