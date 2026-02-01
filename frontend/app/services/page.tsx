@@ -276,7 +276,13 @@ export default function ServicesPage() {
                                     {service.icon_svg ? (
                                         <div
                                             className="w-8 h-8 flex-shrink-0 text-gray-400 [&>svg]:w-full [&>svg]:h-full"
-                                            dangerouslySetInnerHTML={{ __html: service.icon_svg }}
+                                            dangerouslySetInnerHTML={{
+                                                // AdGuard API returns icons as Base64 encoded SVGs (start with PHN...)
+                                                // We must decode them to render as inline SVG
+                                                __html: service.icon_svg.startsWith('PHN') || !service.icon_svg.trim().startsWith('<')
+                                                    ? atob(service.icon_svg)
+                                                    : service.icon_svg
+                                            }}
                                         />
                                     ) : (
                                         <div className="w-8 h-8 flex items-center justify-center text-gray-400">
