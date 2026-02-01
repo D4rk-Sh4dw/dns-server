@@ -141,10 +141,7 @@ export default function ServicesPage() {
         setScheduleSaving(false);
     };
 
-    const filteredServices = availableServices.filter(s =>
-        s.name.toLowerCase().includes(filter.toLowerCase()) ||
-        s.id.toLowerCase().includes(filter.toLowerCase())
-    );
+
 
     return (
         <div className="p-8 space-y-8">
