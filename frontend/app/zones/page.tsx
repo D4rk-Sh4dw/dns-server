@@ -237,11 +237,26 @@ export default function ZonesPage() {
                                         : 'Technitium (docker)'}
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className={`flex items-center gap-2 text-xs font-medium ${zone.forwardingEnabled ? 'text-green-400' : 'text-yellow-400'
-                                        }`}>
-                                        <Check size={14} />
-                                        {zone.forwardingEnabled ? 'Forwarding Active' : 'Pending'}
-                                    </span>
+                                    {/* Determine status based on zone type */}
+                                    {zone.internal ? (
+                                        // Internal Technitium zones (localhost, reverse zones, etc.)
+                                        <span className="flex items-center gap-2 text-xs font-medium text-gray-400">
+                                            <div className="w-2 h-2 rounded-full bg-gray-500" />
+                                            Internal
+                                        </span>
+                                    ) : zone.forwardingEnabled ? (
+                                        // Custom zones with forwarding active
+                                        <span className="flex items-center gap-2 text-xs font-medium text-green-400">
+                                            <Check size={14} />
+                                            Active
+                                        </span>
+                                    ) : (
+                                        // Custom zones without forwarding
+                                        <span className="flex items-center gap-2 text-xs font-medium text-yellow-400">
+                                            <AlertCircle size={14} />
+                                            Pending
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <button
