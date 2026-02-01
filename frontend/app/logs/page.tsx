@@ -161,7 +161,13 @@ export default function LogsPage() {
                     <tbody className="divide-y divide-gray-800">
                         {logs.map((log, idx) => (
                             <>
-                                <tr key={idx} className="group hover:bg-gray-800/50 transition-colors font-mono cursor-pointer" onClick={() => setExpandedLog(expandedLog === idx ? null : idx)}>
+                                <tr key={idx}
+                                    className={`group transition-colors font-mono cursor-pointer ${log.status.toLowerCase().includes('blocked') || log.status.toLowerCase().includes('safe') || log.status.toLowerCase().includes('parental')
+                                        ? 'bg-red-950/20 hover:bg-red-950/30 border-l-2 border-l-red-500'
+                                        : 'hover:bg-gray-800/50 border-l-2 border-l-transparent'
+                                        }`}
+                                    onClick={() => setExpandedLog(expandedLog === idx ? null : idx)}
+                                >
                                     <td className="px-6 py-4 text-gray-500">
                                         {expandedLog === idx ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                     </td>
@@ -186,11 +192,15 @@ export default function LogsPage() {
                                         ) : (
                                             log.answer?.[0]?.value
                                         )}
-                                        {log.elapsed && <span className="ml-2 text-xs text-gray-600">({log.elapsed})</span>}
+                                        {log.elapsedMs && <span className="ml-2 text-xs text-gray-600">({parseFloat(log.elapsedMs).toFixed(1)}ms)</span>}
                                     </td>
                                 </tr>
                                 {expandedLog === idx && (
-                                    <tr className="bg-gray-950/30">
+                                    <tr className={
+                                        log.status.toLowerCase().includes('blocked') || log.status.toLowerCase().includes('safe') || log.status.toLowerCase().includes('parental')
+                                            ? 'bg-red-950/10'
+                                            : 'bg-gray-950/30'
+                                    }>
                                         <td colSpan={6} className="px-6 py-4 cursor-auto">
                                             <div className="bg-gray-950 rounded-xl border border-gray-800 p-6 space-y-6">
                                                 {/* Header Info */}
@@ -336,7 +346,7 @@ function StatusBadge({ status, reason }: { status: string, reason?: string }) {
     return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
             <Check size={12} />
-            Processed
+            Allowed
         </span>
     );
 }
