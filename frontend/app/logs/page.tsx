@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Search, RotateCw, Shield, AlertTriangle, Check, ArrowRight, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Search, RotateCw, Shield, AlertTriangle, Check, ArrowRight, Trash2, ChevronDown, ChevronUp, Ban, User, X } from 'lucide-react';
 
 interface QueryLogItem {
     time: string;
@@ -31,6 +31,12 @@ interface QueryLogItem {
     }[];
 }
 
+interface Client {
+    name: string;
+    ids: string[];
+    [key: string]: any;
+}
+
 const isBlocked = (log: QueryLogItem) => {
     const s = log.status.toLowerCase();
     const r = log.reason?.toLowerCase() || '';
@@ -50,6 +56,17 @@ export default function LogsPage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [olderThan, setOlderThan] = useState<string | undefined>(undefined);
     const [expandedLog, setExpandedLog] = useState<number | null>(null);
+    const [clients, setClients] = useState<Client[]>([]);
+
+    useEffect(() => {
+        // Fetch clients for the dropdown
+        fetch('/api/adguard/clients')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setClients(data);
+            })
+            .catch(err => console.error('Failed to fetch clients', err));
+    }, []);
 
     const fetchLogs = async (reset = false) => {
         setLoading(true);
@@ -106,19 +123,31 @@ export default function LogsPage() {
         }
     };
 
-    const handleWhitelist = async (domain: string) => {
-        const rule = `@@||${domain}^`;
+    const handleRule = async (domain: string, type: 'block' | 'whitelist' | 'block_client' | 'whitelist_client', clientName?: string) => {
+        let rule = '';
+        if (type === 'block') {
+            rule = `||${domain}^`;
+        } else if (type === 'whitelist') {
+            rule = `@@||${domain}^`;
+        } else if (type === 'block_client') {
+            if (!clientName) return alert('No client selected');
+            rule = `||${domain}^$client='${clientName}'`;
+        } else if (type === 'whitelist_client') {
+            if (!clientName) return alert('No client selected');
+            rule = `@@||${domain}^$client='${clientName}'`;
+        }
+
         try {
             const res = await fetch('/api/adguard/filtering', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'addRule', rule })
             });
-            if (!res.ok) throw new Error('Failed to add whitelist rule');
-            alert(`Whitelist rule added for ${domain}`);
+            if (!res.ok) throw new Error('Failed to add rule');
+            alert(`Rule added: ${rule}`);
             fetchLogs(true);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to whitelist domain');
+            alert(err instanceof Error ? err.message : 'Failed to add rule');
         }
     };
 
@@ -192,171 +221,15 @@ export default function LogsPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-800">
                         {logs.map((log, idx) => (
-                            <>
-                                <tr key={idx}
-                                    className={`group transition-colors font-mono cursor-pointer ${isBlocked(log)
-                                        ? 'bg-red-950/20 hover:bg-red-950/30 border-l-2 border-l-red-500'
-                                        : 'hover:bg-gray-800/50 border-l-2 border-l-transparent'
-                                        }`}
-                                    onClick={() => setExpandedLog(expandedLog === idx ? null : idx)}
-                                >
-                                    <td className="px-6 py-4 text-gray-500">
-                                        {expandedLog === idx ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-400 whitespace-nowrap">
-                                        {new Date(log.time).toLocaleTimeString()}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <StatusBadge log={log} />
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-300">{log.client}</td>
-                                    <td className="px-6 py-4 text-white">
-                                        {log.question.name}
-                                        <span className="ml-2 text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
-                                            {log.question.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-400 max-w-xs truncate">
-                                        {log.upstream ? (
-                                            <span className="flex items-center gap-1 text-xs">
-                                                <ArrowRight size={12} /> {log.upstream}
-                                            </span>
-                                        ) : (
-                                            log.answer?.[0]?.value
-                                        )}
-                                        {log.elapsedMs && <span className="ml-2 text-xs text-gray-600">({parseFloat(log.elapsedMs).toFixed(1)}ms)</span>}
-                                    </td>
-                                </tr>
-                                {expandedLog === idx && (
-                                    <tr className={
-                                        isBlocked(log)
-                                            ? 'bg-red-950/10'
-                                            : 'bg-gray-950/30'
-                                    }>
-                                        <td colSpan={6} className="px-0 py-4 cursor-auto">
-                                            <div className="bg-gray-950 rounded-xl border-y border-gray-800 p-4 md:p-6 space-y-6 min-w-[600px] md:min-w-0">
-                                                {/* Header Info */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Details</h4>
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">IP Address:</span>
-                                                                <span className="text-white font-mono cursor-pointer hover:text-blue-400" onClick={(e) => { e.stopPropagation(); setFilter(log.client); }}>{log.client}</span>
-                                                            </div>
-                                                            {/* @ts-ignore */}
-                                                            {log.client_info?.name && (
-                                                                <div className="flex items-center justify-between text-sm">
-                                                                    <span className="text-gray-400">Hostname:</span>
-                                                                    {/* @ts-ignore */}
-                                                                    <span className="text-white">{log.client_info.name}</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Proto:</span>
-                                                                {/* @ts-ignore */}
-                                                                <span className="text-white">{log.client_proto || 'UDP'}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <div className="flex justify-between items-center mb-2">
-                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Response Info</h4>
-                                                            {isBlocked(log) && (
-                                                                <button
-                                                                    onClick={() => handleWhitelist(log.question.name)}
-                                                                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded transition-colors"
-                                                                >
-                                                                    <Shield size={10} />
-                                                                    Whitelist
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Status:</span>
-                                                                <span className="text-white">{log.status}</span>
-                                                            </div>
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Elapsed:</span>
-                                                                {/* @ts-ignore */}
-                                                                <span className="text-white">{log.elapsedMs ? `${parseFloat(log.elapsedMs).toFixed(2)} ms` : log.elapsed}</span>
-                                                            </div>
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-400">Upstream:</span>
-                                                                <span className="text-blue-400 font-mono text-xs truncate max-w-[200px]">{log.upstream}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* DNS Question */}
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Question</h4>
-                                                    <div className="bg-gray-900 rounded-lg p-3 text-sm font-mono flex gap-4 text-white">
-                                                        <span className="text-purple-400">[{log.question.type}]</span>
-                                                        <span className="text-purple-400">[{log.question.class || 'IN'}]</span>
-                                                        <span>{log.question.name}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Blocking Rules */}
-                                                {log.rules && log.rules.length > 0 && (
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Matched Rules</h4>
-                                                        <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-3 space-y-2">
-                                                            {log.rules.map((rule, i) => (
-                                                                <div key={i} className="font-mono text-sm text-red-300 break-all">
-                                                                    {rule.text}
-                                                                    {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">(List ID: {rule.filter_list_id})</span>}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* DNS Answers */}
-                                                {log.answer && log.answer.length > 0 && (
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Answer</h4>
-                                                        <div className="overflow-hidden rounded-lg border border-gray-800">
-                                                            <table className="w-full text-sm">
-                                                                <thead className="bg-gray-900 text-gray-400">
-                                                                    <tr>
-                                                                        <th className="px-4 py-2 text-left">Type</th>
-                                                                        <th className="px-4 py-2 text-left">Value</th>
-                                                                        <th className="px-4 py-2 text-right">TTL</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y divide-gray-800 bg-gray-900/50">
-                                                                    {log.answer.map((ans, i) => (
-                                                                        <tr key={i}>
-                                                                            <td className="px-4 py-2 font-mono text-yellow-400">{ans.type}</td>
-                                                                            <td className="px-4 py-2 font-mono text-white break-all">{ans.value}</td>
-                                                                            <td className="px-4 py-2 font-mono text-gray-400 text-right">{ans.ttl}</td>
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Raw JSON Toggle (Optional, maybe hidden or bottom) */}
-                                                <div className="pt-4 border-t border-gray-800">
-                                                    <details className="text-xs text-gray-600 cursor-pointer">
-                                                        <summary className="hover:text-gray-400 font-medium">View Raw JSON</summary>
-                                                        <pre className="mt-2 text-green-500 font-mono overflow-auto p-2 bg-black rounded max-h-60">
-                                                            {JSON.stringify(log, null, 2)}
-                                                        </pre>
-                                                    </details>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </>
+                            <LogItem
+                                key={`${log.time}-${idx}`}
+                                log={log}
+                                isExpanded={expandedLog === idx}
+                                onToggle={() => setExpandedLog(expandedLog === idx ? null : idx)}
+                                onFilterClient={(client) => setFilter(client)}
+                                handleRule={handleRule}
+                                clients={clients}
+                            />
                         ))}
                     </tbody>
                 </table>
@@ -378,6 +251,266 @@ export default function LogsPage() {
                 )}
             </div>
         </div >
+    );
+}
+
+function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, clients }: {
+    log: QueryLogItem;
+    isExpanded: boolean;
+    onToggle: () => void;
+    onFilterClient: (client: string) => void;
+    handleRule: (domain: string, type: 'block' | 'whitelist' | 'block_client' | 'whitelist_client', clientName?: string) => void;
+    clients: Client[];
+}) {
+    const blocked = isBlocked(log);
+    const [selectedClient, setSelectedClient] = useState<string>('');
+    const [clientSearch, setClientSearch] = useState('');
+
+    // Try to auto-select client if it matches a known client name or IP
+    useEffect(() => {
+        if (isExpanded) {
+            const match = clients.find(c =>
+                c.ids.includes(log.client) ||
+                (log.client_info?.name && c.ids.includes(log.client_info.name)) ||
+                c.name === log.client_info?.name
+            );
+            if (match) {
+                setSelectedClient(match.name);
+            } else {
+                // If no exact match, maybe default to empty or the first one?
+                // For now, let's leave it empty so user chooses, or maybe default to 'Client X' if created?
+                // Actually, if we can't map it, user might want to select manually.
+            }
+        }
+    }, [isExpanded, log.client, log.client_info, clients]);
+
+    const filteredClients = useMemo(() => {
+        if (!clientSearch) return clients;
+        return clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || c.ids.some(id => id.includes(clientSearch)));
+    }, [clients, clientSearch]);
+
+
+    return (
+        <>
+            <tr
+                className={`group transition-colors font-mono cursor-pointer ${blocked
+                    ? 'bg-red-950/20 hover:bg-red-950/30 border-l-2 border-l-red-500'
+                    : 'hover:bg-gray-800/50 border-l-2 border-l-transparent'
+                    }`}
+                onClick={onToggle}
+            >
+                <td className="px-6 py-4 text-gray-500">
+                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </td>
+                <td className="px-6 py-4 text-gray-400 whitespace-nowrap">
+                    {new Date(log.time).toLocaleTimeString()}
+                </td>
+                <td className="px-6 py-4">
+                    <StatusBadge log={log} />
+                </td>
+                <td className="px-6 py-4 text-gray-300">{log.client}</td>
+                <td className="px-6 py-4 text-white">
+                    {log.question.name}
+                    <span className="ml-2 text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
+                        {log.question.type}
+                    </span>
+                </td>
+                <td className="px-6 py-4 text-gray-400 max-w-xs truncate">
+                    {log.upstream ? (
+                        <span className="flex items-center gap-1 text-xs">
+                            <ArrowRight size={12} /> {log.upstream}
+                        </span>
+                    ) : (
+                        log.answer?.[0]?.value
+                    )}
+                    {log.elapsedMs && <span className="ml-2 text-xs text-gray-600">({parseFloat(log.elapsedMs).toFixed(1)}ms)</span>}
+                </td>
+            </tr>
+            {isExpanded && (
+                <tr className={
+                    blocked
+                        ? 'bg-red-950/10'
+                        : 'bg-gray-950/30'
+                }>
+                    <td colSpan={6} className="px-0 py-4 cursor-auto">
+                        <div className="bg-gray-950 rounded-xl border-y border-gray-800 p-4 md:p-6 space-y-6 min-w-[600px] md:min-w-0">
+                            {/* Header Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Details</h4>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-400">IP Address:</span>
+                                            <span className="text-white font-mono cursor-pointer hover:text-blue-400" onClick={(e) => { e.stopPropagation(); onFilterClient(log.client); }}>{log.client}</span>
+                                        </div>
+                                        {/* @ts-ignore */}
+                                        {log.client_info?.name && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-400">Hostname:</span>
+                                                {/* @ts-ignore */}
+                                                <span className="text-white">{log.client_info.name}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-400">Proto:</span>
+                                            {/* @ts-ignore */}
+                                            <span className="text-white">{log.client_proto || 'UDP'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Response Info</h4>
+                                        <div className="flex gap-2">
+                                            {blocked ? (
+                                                <button
+                                                    onClick={() => handleRule(log.question.name, 'whitelist')}
+                                                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded transition-colors"
+                                                >
+                                                    <Shield size={10} />
+                                                    Whitelist Global
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleRule(log.question.name, 'block')}
+                                                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded transition-colors"
+                                                >
+                                                    <Ban size={10} />
+                                                    Block Global
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-400">Status:</span>
+                                            <span className="text-white">{log.status}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-400">Elapsed:</span>
+                                            {/* @ts-ignore */}
+                                            <span className="text-white">{log.elapsedMs ? `${parseFloat(log.elapsedMs).toFixed(2)} ms` : log.elapsed}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-400">Upstream:</span>
+                                            <span className="text-blue-400 font-mono text-xs truncate max-w-[200px]">{log.upstream}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Client Operations */}
+                            <div>
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Operations</h4>
+                                <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                                    <div className="flex flex-col md:flex-row gap-4 items-end">
+                                        <div className="flex-1 w-full space-y-1">
+                                            <label className="text-xs text-gray-400">Select Client</label>
+                                            <div className="relative">
+                                                <select
+                                                    className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                                                    value={selectedClient}
+                                                    onChange={(e) => setSelectedClient(e.target.value)}
+                                                >
+                                                    <option value="">-- Select Client --</option>
+                                                    {clients.map(c => (
+                                                        <option key={c.name} value={c.name}>{c.name} ({c.ids.join(', ')})</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleRule(log.question.name, 'block_client', selectedClient)}
+                                                disabled={!selectedClient}
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-red-900/50"
+                                            >
+                                                <Ban size={14} />
+                                                Block for Client
+                                            </button>
+                                            <button
+                                                onClick={() => handleRule(log.question.name, 'whitelist_client', selectedClient)}
+                                                disabled={!selectedClient}
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-900/30 text-green-400 hover:bg-green-900/50 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-green-900/50"
+                                            >
+                                                <Shield size={14} />
+                                                Whitelist for Client
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 text-[10px] text-gray-600">
+                                        Applies rule <code>$client='{selectedClient || '...'}'</code> to domain <code>{log.question.name}</code>.
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* DNS Question */}
+                            <div>
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Question</h4>
+                                <div className="bg-gray-900 rounded-lg p-3 text-sm font-mono flex gap-4 text-white">
+                                    <span className="text-purple-400">[{log.question.type}]</span>
+                                    <span className="text-purple-400">[{log.question.class || 'IN'}]</span>
+                                    <span>{log.question.name}</span>
+                                </div>
+                            </div>
+
+                            {/* Blocking Rules */}
+                            {log.rules && log.rules.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Matched Rules</h4>
+                                    <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-3 space-y-2">
+                                        {log.rules.map((rule, i) => (
+                                            <div key={i} className="font-mono text-sm text-red-300 break-all">
+                                                {rule.text}
+                                                {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">(List ID: {rule.filter_list_id})</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* DNS Answers */}
+                            {log.answer && log.answer.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Answer</h4>
+                                    <div className="overflow-hidden rounded-lg border border-gray-800">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-gray-900 text-gray-400">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">Type</th>
+                                                    <th className="px-4 py-2 text-left">Value</th>
+                                                    <th className="px-4 py-2 text-right">TTL</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-800 bg-gray-900/50">
+                                                {log.answer.map((ans, i) => (
+                                                    <tr key={i}>
+                                                        <td className="px-4 py-2 font-mono text-yellow-400">{ans.type}</td>
+                                                        <td className="px-4 py-2 font-mono text-white break-all">{ans.value}</td>
+                                                        <td className="px-4 py-2 font-mono text-gray-400 text-right">{ans.ttl}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Raw JSON Toggle (Optional, maybe hidden or bottom) */}
+                            <div className="pt-4 border-t border-gray-800">
+                                <details className="text-xs text-gray-600 cursor-pointer">
+                                    <summary className="hover:text-gray-400 font-medium">View Raw JSON</summary>
+                                    <pre className="mt-2 text-green-500 font-mono overflow-auto p-2 bg-black rounded max-h-60">
+                                        {JSON.stringify(log, null, 2)}
+                                    </pre>
+                                </details>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            )}
+        </>
     );
 }
 
