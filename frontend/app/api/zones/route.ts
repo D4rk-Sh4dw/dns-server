@@ -86,9 +86,7 @@ export async function POST(request: Request) {
                     // UI 'ConditionalForwarder' -> Technitium 'Forwarder'
                     const techType = type === 'ConditionalForwarder' ? 'Forwarder' : (type || 'Primary');
 
-                    // If it's a Conditional Forwarder, we might need to add the FWD record manually or use options
                     // Based on plan: Create zone, then add FWD record if needed.
-                    const techType = type === 'ConditionalForwarder' ? 'Forwarder' : (type || 'Primary');
 
                     // If it's a Conditional Forwarder, we pass the forwarder option to createZone
                     // The 'forwarder' string should be the full IP or URL (handled by frontend now)
