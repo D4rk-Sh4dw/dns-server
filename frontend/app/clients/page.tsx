@@ -366,15 +366,44 @@ export default function ClientsPage() {
 
                                         {!formData.use_global_blocked_services && (
                                             <div className="pt-4 border-t border-gray-800 space-y-4">
-                                                <div className="relative">
-                                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search services..."
-                                                        value={serviceSearch}
-                                                        onChange={(e) => setServiceSearch(e.target.value)}
-                                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                                                    />
+                                                <div className="flex gap-2">
+                                                    <div className="relative flex-1">
+                                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search services..."
+                                                            value={serviceSearch}
+                                                            onChange={(e) => setServiceSearch(e.target.value)}
+                                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current = formData.blocked_services || [];
+                                                            const toBlock = filteredServices.filter(s => !current.includes(s));
+                                                            setFormData({ ...formData, blocked_services: [...current, ...toBlock] });
+                                                        }}
+                                                        className="px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs font-medium text-gray-300 transition-colors whitespace-nowrap"
+                                                        title="Block all visible services"
+                                                    >
+                                                        Block All
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current = formData.blocked_services || [];
+                                                            // Remove observable services from blocklist
+                                                            setFormData({
+                                                                ...formData,
+                                                                blocked_services: current.filter(s => !filteredServices.includes(s))
+                                                            });
+                                                        }}
+                                                        className="px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs font-medium text-gray-300 transition-colors whitespace-nowrap"
+                                                        title="Unblock all visible services"
+                                                    >
+                                                        Unblock All
+                                                    </button>
                                                 </div>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                                     {filteredServices.length === 0 ? (
