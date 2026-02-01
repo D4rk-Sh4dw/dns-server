@@ -2,9 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { RefreshCw, Clock, Save, ShieldOff } from 'lucide-react';
-import { POPULAR_SERVICES } from '../../config/services';
+import { POPULAR_SERVICES, ServiceDefinition } from '../../config/services';
+
+function Switch({ checked }: { checked: boolean }) {
+    return (
+        <div className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${checked ? 'bg-red-500' : 'bg-gray-600'}`}>
+            <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${checked ? 'translate-x-5' : ''}`} />
+        </div>
+    );
+}
 
 export default function ServicesPage() {
+    const [availableServices, setAvailableServices] = useState<any[]>([]);
     const [blockedServices, setBlockedServices] = useState<string[]>([]);
     const [schedule, setSchedule] = useState<any>({});
 
@@ -24,14 +33,21 @@ export default function ServicesPage() {
             const servicesData = await servicesRes.json();
             const scheduleData = await scheduleRes.json();
 
-            // We only need the blocked list from API now
+            // Set blocked list
             const blocked = Array.isArray(servicesData.blocked) ? servicesData.blocked : [];
             setBlockedServices(blocked);
+
+            // Set available services -- hybrid logic
+            const available = Array.isArray(servicesData.available) ? servicesData.available : [];
+            setAvailableServices(available); // Set even if empty, logic below fallback handles it
+
+            // Set schedule
             setSchedule(scheduleData || {});
         } catch (err) {
             console.error('Failed to fetch data:', err);
             // Ensure we don't leave loading state hanging if fetch fails
             setBlockedServices([]);
+            setAvailableServices([]);
         }
         setLoading(false);
     };
@@ -42,10 +58,7 @@ export default function ServicesPage() {
     const formatTime = (timeStr?: string) => {
         if (!timeStr) return '';
         try {
-            // If valid HH:mm
             if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
-            // If date string or milliseconds, try to parse
-            // AdGuard sometimes sends milliseconds.
             return new Date(`2000-01-01T${timeStr}`).toTimeString().substring(0, 5);
         } catch (e) {
             return '';
@@ -77,7 +90,7 @@ export default function ServicesPage() {
         setScheduleSaving(true);
         try {
             const payload = {
-                ids: blockedServices, // Schedule update often requires resending IDs too
+                ids: blockedServices,
                 schedule: schedule.schedule
             };
 
@@ -93,7 +106,10 @@ export default function ServicesPage() {
         setScheduleSaving(false);
     };
 
-    const filteredServices = POPULAR_SERVICES.filter(s =>
+    // Determine which list to show: Dynamic or Static Fallback
+    const displayServices = availableServices.length > 0 ? availableServices : POPULAR_SERVICES;
+
+    const filteredServices = displayServices.filter(s =>
         s.name.toLowerCase().includes(filter.toLowerCase()) ||
         s.id.toLowerCase().includes(filter.toLowerCase())
     );
@@ -220,7 +236,7 @@ export default function ServicesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filteredServices.map(service => {
                         const isBlocked = blockedServices.includes(service.id);
-                        const Icon = service.icon || ShieldOff;
+
                         return (
                             <div
                                 key={service.id}
@@ -229,30 +245,33 @@ export default function ServicesPage() {
                                 onClick={() => toggleService(service.id)}
                             >
                                 <div className="flex gap-3 items-center">
-                                    <div className="w-8 h-8 flex items-center justify-center text-gray-400">
-                                        <Icon size={24} />
-                                    </div>
+                                    {service.icon_svg ? (
+                                        <div
+                                            className="w-8 h-8 flex-shrink-0 text-gray-400 [&>svg]:w-full [&>svg]:h-full"
+                                            dangerouslySetInnerHTML={{ __html: service.icon_svg }}
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 flex items-center justify-center text-gray-400">
+                                            {/* Dynamic check for icon component vs simple text fallback */}
+                                            {/* @ts-ignore */}
+                                            {service.icon ? <service.icon size={24} /> : (
+                                                <div className="text-xs font-bold w-full text-center">{service.name.substring(0, 2)}</div>
+                                            )}
+                                        </div>
+                                    )}
                                     <span className="text-white font-medium">{service.name}</span>
                                 </div>
                                 <Switch checked={isBlocked} />
                             </div>
                         );
                     })}
-                    {filteredServices.length === 0 && (
+                    {filteredServices.length === 0 && !loading && (
                         <div className="col-span-full text-center text-gray-500 py-8">
                             No services found matching term "{filter}".
                         </div>
                     )}
                 </div>
             </div>
-        </div>
-    );
-}
-
-function Switch({ checked }: { checked: boolean }) {
-    return (
-        <div className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${checked ? 'bg-red-500' : 'bg-gray-600'}`}>
-            <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${checked ? 'translate-x-5' : ''}`} />
         </div>
     );
 }

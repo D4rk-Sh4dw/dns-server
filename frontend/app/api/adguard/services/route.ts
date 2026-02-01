@@ -3,10 +3,22 @@ import * as adguard from '@/lib/adguard';
 
 export async function GET() {
     try {
-        const blockedRes = await adguard.getBlockedServices();
+        const [availableRes, blockedRes] = await Promise.all([
+            adguard.getAllBlockedServices(),
+            adguard.getBlockedServices()
+        ]);
 
-        // Normalize blocked services (usually a list of strings)
-        // AdGuard might return object with `ids` property or array
+        // Normalize available services
+        let available = [];
+        if (Array.isArray(availableRes)) {
+            available = availableRes;
+        } else if (availableRes && typeof availableRes === 'object') {
+            // @ts-ignore
+            available = availableRes.blocking_services || availableRes.services || availableRes.available_services || [];
+            if (!Array.isArray(available)) available = [];
+        }
+
+        // Normalize blocked services
         let blocked: string[] = [];
         if (Array.isArray(blockedRes)) {
             blocked = blockedRes;
@@ -16,8 +28,7 @@ export async function GET() {
         }
 
         return NextResponse.json({
-            // available is now handled statically on frontend
-            available: [],
+            available,
             blocked
         });
     } catch (error) {
