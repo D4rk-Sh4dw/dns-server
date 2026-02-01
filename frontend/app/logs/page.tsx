@@ -226,20 +226,7 @@ function StatusBadge({ status, reason }: { status: string, reason?: string }) {
         </span>
     );
 }
-time: string;
-client: string;
-question: {
-    name: string;
-    type: string;
-};
-status: string;
-reason ?: string;
-upstream ?: string;
-answer ?: {
-    type: string;
-    value: string;
-}[];
-}
+
 
 export default function LogsPage() {
     const [logs, setLogs] = useState<QueryLogItem[]>([]);

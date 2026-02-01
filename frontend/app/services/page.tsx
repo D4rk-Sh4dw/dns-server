@@ -194,8 +194,8 @@ export default function ServicesPage() {
                                     });
                                 }}
                                 className={`px-3 py-1 rounded text-sm font-medium transition-colors ${(schedule.schedule?.days || []).includes(day)
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                     }`}
                             >
                                 {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][idx]}
@@ -278,29 +278,7 @@ function Switch({ checked }: { checked: boolean }) {
         </div>
     );
 }
-{ id: 'instagram', name: 'Instagram', icon: '📷', description: 'Block Instagram app and website' },
-{ id: 'tiktok', name: 'TikTok', icon: '🎵', description: 'Block TikTok app and website' },
-{ id: 'facebook', name: 'Facebook', icon: '👤', description: 'Block Facebook and Messenger' },
-{ id: 'whatsapp', name: 'WhatsApp', icon: '💬', description: 'Block WhatsApp messaging' },
-{ id: 'youtube', name: 'YouTube', icon: '▶️', description: 'Block YouTube video streaming' },
-{ id: 'twitter', name: 'X (Twitter)', icon: '🐦', description: 'Block X/Twitter' },
-{ id: 'snapchat', name: 'Snapchat', icon: '👻', description: 'Block Snapchat' },
-{ id: 'telegram', name: 'Telegram', icon: '✈️', description: 'Block Telegram messaging' },
-{ id: 'discord', name: 'Discord', icon: '🎮', description: 'Block Discord' },
-{ id: 'twitch', name: 'Twitch', icon: '📺', description: 'Block Twitch streaming' },
-{ id: 'spotify', name: 'Spotify', icon: '🎧', description: 'Block Spotify music' },
-{ id: 'netflix', name: 'Netflix', icon: '🎬', description: 'Block Netflix streaming' },
-{ id: 'amazon', name: 'Amazon', icon: '📦', description: 'Block Amazon shopping' },
-{ id: 'ebay', name: 'eBay', icon: '🛒', description: 'Block eBay' },
-{ id: 'reddit', name: 'Reddit', icon: '🤖', description: 'Block Reddit' },
-{ id: 'pinterest', name: 'Pinterest', icon: '📌', description: 'Block Pinterest' },
-{ id: 'tinder', name: 'Tinder', icon: '🔥', description: 'Block Tinder dating' },
-{ id: 'steam', name: 'Steam', icon: '🎮', description: 'Block Steam gaming' },
-{ id: 'epic_games', name: 'Epic Games', icon: '🎯', description: 'Block Epic Games' },
-{ id: 'minecraft', name: 'Minecraft', icon: '⛏️', description: 'Block Minecraft' },
-{ id: 'fortnite', name: 'Fortnite', icon: '🏝️', description: 'Block Fortnite' },
-{ id: 'roblox', name: 'Roblox', icon: '🧱', description: 'Block Roblox' },
-];
+
 
 export default function ServicesPage() {
     const [blockedServices, setBlockedServices] = useState<string[]>([]);
