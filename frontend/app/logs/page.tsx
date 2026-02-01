@@ -29,7 +29,11 @@ interface QueryLogItem {
 
 const isBlocked = (log: QueryLogItem) => {
     const s = log.status.toLowerCase();
+    const r = log.reason?.toLowerCase() || '';
+
     if (s.includes('blocked') || s.includes('safe') || s.includes('parental')) return true;
+    if (r.includes('blacklist') || r.includes('blockedservice')) return true;
+
     // Check for 0.0.0.0 or :: (AdGuard blocking)
     if (log.answer?.some(a => a.value === '0.0.0.0' || a.value === '::')) return true;
     return false;
