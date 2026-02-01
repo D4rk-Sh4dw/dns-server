@@ -42,6 +42,12 @@ export async function POST(request: Request) {
                 break;
             case 'protection':
                 await adguard.setProtectionEnabled(enabled);
+                if (!enabled && body.duration) {
+                    const pauseUntil = Date.now() + body.duration * 60 * 1000;
+                    await adguard.setPauseState(pauseUntil);
+                } else if (enabled) {
+                    await adguard.setPauseState(null);
+                }
                 break;
             default:
                 return NextResponse.json(

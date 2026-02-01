@@ -252,22 +252,35 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     }, []);
 
     const startPauseTimer = (minutes: number) => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        const seconds = minutes * 60;
-        setPauseTimer(seconds);
-        setShowTimerMenu(false);
-
-        timerRef.current = setInterval(() => {
-            setPauseTimer((prev) => {
-                if (prev === null || prev <= 1) {
-                    if (timerRef.current) clearInterval(timerRef.current);
-                    toggleProtection('protection', true);
-                    return null;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+        // Now handled by backend mostly. We just set a local UI timer for smooth countdown.
+        toggleProtection('protection', false, minutes);
     };
+
+    // Helper to sync timer with server state
+    useEffect(() => {
+        if (protection?.pauseUntil) {
+            const remaining = Math.max(0, Math.floor((protection.pauseUntil - Date.now()) / 1000));
+            setPauseTimer(remaining);
+            setShowTimerMenu(false);
+
+            if (timerRef.current) clearInterval(timerRef.current);
+            timerRef.current = setInterval(() => {
+                setPauseTimer((prev) => {
+                    if (prev === null || prev <= 1) {
+                        if (timerRef.current) clearInterval(timerRef.current);
+                        // No need to call toggleProtection(true) here as the backend status check will handle it
+                        // but refreshing helps the UI catch up
+                        refresh();
+                        return null;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        } else {
+            setPauseTimer(null);
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+    }, [protection?.pauseUntil]);
 
     const cancelPause = () => {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -282,13 +295,13 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     };
 
     // Handlers (moved from original)
-    const toggleProtection = async (setting: string, enabled: boolean) => {
+    const toggleProtection = async (setting: string, enabled: boolean, duration?: number) => {
         // Optimistic update
         const previousStatus = { ...protection };
         setProtection((prev: any) => ({ ...prev, [`${setting}Enabled`]: enabled }));
 
         // If turning OFF DNS Protection, show timer menu
-        if (setting === 'protection' && !enabled) {
+        if (setting === 'protection' && !enabled && !duration) {
             setShowTimerMenu(true);
         } else if (setting === 'protection' && enabled) {
             // If turning ON, cancel any active timer
@@ -301,10 +314,13 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             const res = await fetch('/api/adguard/protection', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ setting, enabled }),
+                body: JSON.stringify({ setting, enabled, duration }),
             });
 
             if (!res.ok) throw new Error('Failed to update protection');
+
+            // Re-fetch to get the exact pauseUntil from server
+            refresh();
         } catch (e) {
             console.error(e);
             setProtection(previousStatus); // Revert on error

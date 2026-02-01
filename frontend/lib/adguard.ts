@@ -1,6 +1,9 @@
 // AdGuard Home API Client
 // Docs: https://github.com/AdguardTeam/AdGuardHome/tree/master/openapi
 
+import fs from 'fs/promises';
+import path from 'path';
+
 const ADGUARD_URL = process.env.ADGUARD_URL || 'http://10.10.10.2:3000';
 const ADGUARD_USER = process.env.ADGUARD_USER || 'admin';
 const ADGUARD_PASS = process.env.ADGUARD_PASS || 'admin123';
@@ -425,20 +428,52 @@ export async function deleteClient(name: string) {
     });
 }
 
+const PAUSE_FILE = path.join(process.cwd(), 'pause_state.json');
+
+async function getPauseState(): Promise<number | null> {
+    try {
+        const data = await fs.readFile(PAUSE_FILE, 'utf-8');
+        const { pauseUntil } = JSON.parse(data);
+        return pauseUntil;
+    } catch {
+        return null;
+    }
+}
+
+export async function setPauseState(pauseUntil: number | null) {
+    if (pauseUntil === null) {
+        try { await fs.unlink(PAUSE_FILE); } catch { }
+    } else {
+        await fs.writeFile(PAUSE_FILE, JSON.stringify({ pauseUntil }));
+    }
+}
+
 // Get all protection settings in one call
 export async function getAllProtectionStatus() {
-    const [status, parental, safeBrowsing, safeSearch] = await Promise.all([
+    const [status, parental, safeBrowsing, safeSearch, pauseUntil] = await Promise.all([
         getStatus(),
         getParentalStatus(),
         getSafeBrowsingStatus(),
         getSafeSearchStatus(),
+        getPauseState(),
     ]);
 
+    let protectionEnabled = status.protection_enabled;
+
+    // Check if we should re-enable protection
+    if (pauseUntil && Date.now() >= pauseUntil && !protectionEnabled) {
+        console.log('Pause timer expired, re-enabling DNS protection...');
+        await setProtectionEnabled(true);
+        await setPauseState(null);
+        protectionEnabled = true;
+    }
+
     return {
-        protectionEnabled: status.protection_enabled,
+        protectionEnabled,
         parentalEnabled: parental.enabled,
         safeBrowsingEnabled: safeBrowsing.enabled,
         safeSearchEnabled: safeSearch.enabled,
+        pauseUntil: pauseUntil && pauseUntil > Date.now() ? pauseUntil : null,
     };
 }
 
