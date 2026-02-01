@@ -54,6 +54,8 @@ services:
       - DNS_SERVER_ADMIN_PASSWORD=admin123
       - DNS_SERVER_PREFER_IPV6=false
       - DNS_SERVER_FORWARDERS=1.1.1.1,8.8.8.8
+      - DNS_SERVER_RECURSION=Allow
+      - DNS_SERVER_ENABLE_BLOCKING=false
     volumes:
       - ./data/technitium:/etc/dns
     networks:
