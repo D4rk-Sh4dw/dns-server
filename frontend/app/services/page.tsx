@@ -55,15 +55,22 @@ export default function ServicesPage() {
 
     useEffect(() => { fetchData(); }, []);
 
-    // Helper functions for safe rendering
-    const formatTime = (timeStr?: string) => {
-        if (!timeStr) return '';
-        try {
-            if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
-            return new Date(`2000-01-01T${timeStr}`).toTimeString().substring(0, 5);
-        } catch (e) {
-            return '';
-        }
+    // Helper functions for time conversion
+    const msToTime = (ms?: number | string) => {
+        if (ms === undefined || ms === null) return '';
+        // If already string HH:MM
+        if (typeof ms === 'string' && /^\d{2}:\d{2}$/.test(ms)) return ms;
+
+        const totalMinutes = Math.floor(Number(ms) / 60000);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+
+    const timeToMs = (timeStr: string) => {
+        if (!timeStr) return 0;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return (hours * 3600000) + (minutes * 60000);
     };
 
     const toggleService = async (serviceId: string) => {
@@ -75,6 +82,11 @@ export default function ServicesPage() {
         setBlockedServices(newBlocked);
 
         try {
+            // Must fetch current schedule to preserve it, but API route logic might handle partials?
+            // Ideally we send the full object. But our atomic 'setBlockedServices' usage in route 
+            // relies on the lib which refetches. 
+            // Client side logic here sends just IDs to a PUT endpoint?
+            // Wait, previous logical flow in page calls:
             await fetch('/api/adguard/services', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -90,9 +102,16 @@ export default function ServicesPage() {
     const saveSchedule = async () => {
         setScheduleSaving(true);
         try {
+            // Convert times to milliseconds for API
+            const apiSchedule = {
+                ...schedule.schedule,
+                start: timeToMs(schedule.schedule?.start),
+                end: timeToMs(schedule.schedule?.end),
+            };
+
             const payload = {
                 ids: blockedServices,
-                schedule: schedule.schedule
+                schedule: apiSchedule
             };
 
             await fetch('/api/adguard/services/schedule', {
@@ -102,6 +121,7 @@ export default function ServicesPage() {
             });
             alert('Schedule saved!');
         } catch (err) {
+            console.error(err);
             alert('Failed to save schedule');
         }
         setScheduleSaving(false);
@@ -158,10 +178,17 @@ export default function ServicesPage() {
                         <input
                             type="time"
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
-                            value={formatTime(schedule.schedule?.start)}
+                            value={msToTime(schedule.schedule?.start)}
                             onChange={e => setSchedule({
                                 ...schedule,
                                 schedule: { ...schedule.schedule, start: e.target.value }
+                                // Keep as string in state until save? Or convert immediately?
+                                // Better to keep "UI value" in state if possible, but our schedule object mirrors API.
+                                // Let's keep it mixed for now (helper handles string/number) but best to keep consistent.
+                                // Actually, `msToTime` handles string. `timeToMs` handles string.
+                                // Let's just store the string from input in state, and convert ONLY on save.
+                                // The API response will be number (ms). `msToTime` converts to string.
+                                // So on change, we write string. On render `msToTime` handles string or number.
                             })}
                         />
                     </div>
@@ -170,7 +197,7 @@ export default function ServicesPage() {
                         <input
                             type="time"
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
-                            value={formatTime(schedule.schedule?.end)}
+                            value={msToTime(schedule.schedule?.end)}
                             onChange={e => setSchedule({
                                 ...schedule,
                                 schedule: { ...schedule.schedule, end: e.target.value }
