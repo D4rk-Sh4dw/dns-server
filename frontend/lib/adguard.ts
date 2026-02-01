@@ -97,19 +97,11 @@ export async function getBlockedServices() {
 }
 
 export async function setBlockedServices(ids: string[]) {
-    // To safe-guard schedule, we should ideally fetch it first? 
-    // Or does 'update' merge? AdGuard usually replaces provided keys.
-    // If we only send 'ids', 'schedule' might be reset if not sent?
-    // Let's safe-guard: fetch current config, update ids.
-    const current = await getBlockedServices();
-    const payload = {
-        ids,
-        schedule: current.schedule // Preserve schedule
-    };
-
-    return adguardFetch('/control/blocked_services/update', {
-        method: 'PUT',
-        body: JSON.stringify(payload),
+    // Official API: POST /control/blocked_services/set
+    // Payload: array of strings
+    return adguardFetch('/control/blocked_services/set', {
+        method: 'POST',
+        body: JSON.stringify(ids),
     });
 }
 
