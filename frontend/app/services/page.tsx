@@ -50,18 +50,46 @@ export default function ServicesPage() {
             ]);
 
             const servicesData = await servicesRes.json();
-            const scheduleData = await scheduleRes.json();
+            // Ensure array type before setting state to avoid render crashes
+            // Use logical OR to fallback to empty array if response is bad
+            const available = Array.isArray(servicesData.available) ? servicesData.available : [];
+            const blocked = Array.isArray(servicesData.blocked) ? servicesData.blocked : [];
 
-            setAvailableServices(servicesData.available || []);
-            setBlockedServices(servicesData.blocked || []);
-            setSchedule(scheduleData);
+            setAvailableServices(available);
+            setBlockedServices(blocked);
+
+            // Handle schedule safely
+            try {
+                const scheduleData = await scheduleRes.json();
+                setSchedule(scheduleData || {});
+            } catch (e) {
+                console.error("Failed to parse schedule", e);
+                setSchedule({});
+            }
         } catch (err) {
             console.error('Failed to fetch data:', err);
+            // Ensure we don't leave loading state hanging if fetch fails
+            setAvailableServices([]);
+            setBlockedServices([]);
         }
         setLoading(false);
     };
 
     useEffect(() => { fetchData(); }, []);
+
+    // Helper functions for safe rendering
+    const formatTime = (timeStr?: string) => {
+        if (!timeStr) return '';
+        try {
+            // If valid HH:mm
+            if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+            // If date string or milliseconds, try to parse
+            // AdGuard sometimes sends milliseconds.
+            return new Date(`2000-01-01T${timeStr}`).toTimeString().substring(0, 5);
+        } catch (e) {
+            return '';
+        }
+    };
 
     const toggleService = async (serviceId: string) => {
         setSaving(true);
@@ -83,6 +111,15 @@ export default function ServicesPage() {
         }
         setSaving(false);
     };
+
+    // ... saveSchedule ...
+
+    // Filter availableServices only if it's an array (now guaranteed by fetchData but state could be initial)
+    const safeAvailableServices = Array.isArray(availableServices) ? availableServices : [];
+    const filteredServices = safeAvailableServices.filter(s =>
+        (s.name || '').toLowerCase().includes(filter.toLowerCase()) ||
+        (s.id || '').toLowerCase().includes(filter.toLowerCase())
+    );
 
     const saveSchedule = async () => {
         setScheduleSaving(true);
@@ -152,9 +189,7 @@ export default function ServicesPage() {
                         <input
                             type="time"
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
-                            value={schedule.schedule?.start ?
-                                new Date(`2000-01-01T${schedule.schedule.start}`).toTimeString().substring(0, 5)
-                                : ''}
+                            value={formatTime(schedule.schedule?.start)}
                             onChange={e => setSchedule({
                                 ...schedule,
                                 schedule: { ...schedule.schedule, start: e.target.value } // AdGuard expects milliseconds? Or HH:mm? Needs verify. Assuming HH:mm for now.
@@ -166,9 +201,7 @@ export default function ServicesPage() {
                         <input
                             type="time"
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
-                            value={schedule.schedule?.end ?
-                                new Date(`2000-01-01T${schedule.schedule.end}`).toTimeString().substring(0, 5)
-                                : ''}
+                            value={formatTime(schedule.schedule?.end)}
                             onChange={e => setSchedule({
                                 ...schedule,
                                 schedule: { ...schedule.schedule, end: e.target.value }
@@ -194,8 +227,8 @@ export default function ServicesPage() {
                                     });
                                 }}
                                 className={`px-3 py-1 rounded text-sm font-medium transition-colors ${(schedule.schedule?.days || []).includes(day)
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                     }`}
                             >
                                 {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][idx]}
