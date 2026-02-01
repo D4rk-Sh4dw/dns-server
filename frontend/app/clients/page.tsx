@@ -44,21 +44,33 @@ export default function ClientsPage() {
     const [idInput, setIdInput] = useState('');
     const [tagInput, setTagInput] = useState('');
     const [serviceSearch, setServiceSearch] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
+        setError(null);
         try {
             const [clientsRes, servicesRes] = await Promise.all([
                 fetch('/api/adguard/clients'),
                 fetch('/api/adguard/clients?services=true')
             ]);
-            const clientsData = await clientsRes.json();
-            const servicesData = await servicesRes.json();
 
+            if (!clientsRes.ok) {
+                const errData = await clientsRes.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to fetch clients');
+            }
+
+            const clientsData = await clientsRes.json();
             setClients(clientsData.clients || []);
-            setAvailableServices(servicesData || []);
+
+            // Services endpoint might fail but shouldn't block clients display
+            if (servicesRes.ok) {
+                const servicesData = await servicesRes.json();
+                setAvailableServices(Array.isArray(servicesData) ? servicesData : []);
+            }
         } catch (err) {
             console.error('Failed to fetch data:', err);
+            setError(err instanceof Error ? err.message : 'Failed to connect to AdGuard');
         }
         setLoading(false);
     };
@@ -173,7 +185,18 @@ export default function ClientsPage() {
                 </div>
             </div>
 
-            {loading ? (
+            {error ? (
+                <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6 text-center">
+                    <p className="text-red-400 mb-2">Failed to load clients</p>
+                    <p className="text-gray-500 text-sm">{error}</p>
+                    <button
+                        onClick={() => fetchData()}
+                        className="mt-4 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            ) : loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
                         <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-64 animate-pulse" />
