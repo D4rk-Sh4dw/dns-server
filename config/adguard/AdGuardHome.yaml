@@ -20,7 +20,7 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - "[/local/lan/home/internal/]tcp://172.25.0.101:53"  # Technitium for local domains
+    - "[/local/lan/home/internal/]172.25.0.101:53"  # Technitium for local domains
     - https://dns.cloudflare.com/dns-query        # Cloudflare DoH
     - https://dns.google/dns-query                # Google DoH
   upstream_dns_file: ""

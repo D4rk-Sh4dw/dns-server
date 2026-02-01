@@ -115,7 +115,7 @@ export default function Home() {
         />
         <StatCard
           title="Performance"
-          value={stats ? `${stats.avg_processing_time.toFixed(2)}ms` : '—'}
+          value={stats ? `${(stats.avg_processing_time * 1000).toFixed(1)} ms` : '—'}
           trend="Avg processing time"
           icon={Wifi}
           color="text-blue-400"
