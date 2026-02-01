@@ -3,7 +3,8 @@ version: '3.8'
 services:
   # --- Central Management Dashboard ---
   dashboard:
-    image: ghcr.io/d4rk-sh4dw/dns-frontend:latest
+    build: ./frontend
+    image: dns-dashboard:local
     container_name: dns-dashboard
     restart: unless-stopped
     ports:

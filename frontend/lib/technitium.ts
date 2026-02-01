@@ -102,7 +102,7 @@ function normalizeRecord(record: any): any {
 
 // Record Management
 export async function listRecords(zone: string) {
-    const response = await technitiumFetch('/api/zones/records/get', { domain: zone });
+    const response = await technitiumFetch('/api/zones/records/get', { domain: zone, listZone: 'true' });
 
     // Normalize records to camelCase if needed
     if (response && response.records) {
