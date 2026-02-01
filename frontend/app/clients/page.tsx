@@ -128,15 +128,15 @@ export default function ClientsPage() {
     );
 
     return (
-        <div className="p-8 space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Client Management</h1>
-                    <p className="text-gray-400">Configure per-device DNS policies and protection settings.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Client Management</h1>
+                    <p className="text-gray-400 text-sm md:text-base">Configure per-device DNS policies and protection settings.</p>
                 </div>
                 <button
                     onClick={() => { resetForm(); setShowModal(true); }}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                     <Plus size={18} />
                     Add Client
@@ -306,7 +306,7 @@ export default function ClientsPage() {
     );
 }
 
-function SimpleSwitch({ label, description, checked, onChange }: any) {
+function SimpleSwitch({ label, description, checked, onChange }: { label: string; description?: string; checked: boolean; onChange: (v: boolean) => void }) {
     return (
         <div className="flex items-center justify-between">
             <div>
