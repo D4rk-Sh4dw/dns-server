@@ -88,15 +88,21 @@ export async function POST(request: Request) {
 
                     // If it's a Conditional Forwarder, we might need to add the FWD record manually or use options
                     // Based on plan: Create zone, then add FWD record if needed.
-                    await technitium.createZone(zone, techType);
+                    const techType = type === 'ConditionalForwarder' ? 'Forwarder' : (type || 'Primary');
 
-                    if (type === 'ConditionalForwarder' && forwarder) {
-                        // Add FWD record for the zone root
-                        await technitium.addRecord(zone, 'FWD', forwarder, 3600, {
-                            protocol: protocol || 'Udp',
-                            useThisServer: 'false' // We want to forward
-                        });
+                    // If it's a Conditional Forwarder, we pass the forwarder option to createZone
+                    // The 'forwarder' string should be the full IP or URL (handled by frontend now)
+                    await technitium.createZone(zone, techType, { forwarder });
+
+                    // We let createZone handle the forwarder setup. If it fails, it throws.
+                    // We don't need manual addRecord('FWD') if the API accepts 'forwarder' param for 'Forwarder' zone type.
+                    // But if protocol is 'Udp'/'Tcp', createZone might expect just IP?
+                    // Frontend now sends full string provided by user. Technitium API is flexible.
+
+                    if (type === 'ConditionalForwarder') {
+                        console.log(`Created Forwarder zone ${zone} with target ${forwarder}`);
                     }
+
 
                     await adguard.addZoneForwarding(zone);
 

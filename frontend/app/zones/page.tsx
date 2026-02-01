@@ -12,7 +12,51 @@ interface Zone {
     forwardingEnabled: boolean;
     source: 'technitium' | 'active-directory';
     dcServers?: string;
+    forwarder?: string;
 }
+
+const PROVIDERS: Record<string, { name: string; protocols: Record<string, string> }> = {
+    'Cloudflare': {
+        name: 'Cloudflare',
+        protocols: {
+            'Udp': '1.1.1.1',
+            'Tcp': '1.1.1.1',
+            'Tls': '1.1.1.1:853',
+            'Https': 'https://cloudflare-dns.com/dns-query',
+            'Quic': 'quic://dns.cloudflare.com:853'
+        }
+    },
+    'Google': {
+        name: 'Google',
+        protocols: {
+            'Udp': '8.8.8.8',
+            'Tcp': '8.8.8.8',
+            'Tls': '8.8.8.8:853',
+            'Https': 'https://dns.google/dns-query',
+            'Quic': 'quic://dns.google:853'
+        }
+    },
+    'Quad9': {
+        name: 'Quad9',
+        protocols: {
+            'Udp': '9.9.9.9',
+            'Tcp': '9.9.9.9',
+            'Tls': '9.9.9.9:853',
+            'Https': 'https://dns.quad9.net/dns-query',
+            'Quic': 'quic://dns.quad9.net:853'
+        }
+    },
+    'OpenDNS': {
+        name: 'OpenDNS',
+        protocols: {
+            'Udp': '208.67.222.222',
+            'Tcp': '208.67.222.222',
+            'Tls': '208.67.222.222:853', // OpenDNS support for DoT/DoH varies, using assumed defaults or standard IP
+            'Https': 'https://doh.opendns.com/dns-query',
+            'Quic': '' // Not standard support yet
+        }
+    }
+};
 
 export default function ZonesPage() {
     const [zones, setZones] = useState<Zone[]>([]);
@@ -26,6 +70,7 @@ export default function ZonesPage() {
         forwarder: '',
         protocol: 'Udp', // Default Technitium protocol value
     });
+    const [selectedProvider, setSelectedProvider] = useState('');
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -324,16 +369,20 @@ export default function ZonesPage() {
                                         </label>
                                         <select
                                             onChange={(e) => {
-                                                const val = e.target.value;
-                                                if (val) setNewZone(prev => ({ ...prev, forwarder: val }));
+                                                const providerKey = e.target.value;
+                                                setSelectedProvider(providerKey);
+                                                if (providerKey && PROVIDERS[providerKey]) {
+                                                    const newForwarder = PROVIDERS[providerKey].protocols[newZone.protocol] || '';
+                                                    setNewZone(prev => ({ ...prev, forwarder: newForwarder }));
+                                                }
                                             }}
                                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 mb-2"
+                                            value={selectedProvider}
                                         >
                                             <option value="">Select a provider...</option>
-                                            <option value="1.1.1.1">Cloudflare (1.1.1.1)</option>
-                                            <option value="8.8.8.8">Google (8.8.8.8)</option>
-                                            <option value="9.9.9.9">Quad9 (9.9.9.9)</option>
-                                            <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
+                                            {Object.keys(PROVIDERS).map(key => (
+                                                <option key={key} value={key}>{PROVIDERS[key].name}</option>
+                                            ))}
                                         </select>
                                     </div>
 
@@ -360,8 +409,8 @@ export default function ZonesPage() {
                                                     key={p}
                                                     onClick={() => setNewZone(prev => ({ ...prev, protocol: p }))}
                                                     className={`px-3 py-2 rounded-lg text-sm border transition-colors ${newZone.protocol === p
-                                                            ? 'bg-blue-500/20 border-blue-500 text-blue-400'
-                                                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400'
+                                                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
                                                         }`}
                                                 >
                                                     DNS-over-{p.toUpperCase()}
