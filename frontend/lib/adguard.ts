@@ -84,9 +84,26 @@ export async function getSafeSearchStatus() {
     return adguardFetch('/control/safesearch/status');
 }
 
+// Common services list as fallback if API fails
+const FALLBACK_SERVICES = [
+    'youtube', 'facebook', 'twitter', 'instagram', 'tiktok', 'snapchat', 'whatsapp', 'telegram', 'viber', 'skype',
+    'discord', 'twitch', 'steam', 'epic_games', 'origin', 'roblox', 'minecraft',
+    'netflix', 'amazon', 'ebay', 'reddit', 'pinterest', 'linkedin', 'tumblr',
+    '9gag', 'imgur', 'dailymotion', 'vimeo', 'wechat', 'qq', 'douyu', 'bilibili'
+];
+
 export async function getAllBlockedServices() {
     // Fetches all available services that can be blocked
-    return adguardFetch('/control/blocked_services/all');
+    try {
+        const services = await adguardFetch('/control/blocked_services/all');
+        if (Array.isArray(services) && services.length > 0) return services;
+        // Try alternative endpoint
+        const services2 = await adguardFetch('/control/blocked_services/services');
+        if (Array.isArray(services2) && services2.length > 0) return services2;
+    } catch (e) {
+        console.warn('Failed to fetch blocked services list from API, using fallback', e);
+    }
+    return FALLBACK_SERVICES;
 }
 
 export async function getBlockedServices() {
