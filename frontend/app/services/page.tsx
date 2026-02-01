@@ -37,9 +37,10 @@ export default function ServicesPage() {
             const blocked = Array.isArray(servicesData.blocked) ? servicesData.blocked : [];
             setBlockedServices(blocked);
 
-            // Set available services -- hybrid logic
-            const available = Array.isArray(servicesData.available) ? servicesData.available : [];
-            setAvailableServices(available); // Set even if empty, logic below fallback handles it
+            // Normalize and validates available services
+            const rawAvailable = Array.isArray(servicesData.available) ? servicesData.available : [];
+            const validAvailable = rawAvailable.filter((s: any) => s && typeof s === 'object' && s.id && s.name);
+            setAvailableServices(validAvailable);
 
             // Set schedule
             setSchedule(scheduleData || {});
@@ -110,8 +111,8 @@ export default function ServicesPage() {
     const displayServices = availableServices.length > 0 ? availableServices : POPULAR_SERVICES;
 
     const filteredServices = displayServices.filter(s =>
-        s.name.toLowerCase().includes(filter.toLowerCase()) ||
-        s.id.toLowerCase().includes(filter.toLowerCase())
+        (s.name || '').toLowerCase().includes(filter.toLowerCase()) ||
+        (s.id || '').toLowerCase().includes(filter.toLowerCase())
     );
 
     return (
