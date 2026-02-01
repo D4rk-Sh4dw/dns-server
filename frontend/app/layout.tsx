@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { LayoutDashboard, Shield, Globe, Settings, Menu } from 'lucide-react'
+import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText } from 'lucide-react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -34,6 +34,7 @@ export default function RootLayout({
             </div>
             <NavItem href="/filtering" icon={Shield} label="Filtering & Blocklists" />
             <NavItem href="/services" icon={Menu} label="Service Blocking" />
+            <NavItem href="/logs" icon={FileText} label="Query Log" />
 
             <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Technitium Controls
