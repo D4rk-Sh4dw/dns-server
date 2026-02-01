@@ -1,48 +1,82 @@
-import type { Metadata } from 'next'
+'use client';
+
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText } from 'lucide-react'
+import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 const inter = Inter({ subsets: ['latin'] })
-
-export const metadata: Metadata = {
-  title: 'Unified DNS Dashboard',
-  description: 'Manage AdGuard Home and Technitium DNS',
-}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
+
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-black min-h-screen flex`}>
+      <body className={`${inter.className} bg-black min-h-screen flex flex-col lg:flex-row shadow-2xl`}>
+        {/* Mobile Header */}
+        <header className="lg:hidden h-16 flex items-center justify-between px-4 bg-gray-950 border-b border-gray-900 sticky top-0 z-50">
+          <div className="flex items-center">
+            <Shield className="w-6 h-6 text-blue-500 mr-2" />
+            <span className="font-bold text-white text-lg">UnifiedDNS</span>
+          </div>
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-gray-400 hover:text-white"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </header>
+
+        {/* Backdrop for mobile */}
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className="w-64 bg-gray-950 border-r border-gray-900 flex-shrink-0 flex flex-col">
-          <div className="h-16 flex items-center px-6 border-b border-gray-900">
+        <aside className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 border-r border-gray-900 flex-shrink-0 flex flex-col
+          transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="h-16 hidden lg:flex items-center px-6 border-b border-gray-900">
             <Shield className="w-6 h-6 text-blue-500 mr-3" />
             <span className="font-bold text-white text-lg">UnifiedDNS</span>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1">
-            <NavItem href="/" icon={LayoutDashboard} label="Overview" />
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+            <NavItem href="/" icon={LayoutDashboard} label="Overview" active={pathname === '/'} />
 
             <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               AdGuard Controls
             </div>
-            <NavItem href="/filtering" icon={Shield} label="Filtering & Blocklists" />
-            <NavItem href="/services" icon={Menu} label="Service Blocking" />
-            <NavItem href="/logs" icon={FileText} label="Query Log" />
+            <NavItem href="/filtering" icon={Shield} label="Filtering & Blocklists" active={pathname === '/filtering'} />
+            <NavItem href="/services" icon={Menu} label="Service Blocking" active={pathname === '/services'} />
+            <NavItem href="/logs" icon={FileText} label="Query Log" active={pathname === '/logs'} />
 
             <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Technitium Controls
             </div>
-            <NavItem href="/zones" icon={Globe} label="Zones & Records" />
+            <NavItem href="/zones" icon={Globe} label="Zones & Records" active={pathname.startsWith('/zones')} />
 
-            <div className="mt-auto pt-4">
-              <NavItem href="/settings" icon={Settings} label="Settings" />
+            <div className="mt-auto pt-4 border-t border-gray-900/50">
+              <NavItem href="/clients" icon={Users} label="Clients" active={pathname === '/clients'} />
+              <NavItem href="/settings/dhcp" icon={Wifi} label="DHCP" active={pathname === '/settings/dhcp'} />
+              <NavItem href="/settings" icon={Settings} label="Settings" active={pathname === '/settings'} />
             </div>
           </nav>
 
@@ -60,7 +94,7 @@ export default function RootLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto bg-black">
+        <main className="flex-1 overflow-auto bg-black min-h-0">
           {children}
         </main>
       </body>
@@ -68,11 +102,14 @@ export default function RootLayout({
   )
 }
 
-function NavItem({ href, icon: Icon, label }: any) {
+function NavItem({ href, icon: Icon, label, active }: any) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-3 py-2 text-gray-400 rounded-lg hover:bg-gray-900 hover:text-white transition-colors"
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${active
+        ? 'bg-blue-600/10 text-blue-400'
+        : 'text-gray-400 hover:bg-gray-900 hover:text-white'
+        }`}
     >
       <Icon size={18} />
       <span className="text-sm font-medium">{label}</span>

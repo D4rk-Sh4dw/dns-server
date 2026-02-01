@@ -104,24 +104,24 @@ export default function ZonesPage() {
     };
 
     return (
-        <div className="p-8 space-y-8">
-            <div className="flex justify-between items-start">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">DNS Zones</h1>
-                    <p className="text-gray-400">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">DNS Zones</h1>
+                    <p className="text-gray-400 text-sm md:text-base">
                         Manage DNS zones and Active Directory domain forwarding.
                     </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto">
                     <button
                         onClick={fetchZones}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                        className="flex-1 sm:flex-none p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
                     >
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                        className="flex-[3] sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
                     >
                         <Plus size={18} />
                         Add Zone
@@ -139,7 +139,7 @@ export default function ZonesPage() {
                 </div>
             )}
 
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
                         <tr>

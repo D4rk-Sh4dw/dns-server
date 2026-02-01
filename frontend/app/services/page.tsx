@@ -136,15 +136,15 @@ export default function ServicesPage() {
     );
 
     return (
-        <div className="p-8 space-y-8">
-            <div className="flex justify-between items-start">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Service Blocking</h1>
-                    <p className="text-gray-400">Block popular applications and configure pause schedules.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Service Blocking</h1>
+                    <p className="text-gray-400 text-sm md:text-base">Block popular applications and configure pause schedules.</p>
                 </div>
                 <button
                     onClick={fetchData}
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors self-end sm:self-auto"
                 >
                     <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                 </button>
@@ -222,12 +222,12 @@ export default function ServicesPage() {
                                         schedule: { ...schedule.schedule, days: newDays }
                                     });
                                 }}
-                                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${(schedule.schedule?.days || []).includes(day)
+                                className={`px-3 py-2 rounded text-xs md:text-sm font-medium transition-colors flex-1 sm:flex-none text-center min-w-[60px] ${(schedule.schedule?.days || []).includes(day)
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                     }`}
                             >
-                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][idx]}
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][idx]}
                             </button>
                         ))}
                     </div>

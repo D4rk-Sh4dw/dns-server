@@ -107,13 +107,13 @@ export default function LogsPage() {
     };
 
     return (
-        <div className="p-8 space-y-8">
-            <div className="flex justify-between items-center">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Query Log</h1>
-                    <p className="text-gray-400">Real-time DNS query inspection.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Query Log</h1>
+                    <p className="text-gray-400 text-sm md:text-base">Real-time DNS query inspection.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 self-end sm:self-auto">
                     <button
                         onClick={handleClearLogs}
                         className="p-2 rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 transition-colors"
@@ -162,7 +162,7 @@ export default function LogsPage() {
             </div>
 
             {/* Logs Table */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
                 <table className="w-full text-left text-sm">
                     <thead className="bg-gray-950/50 text-gray-500 uppercase font-medium">
                         <tr>
@@ -217,8 +217,8 @@ export default function LogsPage() {
                                             ? 'bg-red-950/10'
                                             : 'bg-gray-950/30'
                                     }>
-                                        <td colSpan={6} className="px-6 py-4 cursor-auto">
-                                            <div className="bg-gray-950 rounded-xl border border-gray-800 p-6 space-y-6">
+                                        <td colSpan={6} className="px-0 py-4 cursor-auto">
+                                            <div className="bg-gray-950 rounded-xl border-y border-gray-800 p-4 md:p-6 space-y-6 min-w-[600px] md:min-w-0">
                                                 {/* Header Info */}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     <div>

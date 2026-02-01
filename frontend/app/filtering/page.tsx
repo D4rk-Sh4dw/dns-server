@@ -147,15 +147,15 @@ export default function FilteringPage() {
     };
 
     return (
-        <div className="p-8 space-y-8">
-            <div className="flex justify-between items-start">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Filtering & Protection</h1>
-                    <p className="text-gray-400">Manage global protection settings and AdGuard blocklists.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Filtering & Protection</h1>
+                    <p className="text-gray-400 text-sm md:text-base">Manage global protection settings and AdGuard blocklists.</p>
                 </div>
                 <button
                     onClick={handleRefresh}
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors self-end sm:self-auto"
                 >
                     <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                 </button>
@@ -281,47 +281,49 @@ export default function FilteringPage() {
                     </button>
                 </div>
 
-                <table className="w-full text-left">
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
-                        <tr>
-                            <th className="px-4 py-3 rounded-l-lg">Name</th>
-                            <th className="px-4 py-3">URL</th>
-                            <th className="px-4 py-3">Rules</th>
-                            <th className="px-4 py-3">Status</th>
-                            <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                        {filtering?.filters?.map((filter) => (
-                            <tr key={filter.id} className="text-sm group hover:bg-gray-800/50">
-                                <td className="px-4 py-4 text-white font-medium">{filter.name}</td>
-                                <td className="px-4 py-4 text-gray-500 truncate max-w-xs">{filter.url}</td>
-                                <td className="px-4 py-4 text-gray-400">{filter.rules_count?.toLocaleString()}</td>
-                                <td className="px-4 py-4">
-                                    <span className={`text-xs font-medium px-2 py-1 rounded ${filter.enabled ? 'text-green-400 bg-green-400/10' : 'text-gray-400 bg-gray-400/10'
-                                        }`}>
-                                        {filter.enabled ? 'Enabled' : 'Disabled'}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-4 text-right">
-                                    <button
-                                        onClick={() => handleRemoveList(filter.url)}
-                                        className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        {!filtering?.filters?.length && (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
                             <tr>
-                                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                                    No blocklists configured. Click "Add Blocklist" to get started.
-                                </td>
+                                <th className="px-4 py-3 rounded-l-lg">Name</th>
+                                <th className="px-4 py-3">URL</th>
+                                <th className="px-4 py-3">Rules</th>
+                                <th className="px-4 py-3">Status</th>
+                                <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                            {filtering?.filters?.map((filter) => (
+                                <tr key={filter.id} className="text-sm group hover:bg-gray-800/50">
+                                    <td className="px-4 py-4 text-white font-medium">{filter.name}</td>
+                                    <td className="px-4 py-4 text-gray-500 truncate max-w-xs">{filter.url}</td>
+                                    <td className="px-4 py-4 text-gray-400">{filter.rules_count?.toLocaleString()}</td>
+                                    <td className="px-4 py-4">
+                                        <span className={`text-xs font-medium px-2 py-1 rounded ${filter.enabled ? 'text-green-400 bg-green-400/10' : 'text-gray-400 bg-gray-400/10'
+                                            }`}>
+                                            {filter.enabled ? 'Enabled' : 'Disabled'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4 text-right">
+                                        <button
+                                            onClick={() => handleRemoveList(filter.url)}
+                                            className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {!filtering?.filters?.length && (
+                                <tr>
+                                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                                        No blocklists configured. Click "Add Blocklist" to get started.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Add Blocklist Modal */}

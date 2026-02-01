@@ -15,7 +15,10 @@ interface AdGuardStats {
   num_dns_queries: number;
   num_blocked_filtering: number;
   avg_processing_time: number;
-  dns_queries: number[]; // History array
+  dns_queries: number[];
+  top_queries: { [key: string]: number }[];
+  top_blocked_domains: { [key: string]: number }[];
+  top_clients: { [key: string]: number }[];
 }
 
 interface DashboardData {
@@ -57,7 +60,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30s
+    const interval = setInterval(fetchData, 60000); // Refresh every minute
     return () => clearInterval(interval);
   }, []);
 
@@ -72,7 +75,7 @@ export default function Home() {
         </div>
         <button
           onClick={fetchData}
-          className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+          className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors border border-gray-700"
         >
           <RefreshCw size={20} className={data.loading ? 'animate-spin' : ''} />
         </button>
@@ -89,66 +92,145 @@ export default function Home() {
         <StatCard
           title="Total Queries"
           value={stats?.num_dns_queries?.toLocaleString() || '—'}
-          trend="24h"
+          trend="Last 24h"
           icon={Activity}
           loading={data.loading}
         />
         <StatCard
-          title="Ads Blocked"
+          title="Threats Blocked"
           value={stats?.num_blocked_filtering?.toLocaleString() || '—'}
-          trend={stats ? `${((stats.num_blocked_filtering / stats.num_dns_queries) * 100).toFixed(1)}%` : '—'}
+          trend={stats && stats.num_dns_queries > 0 ? `${((stats.num_blocked_filtering / stats.num_dns_queries) * 100).toFixed(1)}% blocked` : '—'}
           icon={Shield}
           trendUp={true}
-          color="text-green-400"
+          color="text-red-400"
           loading={data.loading}
         />
         <StatCard
           title="Protection"
           value={data.adguard?.status?.protection_enabled ? 'Active' : 'Disabled'}
-          trend={data.adguard?.status?.protection_enabled ? 'Enabled' : 'Warning'}
+          trend={data.adguard?.status?.protection_enabled ? 'All systems go' : 'Action required'}
           icon={Globe}
           color={data.adguard?.status?.protection_enabled ? 'text-green-400' : 'text-red-400'}
           loading={data.loading}
         />
         <StatCard
-          title="Avg Latency"
-          value={stats ? `${stats.avg_processing_time.toFixed(1)}ms` : '—'}
-          trend="per query"
+          title="Performance"
+          value={stats ? `${stats.avg_processing_time.toFixed(2)}ms` : '—'}
+          trend="Avg processing time"
           icon={Wifi}
-          color="text-purple-400"
+          color="text-blue-400"
           loading={data.loading}
         />
       </div>
 
-      {/* Charts / Details Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h3 className="text-lg font-medium text-white mb-4">Query Volume (24h)</h3>
-          <div className="h-64">
-            <QueryChart data={stats?.dns_queries} />
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Chart Section */}
+        <div className="xl:col-span-2 space-y-6">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-medium text-white">DNS Traffic (24h)</h3>
+              <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">Queries per hour</span>
+            </div>
+            <div className="h-72">
+              <QueryChart data={stats?.dns_queries} />
+            </div>
+          </div>
+
+          {/* Top Domains Split */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TopTable
+              title="Top Queried Domains"
+              data={stats?.top_queries}
+              icon={Globe}
+              color="text-blue-400"
+            />
+            <TopTable
+              title="Top Blocked Domains"
+              data={stats?.top_blocked_domains}
+              icon={Shield}
+              color="text-red-400"
+            />
           </div>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h3 className="text-lg font-medium text-white mb-4">Service Status</h3>
-          <div className="space-y-4">
-            <ServiceStatus
-              name="AdGuard Home"
-              status={data.adguard ? 'Operational' : 'Checking...'}
-              version="v0.107"
-            />
-            <ServiceStatus
-              name="Technitium DNS"
-              status="Operational"
-              version="v12.1"
-            />
-            <ServiceStatus
-              name="Dashboard API"
-              status="Operational"
-              version="v1.0.0"
-            />
+        {/* Sidebar Info */}
+        <div className="space-y-6">
+          <TopTable
+            title="Top Clients"
+            data={stats?.top_clients}
+            icon={Activity}
+            color="text-purple-400"
+          />
+
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h3 className="text-lg font-medium text-white mb-4">Infrastructure Status</h3>
+            <div className="space-y-4">
+              <ServiceStatus
+                name="AdGuard Home"
+                status={data.adguard ? 'Operational' : 'Checking...'}
+                version="Primary DNS / Filter"
+              />
+              <ServiceStatus
+                name="Technitium DNS"
+                status="Operational"
+                version="Recursive Resolver"
+              />
+              <ServiceStatus
+                name="Dashboard API"
+                status="Operational"
+                version="Next.js Backend"
+              />
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TopTable({ title, data, icon: Icon, color }: { title: string, data?: any[], icon: any, color: string }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
+        <h3 className="text-lg font-medium text-white mb-4">{title}</h3>
+        <div className="flex-1 flex items-center justify-center text-gray-500 text-sm italic">No records found</div>
+      </div>
+    );
+  }
+
+  // AdGuard format is often [{ "domain": 100 }]
+  const normalizedData = data.slice(0, 10).map(item => {
+    const key = Object.keys(item)[0];
+    const value = item[key];
+    return { key, value };
+  });
+
+  const maxValue = Math.max(...normalizedData.map(d => d.value));
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm overflow-hidden flex flex-col">
+      <div className="flex items-center gap-2 mb-6">
+        <Icon size={18} className={color} />
+        <h3 className="text-lg font-medium text-white">{title}</h3>
+      </div>
+      <div className="space-y-4 flex-1">
+        {normalizedData.map((item, i) => (
+          <div key={i} className="space-y-1.5">
+            <div className="flex justify-between text-sm items-center">
+              <span className="text-gray-300 font-mono truncate max-w-[200px]" title={item.key}>
+                {item.key}
+              </span>
+              <span className="text-white font-medium">{item.value.toLocaleString()}</span>
+            </div>
+            <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+              <div
+                className={`h-full opacity-60 rounded-full ${color.replace('text-', 'bg-')}`}
+                style={{ width: `${(item.value / maxValue) * 100}%` }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

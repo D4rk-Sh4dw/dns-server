@@ -295,6 +295,50 @@ export async function setProtectionEnabled(enabled: boolean) {
     });
 }
 
+// ==================== Client Management ====================
+
+export interface AdGuardClient {
+    name: string;
+    ids: string[];
+    use_global_settings: boolean;
+    filtering_enabled: boolean;
+    parental_enabled: boolean;
+    safebrowsing_enabled: boolean;
+    safesearch_enabled: boolean;
+    use_global_blocked_services: boolean;
+    blocked_services: string[];
+    upstreams: string[];
+    tags?: string[];
+}
+
+export async function getClients() {
+    return adguardFetch('/control/clients');
+}
+
+export async function addClient(client: AdGuardClient) {
+    return adguardFetch('/control/clients/add', {
+        method: 'POST',
+        body: JSON.stringify(client),
+    });
+}
+
+export async function updateClient(oldName: string, client: AdGuardClient) {
+    return adguardFetch('/control/clients/update', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: oldName,
+            client: client
+        }),
+    });
+}
+
+export async function deleteClient(name: string) {
+    return adguardFetch('/control/clients/delete', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+    });
+}
+
 // Get all protection settings in one call
 export async function getAllProtectionStatus() {
     const [status, parental, safeBrowsing, safeSearch] = await Promise.all([

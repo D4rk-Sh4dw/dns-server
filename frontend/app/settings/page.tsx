@@ -35,10 +35,10 @@ export default function SettingsPage() {
     }, []);
 
     return (
-        <div className="p-8 space-y-8">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Settings</h1>
-                <p className="text-gray-400">
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Settings</h1>
+                <p className="text-gray-400 text-sm md:text-base">
                     System configuration and status.
                 </p>
             </div>

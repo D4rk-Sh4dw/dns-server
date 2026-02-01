@@ -193,31 +193,28 @@ export default function ZoneDetailPage() {
     };
 
     return (
-        <div className="p-8 space-y-8">
-            <div className="flex items-center gap-4 mb-6">
-                <Link href="/zones" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white">
-                    <ArrowLeft size={20} />
-                </Link>
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white">{zone}</h1>
-                    <p className="text-gray-400">Manage DNS records for this zone</p>
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Link href="/zones" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white">
+                        <ArrowLeft size={20} />
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white truncate max-w-[200px] sm:max-w-none">{zone}</h1>
+                        <p className="text-gray-400 text-sm">Manage DNS records</p>
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-400">
-                    {records.length} record{records.length !== 1 ? 's' : ''}
-                </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto">
                     <button
                         onClick={fetchRecords}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                        className="flex-1 sm:flex-none p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
                     >
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                        className="flex-[3] sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
                     >
                         <Plus size={18} />
                         Add Record
@@ -225,7 +222,7 @@ export default function ZoneDetailPage() {
                 </div>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
                         <tr>
