@@ -25,6 +25,10 @@ interface QueryLogItem {
         name?: string;
     };
     client_proto?: string;
+    rules?: {
+        text: string;
+        filter_list_id?: number;
+    }[];
 }
 
 const isBlocked = (log: QueryLogItem) => {
@@ -270,6 +274,21 @@ export default function LogsPage() {
                                                     </div>
                                                 </div>
 
+                                                {/* Blocking Rules */}
+                                                {log.rules && log.rules.length > 0 && (
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Matched Rules</h4>
+                                                        <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-3 space-y-2">
+                                                            {log.rules.map((rule, i) => (
+                                                                <div key={i} className="font-mono text-sm text-red-300 break-all">
+                                                                    {rule.text}
+                                                                    {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">(List ID: {rule.filter_list_id})</span>}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {/* DNS Answers */}
                                                 {log.answer && log.answer.length > 0 && (
                                                     <div>
@@ -347,7 +366,12 @@ function StatusBadge({ log }: { log: QueryLogItem }) {
                     <Shield size={12} />
                     Blocked
                 </span>
-                {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[100px] truncate">{reason || status}</span>}
+                {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[150px] truncate">{reason || status}</span>}
+                {log.rules && log.rules.length > 0 && (
+                    <span className="text-[10px] text-red-400 font-mono max-w-[150px] truncate" title={log.rules[0].text}>
+                        {log.rules[0].text}
+                    </span>
+                )}
             </div>
         );
     }
