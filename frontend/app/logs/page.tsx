@@ -31,13 +31,18 @@ export default function LogsPage() {
     const [logs, setLogs] = useState<QueryLogItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
     const [olderThan, setOlderThan] = useState<string | undefined>(undefined);
     const [expandedLog, setExpandedLog] = useState<number | null>(null);
 
     const fetchLogs = async (reset = false) => {
         setLoading(true);
         try {
-            const url = `/api/adguard/querylog?limit=100${olderThan && !reset ? `&older_than=${olderThan}` : ''}${filter ? `&search=${encodeURIComponent(filter)}` : ''}`;
+            let url = `/api/adguard/querylog?limit=100`;
+            if (olderThan && !reset) url += `&older_than=${olderThan}`;
+            if (filter) url += `&search=${encodeURIComponent(filter)}`;
+            if (statusFilter) url += `&response_status=${statusFilter}`;
+
             const res = await fetch(url);
             const data = await res.json();
 
@@ -54,8 +59,9 @@ export default function LogsPage() {
     };
 
     useEffect(() => {
+        setOlderThan(undefined); // Reset pagination on filter change
         fetchLogs(true);
-    }, [filter]); // Re-fetch when filter changes
+    }, [filter, statusFilter]);
 
     const loadMore = () => {
         if (logs.length > 0) {
@@ -123,24 +129,19 @@ export default function LogsPage() {
                     />
                 </div>
                 <select
-                    className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 min-w-[160px]"
-                    onChange={(e) => {
-                        const val = e.target.value;
-                        // AdGuard filtering is usually done via text search in API properly?
-                        // Or we can client-side filter? Better to use search text injection if API supports it.
-                        // AdGuard API: "blocked" matches blocked requests.
-                        // Let's format it into the filter string for transparency or just append?
-                        // User wants "filter possibility".
-                        // If I pick "Blocked", I set filter to "blocked".
-                        if (val) setFilter(prev => `${prev} ${val}`.trim());
-                    }}
+                    className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 min-w-[200px]"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                    <option value="">Quick Filters...</option>
-                    <option value="Blocked">Status: Blocked</option>
-                    <option value="Processed">Status: Processed</option>
-                    <option value="Filtered">Status: Filtered</option>
-                    <option value="SafeBrowsing">Reason: SafeBrowsing</option>
-                    <option value="Parental">Reason: Parental</option>
+                    <option value="">All Queries</option>
+                    <option value="blocked">Blocked</option>
+                    <option value="blocked_services">Blocked Services</option>
+                    <option value="safe_browsing">Blocked Threats</option>
+                    <option value="parental">Blocked by Parental</option>
+                    <option value="processed">Processed</option>
+                    <option value="filtered">Filtered</option>
+                    <option value="rewritten">Rewritten</option>
+                    <option value="safe_search">Safe Search</option>
                 </select>
             </div>
 

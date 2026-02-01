@@ -6,9 +6,10 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const olderThan = searchParams.get('older_than') || undefined;
     const search = searchParams.get('search') || undefined;
+    const responseStatus = searchParams.get('response_status') || undefined;
 
     try {
-        const data = await adguard.getQueryLog(limit, olderThan, search);
+        const data = await adguard.getQueryLog(limit, olderThan, search, responseStatus);
         return NextResponse.json(data);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });

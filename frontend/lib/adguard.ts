@@ -46,10 +46,11 @@ export async function getStats() {
     return adguardFetch('/control/stats');
 }
 
-export async function getQueryLog(limit = 100, olderThan?: string, search?: string) {
+export async function getQueryLog(limit = 100, olderThan?: string, search?: string, responseStatus?: string) {
     let url = `/control/querylog?limit=${limit}`;
     if (olderThan) url += `&older_than=${olderThan}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (responseStatus) url += `&response_status=${responseStatus}`;
     return adguardFetch(url);
 }
 
