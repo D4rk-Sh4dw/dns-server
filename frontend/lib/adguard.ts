@@ -4,6 +4,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+const PAUSE_FILE = '/tmp/pause_state.json';
 const ADGUARD_URL = process.env.ADGUARD_URL || 'http://10.10.10.2:3000';
 const ADGUARD_USER = process.env.ADGUARD_USER || 'admin';
 const ADGUARD_PASS = process.env.ADGUARD_PASS || 'admin123';
