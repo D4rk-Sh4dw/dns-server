@@ -239,11 +239,63 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     const [showDocs, setShowDocs] = useState(false);
     const [showSafeSearchDetails, setShowSafeSearchDetails] = useState(false);
 
+    // State for timer
+    const [pauseTimer, setPauseTimer] = useState<number | null>(null);
+    const [showTimerMenu, setShowTimerMenu] = useState(false);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Clear timer on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
+
+    const startPauseTimer = (minutes: number) => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        const seconds = minutes * 60;
+        setPauseTimer(seconds);
+        setShowTimerMenu(false);
+
+        timerRef.current = setInterval(() => {
+            setPauseTimer((prev) => {
+                if (prev === null || prev <= 1) {
+                    if (timerRef.current) clearInterval(timerRef.current);
+                    toggleProtection('protection', true);
+                    return null;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const cancelPause = () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setPauseTimer(null);
+        toggleProtection('protection', true);
+    };
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
     // Handlers (moved from original)
     const toggleProtection = async (setting: string, enabled: boolean) => {
         // Optimistic update
         const previousStatus = { ...protection };
         setProtection((prev: any) => ({ ...prev, [`${setting}Enabled`]: enabled }));
+
+        // If turning OFF DNS Protection, show timer menu
+        if (setting === 'protection' && !enabled) {
+            setShowTimerMenu(true);
+        } else if (setting === 'protection' && enabled) {
+            // If turning ON, cancel any active timer
+            if (timerRef.current) clearInterval(timerRef.current);
+            setPauseTimer(null);
+            setShowTimerMenu(false);
+        }
 
         try {
             const res = await fetch('/api/adguard/protection', {
@@ -253,9 +305,6 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             });
 
             if (!res.ok) throw new Error('Failed to update protection');
-
-            // Optional: refresh to get server-side truth, but optimistic is enough for now
-            // refresh(); 
         } catch (e) {
             console.error(e);
             setProtection(previousStatus); // Revert on error
@@ -318,10 +367,50 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                     <div className="space-y-1">
                         <ProtectionToggle
                             icon={Shield} color="text-blue-400" title="DNS Protection"
-                            description="Enable DNS filtering and blocking"
+                            description={pauseTimer ? `Automatically re-enables in ${formatTime(pauseTimer)}` : "Enable DNS filtering and blocking"}
                             checked={protection?.protectionEnabled ?? false}
                             onChange={(v: boolean) => toggleProtection('protection', v)}
+                            variant="protection"
                         />
+
+                        {showTimerMenu && !protection?.protectionEnabled && (
+                            <div className="ml-11 mt-2 p-4 bg-gray-950/50 rounded-lg border border-blue-500/20 animate-in slide-in-from-top-2 duration-200">
+                                <div className="text-sm text-gray-400 mb-3">Temporarily disable for:</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {[1, 5, 10, 30].map(m => (
+                                        <button
+                                            key={m}
+                                            onClick={() => startPauseTimer(m)}
+                                            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-xs font-medium rounded-md border border-gray-700 transition-colors"
+                                        >
+                                            {m} min
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setShowTimerMenu(false)}
+                                        className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-xs font-medium rounded-md border border-blue-500/20 transition-colors"
+                                    >
+                                        Stay Off
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {pauseTimer && !showTimerMenu && (
+                            <div className="ml-11 mt-2 p-3 bg-blue-600/10 border border-blue-500/20 rounded-lg flex items-center justify-between animate-in fade-in duration-300">
+                                <div className="flex items-center gap-2 text-blue-400 text-sm">
+                                    <RefreshCw size={14} className="animate-spin" />
+                                    <span>Protection paused: <strong>{formatTime(pauseTimer)}</strong> left</span>
+                                </div>
+                                <button
+                                    onClick={cancelPause}
+                                    className="text-white text-xs font-medium bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-md transition-colors"
+                                >
+                                    Enable Now
+                                </button>
+                            </div>
+                        )}
+
                         <ProtectionToggle
                             icon={Baby} color="text-pink-400" title="Parental Control"
                             description="Block adult content"
@@ -752,7 +841,7 @@ function TabButton({ active, onClick, icon: Icon, label }: any) {
 // Reused components from original file (simplified for brevity in this replace, assume they exist or I paste them back)
 // I need to include the Modal Components defined in the original file to avoid errors.
 
-function ProtectionToggle({ icon: Icon, color, title, description, checked, onChange, showDetails, onDetailsToggle, isOpen }: any) {
+function ProtectionToggle({ icon: Icon, color, title, description, checked, onChange, showDetails, onDetailsToggle, isOpen, variant }: any) {
     return (
         <div className="flex items-center justify-between py-4 border-b border-gray-800 last:border-0">
             <div className="flex items-center gap-3">
@@ -765,7 +854,7 @@ function ProtectionToggle({ icon: Icon, color, title, description, checked, onCh
                     <div className="text-sm text-gray-500">{description}</div>
                 </div>
             </div>
-            <Switch checked={checked} onChange={onChange} />
+            <Switch checked={checked} onChange={onChange} variant={variant} />
         </div>
     );
 }
@@ -866,8 +955,18 @@ function Modal({ children, title, onClose, maxWidth = "max-w-md" }: any) {
     );
 }
 
-function Switch({ checked, onChange, size = 'md' }: { checked: boolean; onChange: (v: boolean) => void; size?: 'sm' | 'md' }) {
+function Switch({ checked, onChange, size = 'md', variant }: { checked: boolean; onChange: (v: boolean) => void; size?: 'sm' | 'md'; variant?: 'protection' }) {
     const isSm = size === 'sm';
+
+    // Determine colors
+    let activeColor = 'bg-blue-600';
+    let inactiveColor = 'bg-gray-700';
+
+    if (variant === 'protection') {
+        activeColor = 'bg-green-500';
+        inactiveColor = 'bg-red-500/80';
+    }
+
     return (
         <button
             onClick={(e) => {
@@ -875,9 +974,9 @@ function Switch({ checked, onChange, size = 'md' }: { checked: boolean; onChange
                 e.stopPropagation();
                 onChange(!checked);
             }}
-            className={`${isSm ? 'w-8 h-4.5' : 'w-11 h-6'} rounded-full relative transition-colors ${checked ? 'bg-blue-600' : 'bg-gray-700'}`}
+            className={`${isSm ? 'w-8 h-4.5' : 'w-11 h-6'} rounded-full relative transition-all duration-300 ${checked ? activeColor : inactiveColor}`}
         >
-            <div className={`absolute top-1 left-1 bg-white ${isSm ? 'w-2.5 h-2.5 translate-x-0' : 'w-4 h-4'} rounded-full transition-transform ${checked ? (isSm ? 'translate-x-3.5' : 'translate-x-5') : ''}`} />
+            <div className={`absolute top-1 left-1 bg-white ${isSm ? 'w-2.5 h-2.5 translate-x-0' : 'w-4 h-4'} rounded-full shadow-sm transition-transform duration-300 ${checked ? (isSm ? 'translate-x-3.5' : 'translate-x-5') : ''}`} />
         </button>
     );
 }
