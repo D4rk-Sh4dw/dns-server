@@ -85,35 +85,40 @@ export async function getSafeSearchStatus() {
 
 export async function getAllBlockedServices() {
     // Fetches all available services that can be blocked
-    return adguardFetch('/control/blocked_services/services');
+    return adguardFetch('/control/blocked_services/all');
 }
 
 export async function getBlockedServices() {
     // Fetches currently blocked services (enabled ones)
-    // Returns { ids: string[], schedule: object } usually, but consumers might expect just array or object.
-    // We'll let consumers handle extracting 'ids' if needed, or we return the IDs?
-    // Existing consumers (route.ts) handle metadata check.
-    return adguardFetch('/control/blocked_services/list');
+    // Returns { ids: string[], schedule: object }
+    // As per docs: GET /control/blocked_services/get
+    return adguardFetch('/control/blocked_services/get');
 }
 
 export async function setBlockedServices(ids: string[]) {
-    // Official API: POST /control/blocked_services/set
-    // Payload: array of strings
-    return adguardFetch('/control/blocked_services/set', {
-        method: 'POST',
-        body: JSON.stringify(ids),
+    // As per docs: PUT /control/blocked_services/update replaces /set
+    // We must preserve existing schedule
+    const current = await getBlockedServices();
+    const payload = {
+        ids,
+        schedule: current.schedule || { time_zone: 'Local', days: [] }
+    };
+
+    return adguardFetch('/control/blocked_services/update', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
     });
 }
 
 export async function getBlockedServicesSchedule() {
-    // Schedule is inside the blocked_services/list response
-    const data = await adguardFetch('/control/blocked_services/list');
-    return data; // Return full object so frontend can slice 'schedule'
+    return getBlockedServices(); // It returns the whole object
 }
 
 export async function setBlockedServicesSchedule(schedule: any) {
+    // As per docs: PUT /control/blocked_services/update
     // We must preserve existing IDs
     const current = await getBlockedServices();
+
     const payload = {
         ids: current.ids || [],
         schedule: schedule
