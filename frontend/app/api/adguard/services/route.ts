@@ -3,11 +3,17 @@ import * as adguard from '@/lib/adguard';
 
 export async function GET() {
     try {
-        const services = await adguard.getBlockedServices();
-        return NextResponse.json(services);
+        const [available, blocked] = await Promise.all([
+            adguard.getAllBlockedServices(),
+            adguard.getBlockedServices()
+        ]);
+        return NextResponse.json({
+            available: available || [],
+            blocked: blocked || []
+        });
     } catch (error) {
         console.error('AdGuard services error:', error);
-        return NextResponse.json({ error: 'Failed to fetch blocked services' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to fetch services' }, { status: 500 });
     }
 }
 

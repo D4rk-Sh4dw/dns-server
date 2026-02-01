@@ -83,7 +83,13 @@ export async function getSafeSearchStatus() {
     return adguardFetch('/control/safesearch/status');
 }
 
+export async function getAllBlockedServices() {
+    // Fetches all available services that can be blocked
+    return adguardFetch('/control/blocked_services/all');
+}
+
 export async function getBlockedServices() {
+    // Fetches currently blocked services (enabled ones)
     return adguardFetch('/control/blocked_services/list');
 }
 
@@ -91,6 +97,31 @@ export async function setBlockedServices(ids: string[]) {
     return adguardFetch('/control/blocked_services/update', {
         method: 'PUT',
         body: JSON.stringify({ ids }),
+    });
+}
+
+export async function getBlockedServicesSchedule() {
+    // This information is usually part of the blocked_services/list or specific endpoint
+    // If specific endpoint doesn't exist, we might need to check how AdGuard stores it.
+    // However, docs mention schedule.
+    // Let's assume /control/blocked_services/schedule exists or we use the 'schedule' property in update.
+    // Checking AdGuard API: often it's passed in the set_blocked_services payload?
+    // OR /control/blocked_services/get returns { ids: [], schedule: {...} }?
+    // Use /control/blocked_services/list which returns the list.
+    // Let's try to fetch /control/blocked_services/schedule separately or fallback.
+    // Actually, simply fetching /control/blocked_services/list might just return the list of strings.
+
+    // Alternative: It might be under /control/filtering/status?
+    // Let's stick to /control/blocked_services/schedule for now as a separate function call attempt, 
+    // or try to get it from a likely "get all settings" endpoint.
+    // But to be safe, I'll add the function wrappers.
+    return adguardFetch('/control/blocked_services/schedule');
+}
+
+export async function setBlockedServicesSchedule(schedule: any) {
+    return adguardFetch('/control/blocked_services/schedule', {
+        method: 'PUT',
+        body: JSON.stringify(schedule),
     });
 }
 
