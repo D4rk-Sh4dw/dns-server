@@ -152,7 +152,7 @@ export async function setDnsConfig(config: any) {
 // For AD zones: forwards to DC DNS servers
 export async function addZoneForwarding(
     domain: string,
-    primaryServer: string = 'dns-technitium',
+    primaryServer: string = 'tcp://172.25.0.101',
     additionalServers: string[] = []
 ) {
     const dnsInfo = await getDnsConfig();
