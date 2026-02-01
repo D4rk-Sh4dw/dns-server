@@ -63,7 +63,11 @@ export default function LogsPage() {
         fetch('/api/adguard/clients')
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) setClients(data);
+                if (Array.isArray(data)) {
+                    setClients(data);
+                } else if (data.clients && Array.isArray(data.clients)) {
+                    setClients(data.clients);
+                }
             })
             .catch(err => console.error('Failed to fetch clients', err));
     }, []);
