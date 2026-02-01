@@ -226,10 +226,28 @@ export async function setDnsConfig(config: any) {
 // Helper to safely update DNS config by fetching current first
 export async function updateDnsConfig(partialConfig: any) {
     const currentConfig = await getDnsConfig();
-    const newConfig = { ...currentConfig, ...partialConfig };
-    // Remove fields that shouldn't be sent back if they are read-only or problematic?
-    // Usually AdGuard returns everything needed.
-    return setDnsConfig(newConfig);
+
+    // Only send fields that are actually part of the POST /control/dns_config schema
+    // and avoid read-only or status fields that might cause errors if sent back
+    const allowedFields = [
+        'bootstrap_dns', 'upstream_dns', 'fallback_dns', 'all_servers',
+        'fastest_addr', 'fastest_timeout', 'protection_enabled', 'ratelimit',
+        'ratelimit_whitelist', 'blocking_mode', 'blocking_ipv4', 'blocking_ipv6',
+        'edns_client_subnet', 'dns_cache_size', 'dns_cache_min_ttl', 'dns_cache_max_ttl',
+        'dns_cache_optimistic', 'upstream_dns_file', 'use_private_ptr_resolvers',
+        'local_ptr_upstreams', 'use_dns64', 'dns64_prefixes', 'serve_http3', 'use_http3_upstreams'
+    ];
+
+    const filteredConfig: any = {};
+    const merged = { ...currentConfig, ...partialConfig };
+
+    for (const key of allowedFields) {
+        if (merged[key] !== undefined) {
+            filteredConfig[key] = merged[key];
+        }
+    }
+
+    return setDnsConfig(filteredConfig);
 }
 
 

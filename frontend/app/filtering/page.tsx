@@ -242,17 +242,24 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     // Handlers (moved from original)
     const toggleProtection = async (setting: string, enabled: boolean) => {
         // Optimistic update
+        const previousStatus = { ...protection };
         setProtection((prev: any) => ({ ...prev, [`${setting}Enabled`]: enabled }));
+
         try {
-            await fetch('/api/adguard/protection', {
+            const res = await fetch('/api/adguard/protection', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ setting, enabled }),
             });
-            refresh();
+
+            if (!res.ok) throw new Error('Failed to update protection');
+
+            // Optional: refresh to get server-side truth, but optimistic is enough for now
+            // refresh(); 
         } catch (e) {
             console.error(e);
-            refresh(); // Revert on error
+            setProtection(previousStatus); // Revert on error
+            alert(`Failed to ${enabled ? 'enable' : 'disable'} ${setting}. Please check if AdGuard is reachable.`);
         }
     };
 
@@ -271,12 +278,35 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
 
     // List Ops
     const handleListOp = async (action: string, body: any) => {
-        await fetch('/api/adguard/filtering', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, ...body }),
-        });
-        refresh();
+        // Optimistic update for toggle
+        let previousFiltering = filtering ? { ...filtering } : null;
+        if (action === 'toggle' && filtering) {
+            const listKey = body.whitelist ? 'whitelist_filters' : 'filters';
+            const updatedLists = filtering[listKey as keyof FilteringStatus].map((f: any) =>
+                f.url === body.url ? { ...f, enabled: body.enabled } : f
+            );
+            setFiltering({ ...filtering, [listKey]: updatedLists });
+        }
+
+        try {
+            const res = await fetch('/api/adguard/filtering', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, ...body }),
+            });
+
+            if (!res.ok) throw new Error('Action failed');
+
+            // For toggle, we don't strictly need a full refresh if optimistic worked
+            if (action !== 'toggle') {
+                refresh();
+            }
+        } catch (e) {
+            console.error(e);
+            if (action === 'toggle') setFiltering(previousFiltering);
+            alert(`Action "${action}" failed. please try again.`);
+            refresh(); // Ensure synced state
+        }
     };
 
     return (
@@ -650,8 +680,8 @@ function ForwardingTab({ zones, refresh }: any) {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`text-xs px-2 py-1 rounded border ${zone.source === 'technitium'
-                                            ? 'bg-blue-900/20 text-blue-400 border-blue-800'
-                                            : (zone.source === 'active-directory' ? 'bg-purple-900/20 text-purple-400 border-purple-800' : 'bg-gray-800 text-gray-400 border-gray-700')
+                                        ? 'bg-blue-900/20 text-blue-400 border-blue-800'
+                                        : (zone.source === 'active-directory' ? 'bg-purple-900/20 text-purple-400 border-purple-800' : 'bg-gray-800 text-gray-400 border-gray-700')
                                         }`}>
                                         {zone.source === 'active-directory' ? 'AD Domain' : (zone.source === 'technitium' ? 'Technitium Zone' : zone.type)}
                                     </span>
@@ -839,7 +869,14 @@ function Modal({ children, title, onClose, maxWidth = "max-w-md" }: any) {
 function Switch({ checked, onChange, size = 'md' }: { checked: boolean; onChange: (v: boolean) => void; size?: 'sm' | 'md' }) {
     const isSm = size === 'sm';
     return (
-        <button onClick={() => onChange(!checked)} className={`${isSm ? 'w-8 h-4.5' : 'w-11 h-6'} rounded-full relative transition-colors ${checked ? 'bg-blue-600' : 'bg-gray-700'}`}>
+        <button
+            onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange(!checked);
+            }}
+            className={`${isSm ? 'w-8 h-4.5' : 'w-11 h-6'} rounded-full relative transition-colors ${checked ? 'bg-blue-600' : 'bg-gray-700'}`}
+        >
             <div className={`absolute top-1 left-1 bg-white ${isSm ? 'w-2.5 h-2.5 translate-x-0' : 'w-4 h-4'} rounded-full transition-transform ${checked ? (isSm ? 'translate-x-3.5' : 'translate-x-5') : ''}`} />
         </button>
     );
