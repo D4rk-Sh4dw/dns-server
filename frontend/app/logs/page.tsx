@@ -27,6 +27,14 @@ interface QueryLogItem {
     client_proto?: string;
 }
 
+const isBlocked = (log: QueryLogItem) => {
+    const s = log.status.toLowerCase();
+    if (s.includes('blocked') || s.includes('safe') || s.includes('parental')) return true;
+    // Check for 0.0.0.0 or :: (AdGuard blocking)
+    if (log.answer?.some(a => a.value === '0.0.0.0' || a.value === '::')) return true;
+    return false;
+};
+
 export default function LogsPage() {
     const [logs, setLogs] = useState<QueryLogItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -162,7 +170,7 @@ export default function LogsPage() {
                         {logs.map((log, idx) => (
                             <>
                                 <tr key={idx}
-                                    className={`group transition-colors font-mono cursor-pointer ${log.status.toLowerCase().includes('blocked') || log.status.toLowerCase().includes('safe') || log.status.toLowerCase().includes('parental')
+                                    className={`group transition-colors font-mono cursor-pointer ${isBlocked(log)
                                         ? 'bg-red-950/20 hover:bg-red-950/30 border-l-2 border-l-red-500'
                                         : 'hover:bg-gray-800/50 border-l-2 border-l-transparent'
                                         }`}
@@ -175,7 +183,7 @@ export default function LogsPage() {
                                         {new Date(log.time).toLocaleTimeString()}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <StatusBadge status={log.status} reason={log.reason} />
+                                        <StatusBadge log={log} />
                                     </td>
                                     <td className="px-6 py-4 text-gray-300">{log.client}</td>
                                     <td className="px-6 py-4 text-white">
@@ -197,7 +205,7 @@ export default function LogsPage() {
                                 </tr>
                                 {expandedLog === idx && (
                                     <tr className={
-                                        log.status.toLowerCase().includes('blocked') || log.status.toLowerCase().includes('safe') || log.status.toLowerCase().includes('parental')
+                                        isBlocked(log)
                                             ? 'bg-red-950/10'
                                             : 'bg-gray-950/30'
                                     }>
@@ -323,15 +331,19 @@ export default function LogsPage() {
     );
 }
 
-function StatusBadge({ status, reason }: { status: string, reason?: string }) {
-    if (status === 'Blocked' || status === 'SafeBrowsing' || status === 'Parental') {
+function StatusBadge({ log }: { log: QueryLogItem }) {
+    const status = log.status;
+    const reason = log.reason;
+    const blocked = isBlocked(log);
+
+    if (blocked) {
         return (
             <div className="flex flex-col items-start gap-1">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500">
                     <Shield size={12} />
-                    {status}
+                    Blocked
                 </span>
-                {reason && <span className="text-[10px] text-gray-500 max-w-[100px] truncate">{reason}</span>}
+                {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[100px] truncate">{reason || status}</span>}
             </div>
         );
     }
