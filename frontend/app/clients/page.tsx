@@ -42,7 +42,6 @@ export default function ClientsPage() {
 
     const [availableServices, setAvailableServices] = useState<string[]>([]);
     const [idInput, setIdInput] = useState('');
-    const [tagInput, setTagInput] = useState('');
     const [serviceSearch, setServiceSearch] = useState('');
     const [error, setError] = useState<string | null>(null);
 
@@ -136,7 +135,6 @@ export default function ClientsPage() {
             tags: []
         });
         setIdInput('');
-        setTagInput('');
         setServiceSearch('');
     };
 
@@ -291,26 +289,36 @@ export default function ClientsPage() {
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-400 mb-1.5">Tags</label>
                                                 <div className="flex gap-2 mb-3">
-                                                    <input
-                                                        type="text"
-                                                        value={tagInput}
-                                                        onChange={(e) => setTagInput(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter' && tagInput) {
-                                                                e.preventDefault();
-                                                                setFormData({ ...formData, tags: [...new Set([...(formData.tags || []), tagInput])] });
-                                                                setTagInput('');
+                                                    <select
+                                                        value=""
+                                                        onChange={(e) => {
+                                                            if (e.target.value) {
+                                                                setFormData({ ...formData, tags: [...new Set([...(formData.tags || []), e.target.value])] });
                                                             }
                                                         }}
-                                                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                                                        placeholder="e.g. mobile, work, kids"
-                                                    />
-                                                    <button
-                                                        onClick={() => { if (tagInput) { setFormData({ ...formData, tags: [...new Set([...(formData.tags || []), tagInput])] }); setTagInput(''); } }}
-                                                        className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-700 transition-colors"
+                                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
                                                     >
-                                                        <Plus size={18} />
-                                                    </button>
+                                                        <option value="" disabled>Select tag...</option>
+                                                        <optgroup label="Devices">
+                                                            <option value="device_phone">Phone</option>
+                                                            <option value="device_tablet">Tablet</option>
+                                                            <option value="device_laptop">Laptop</option>
+                                                            <option value="device_pc">PC</option>
+                                                            <option value="device_tv">TV</option>
+                                                            <option value="device_gameconsole">Game Console</option>
+                                                            <option value="device_camera">Camera</option>
+                                                            <option value="device_printer">Printer</option>
+                                                            <option value="device_audio">Audio</option>
+                                                            <option value="device_nas">NAS</option>
+                                                            <option value="device_other">Other Device</option>
+                                                        </optgroup>
+                                                        <optgroup label="Users">
+                                                            <option value="user_admin">Admin</option>
+                                                            <option value="user_regular">Regular User</option>
+                                                            <option value="user_kids">Kids</option>
+                                                            <option value="user_guest">Guest</option>
+                                                        </optgroup>
+                                                    </select>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {(formData.tags || []).map(tag => (
