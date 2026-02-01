@@ -429,7 +429,6 @@ export async function deleteClient(name: string) {
     });
 }
 
-const PAUSE_FILE = path.join(process.cwd(), 'pause_state.json');
 
 async function getPauseState(): Promise<number | null> {
     try {
