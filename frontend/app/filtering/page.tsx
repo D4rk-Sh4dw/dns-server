@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { PREDEFINED_BLOCKLISTS, PREDEFINED_WHITELISTS } from '@/constants/predefined-lists';
 import {
     RefreshCw, Plus, Trash2, Check, X, Shield, ShieldCheck,
@@ -399,6 +399,67 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     );
 }
 
+function ClientSelector({ clients, selectedClient, onSelect }: any) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Filter clients
+    const filtered = clients.filter((c: any) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.ids.some((id: string) => id.includes(search))
+    );
+
+    const clientObj = clients.find((c: any) => c.name === selectedClient);
+    const selectedName = clientObj ? `${clientObj.name} (${clientObj.ids.join(', ')})` : (selectedClient || 'Choose a Client');
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-left text-white flex justify-between items-center focus:outline-none focus:border-blue-500"
+            >
+                <span className="truncate">{selectedName}</span>
+                <ChevronDown size={16} className="text-gray-500" />
+            </button>
+
+            {isOpen && (
+                <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
+                    <div className="p-2 border-b border-gray-700 sticky top-0 bg-gray-800">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Search clients..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="w-full bg-gray-900 border border-gray-700 rounded-md py-1.5 pl-9 pr-3 text-sm text-white focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                        {filtered.length === 0 ? (
+                            <div className="p-3 text-sm text-gray-500 text-center">No clients found</div>
+                        ) : (
+                            filtered.map((c: any) => (
+                                <button
+                                    key={c.name}
+                                    onClick={() => { onSelect(c.name); setIsOpen(false); setSearch(''); }}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800 last:border-0 ${selectedClient === c.name ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
+                                >
+                                    <div className="font-medium">{c.name}</div>
+                                    <div className="text-xs text-gray-500 truncate">{c.ids.join(', ')}</div>
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 function ClientFilteringTab({ clients, selectedClient, setSelectedClient, userRules, refresh }: any) {
     const [whitelistInput, setWhitelistInput] = useState('');
     const [blocklistInput, setBlocklistInput] = useState('');
@@ -442,19 +503,7 @@ function ClientFilteringTab({ clients, selectedClient, setSelectedClient, userRu
             {/* Client Selector */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                 <label className="block text-sm font-medium text-gray-400 mb-2">Select Client to Manage</label>
-                <div className="relative">
-                    <select
-                        value={selectedClient}
-                        onChange={(e) => setSelectedClient(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white appearance-none focus:outline-none focus:border-blue-500"
-                    >
-                        <option value="">-- Choose a Client --</option>
-                        {clients.map((c: any) => (
-                            <option key={c.name} value={c.name}>{c.name} ({c.ids.join(', ')})</option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
-                </div>
+                <ClientSelector clients={clients} selectedClient={selectedClient} onSelect={setSelectedClient} />
             </div>
 
             {selectedClient ? (
@@ -555,7 +604,12 @@ function ForwardingTab({ zones, refresh }: any) {
     };
 
     const handleDeleteZone = async (zone: Zone) => {
-        if (!confirm(`Delete zone ${zone.name}?`)) return;
+        if (zone.source === 'technitium') {
+            if (!confirm(`Warning: This is a Technitium-managed zone.\nDeleting it may affect local DNS resolution or internal services.\n\nAre you sure you want to delete ${zone.name}?`)) return;
+        } else {
+            if (!confirm(`Delete zone ${zone.name}?`)) return;
+        }
+
         try {
             await fetch('/api/zones', {
                 method: 'POST',
@@ -594,7 +648,14 @@ function ForwardingTab({ zones, refresh }: any) {
                                         <span className="text-white font-medium">{zone.name}</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4"><span className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">{zone.source === 'active-directory' ? 'AD Domain' : zone.type}</span></td>
+                                <td className="px-6 py-4">
+                                    <span className={`text-xs px-2 py-1 rounded border ${zone.source === 'technitium'
+                                            ? 'bg-blue-900/20 text-blue-400 border-blue-800'
+                                            : (zone.source === 'active-directory' ? 'bg-purple-900/20 text-purple-400 border-purple-800' : 'bg-gray-800 text-gray-400 border-gray-700')
+                                        }`}>
+                                        {zone.source === 'active-directory' ? 'AD Domain' : (zone.source === 'technitium' ? 'Technitium Zone' : zone.type)}
+                                    </span>
+                                </td>
                                 <td className="px-6 py-4 text-gray-400 font-mono text-sm">{zone.source === 'active-directory' ? zone.dcServers : (zone.forwarder || 'Local')}</td>
                                 <td className="px-6 py-4 text-green-400 text-xs flex items-center gap-1"><Check size={12} /> Active</td>
                                 <td className="px-6 py-4 text-right">
