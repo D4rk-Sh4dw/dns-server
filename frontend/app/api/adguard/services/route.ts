@@ -19,7 +19,8 @@ export async function GET() {
             available = availableRes;
         } else if (availableRes && typeof availableRes === 'object') {
             // @ts-ignore
-            available = availableRes.blocking_services || availableRes.services || availableRes.available_services || [];
+            // Go code uses json:"blocked_services" for the list of available services
+            available = availableRes.blocked_services || availableRes.blocking_services || availableRes.services || availableRes.available_services || [];
             if (!Array.isArray(available)) available = [];
         }
 
