@@ -223,6 +223,16 @@ export async function setDnsConfig(config: any) {
     });
 }
 
+// Helper to safely update DNS config by fetching current first
+export async function updateDnsConfig(partialConfig: any) {
+    const currentConfig = await getDnsConfig();
+    const newConfig = { ...currentConfig, ...partialConfig };
+    // Remove fields that shouldn't be sent back if they are read-only or problematic?
+    // Usually AdGuard returns everything needed.
+    return setDnsConfig(newConfig);
+}
+
+
 // Add a zone forwarding rule to AdGuard
 // For regular zones: forwards to Technitium (dns-technitium Docker hostname)
 // For AD zones: forwards to DC DNS servers
@@ -251,7 +261,7 @@ export async function addZoneForwarding(
     // Add the new rule at the beginning (before default upstreams)
     const newUpstreams = [forwardRule, ...currentUpstreams];
 
-    await setDnsConfig({
+    await updateDnsConfig({
         upstream_dns: newUpstreams,
     });
 
@@ -272,7 +282,7 @@ export async function removeZoneForwarding(domain: string) {
         return;
     }
 
-    await setDnsConfig({
+    await updateDnsConfig({
         upstream_dns: newUpstreams,
     });
 
@@ -321,9 +331,8 @@ export async function setSafeBrowsingEnabled(enabled: boolean) {
 
 // Overall DNS Protection (enables/disables all filtering)
 export async function setProtectionEnabled(enabled: boolean) {
-    return adguardFetch('/control/dns_config', {
-        method: 'POST',
-        body: JSON.stringify({ protection_enabled: enabled }),
+    return updateDnsConfig({
+        protection_enabled: enabled
     });
 }
 
