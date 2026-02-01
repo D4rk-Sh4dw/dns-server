@@ -169,9 +169,10 @@ export async function addRecord(
 export async function deleteRecord(
     domain: string,
     type: string,
-    value: string
+    value: string,
+    options: Record<string, string> = {}
 ) {
-    const params: Record<string, string> = { domain, type };
+    const params: Record<string, string> = { domain, type, ...options };
 
     switch (type.toUpperCase()) {
         case 'A':
@@ -182,17 +183,28 @@ export async function deleteRecord(
             params.cname = value;
             break;
         case 'NS':
-            params.nameServer = value; // Correct parameter name
+            params.nameServer = value;
             break;
         case 'PTR':
-            params.ptrName = value; // Correct parameter name
+            params.ptrName = value;
             break;
         case 'MX':
-            params.mailExchange = value; // Correct parameter name
-            params.preference = '0'; // Delete requires finding exact record, assuming 0/omitted might work or just value Match
+            params.mailExchange = value;
+            params.preference = options.preference || '0';
             break;
         case 'TXT':
             params.text = value;
+            break;
+        case 'SRV':
+            params.target = value;
+            params.priority = options.priority || '0';
+            params.weight = options.weight || '0';
+            params.port = options.port || '0';
+            break;
+        case 'CAA':
+            params.flags = options.flags || '0';
+            params.tag = options.tag || 'issue';
+            params.value = value;
             break;
         default:
             params.rdata = value;

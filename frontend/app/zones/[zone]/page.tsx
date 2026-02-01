@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface DnsRecord {
@@ -43,6 +43,8 @@ export default function ZoneDetailPage() {
         weight: 0,
         port: 0,
     });
+    const [isEditing, setIsEditing] = useState(false);
+    const [originalRecord, setOriginalRecord] = useState<DnsRecord | null>(null);
 
     const fetchRecords = async () => {
         setLoading(true);
@@ -71,6 +73,16 @@ export default function ZoneDetailPage() {
     const handleAddRecord = async () => {
         const domain = (newRecord.name === '@' || !newRecord.name) ? zone : `${newRecord.name}.${zone}`;
         setError(null); // Clear previous errors
+
+        // If editing, delete original record first
+        if (isEditing && originalRecord) {
+            try {
+                await handleDeleteRecord(originalRecord, true); // Pass true to skip confirm and refetch
+            } catch (err) {
+                setError('Failed to update record: Could not delete original record');
+                return;
+            }
+        }
 
         const options: Record<string, string> = {};
         if (newRecord.type === 'MX') options.preference = newRecord.priority.toString();
@@ -102,14 +114,42 @@ export default function ZoneDetailPage() {
 
             setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0 });
             setShowAddModal(false);
+            setIsEditing(false);
+            setOriginalRecord(null);
             await fetchRecords();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         }
     };
 
-    const handleDeleteRecord = async (record: DnsRecord) => {
-        if (!confirm(`Delete ${record.type} record for ${record.name}?`)) return;
+    const handleEditRecord = (record: DnsRecord) => {
+        setOriginalRecord(record);
+        setIsEditing(true);
+
+        // Parse values from record
+        const rd = record.rData;
+        let value = '';
+        if (rd.ipAddress) value = rd.ipAddress;
+        else if (rd.cname) value = rd.cname;
+        else if (rd.text) value = rd.text;
+        else if (rd.exchange) value = rd.exchange;
+        else if (rd.target) value = rd.target;
+
+        setNewRecord({
+            name: record.name.replace(`.${zone}`, '').replace(zone, '') || '@', // Try to reconstruct subdomain, default to @ if empty/match
+            type: record.type,
+            value,
+            ttl: record.ttl,
+            priority: rd.preference || rd.priority || 10,
+            weight: rd.weight || 0,
+            port: rd.port || 0
+        });
+
+        setShowAddModal(true);
+    };
+
+    const handleDeleteRecord = async (record: DnsRecord, skipConfirm = false) => {
+        if (!skipConfirm && !confirm(`Delete ${record.type} record for ${record.name}?`)) return;
 
         let value = '';
         const rd = record.rData;
@@ -119,6 +159,14 @@ export default function ZoneDetailPage() {
         else if (rd.exchange) value = rd.exchange;
         else if (rd.target) value = rd.target;
 
+        const options: Record<string, string> = {};
+        if (record.type === 'MX') options.preference = (rd.preference || 0).toString();
+        if (record.type === 'SRV') {
+            options.priority = (rd.priority || 0).toString();
+            options.weight = (rd.weight || 0).toString();
+            options.port = (rd.port || 0).toString();
+        }
+
         await fetch('/api/technitium/records', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -127,10 +175,11 @@ export default function ZoneDetailPage() {
                 domain: record.name,
                 type: record.type,
                 value,
+                options,
             }),
         });
 
-        await fetchRecords();
+        if (!skipConfirm) await fetchRecords();
     };
 
     const getRecordValue = (record: DnsRecord) => {
@@ -206,7 +255,13 @@ export default function ZoneDetailPage() {
                                     {getRecordValue(record)}
                                 </td>
                                 <td className="px-6 py-4 text-gray-500 text-sm">{record.ttl}s</td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                    <button
+                                        onClick={() => handleEditRecord(record)}
+                                        className="text-blue-400 hover:text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
                                     <button
                                         onClick={() => handleDeleteRecord(record)}
                                         className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -227,11 +282,13 @@ export default function ZoneDetailPage() {
                 </table>
             </div>
 
-            {/* Add Record Modal */}
+            {/* Add/Edit Record Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-lg">
-                        <h3 className="text-lg font-medium text-white mb-4">Add DNS Record</h3>
+                        <h3 className="text-lg font-medium text-white mb-4">
+                            {isEditing ? 'Edit DNS Record' : 'Add DNS Record'}
+                        </h3>
 
                         {error && (
                             <div className="mb-4 bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-start gap-2">
@@ -258,6 +315,7 @@ export default function ZoneDetailPage() {
                                         value={newRecord.type}
                                         onChange={(e) => setNewRecord(prev => ({ ...prev, type: e.target.value }))}
                                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                        disabled={isEditing} // Prevent type change during edit to avoid complex delete logic
                                     >
                                         {RECORD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                     </select>
@@ -332,7 +390,12 @@ export default function ZoneDetailPage() {
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
                             <button
-                                onClick={() => setShowAddModal(false)}
+                                onClick={() => {
+                                    setShowAddModal(false);
+                                    setIsEditing(false);
+                                    setOriginalRecord(null);
+                                    setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0 });
+                                }}
                                 className="px-4 py-2 text-gray-400 hover:text-white"
                             >
                                 Cancel
@@ -342,7 +405,7 @@ export default function ZoneDetailPage() {
                                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"
                             >
                                 <Check size={18} />
-                                Add Record
+                                {isEditing ? 'Save Changes' : 'Add Record'}
                             </button>
                         </div>
                     </div>

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
                 await technitium.addRecord(domain, type, value, ttl || 3600, options || {});
                 break;
             case 'delete':
-                await technitium.deleteRecord(domain, type, value);
+                await technitium.deleteRecord(domain, type, value, options || {});
                 break;
             default:
                 return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
