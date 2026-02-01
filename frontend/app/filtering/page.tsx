@@ -403,11 +403,17 @@ function ClientFilteringTab({ clients, selectedClient, setSelectedClient, userRu
     const [whitelistInput, setWhitelistInput] = useState('');
     const [blocklistInput, setBlocklistInput] = useState('');
 
+    const escapeClientName = (name: string) => {
+        return name.replace(/'/g, "\\'").replace(/,/g, "\\,");
+    };
+
     const handleAddRule = async (domain: string, type: 'allow' | 'block') => {
         if (!selectedClient || !domain) return;
+
+        const escapedName = escapeClientName(selectedClient);
         const rule = type === 'allow'
-            ? `@@||${domain}^$client='${selectedClient}'`
-            : `||${domain}^$client='${selectedClient}'`;
+            ? `@@||${domain}^$client='${escapedName}'`
+            : `||${domain}^$client='${escapedName}'`;
 
         await fetch('/api/adguard/filtering', {
             method: 'POST',
@@ -426,7 +432,8 @@ function ClientFilteringTab({ clients, selectedClient, setSelectedClient, userRu
         refresh();
     };
 
-    const clientRules = userRules.filter((r: string) => r.includes(`$client='${selectedClient}'`));
+    const escapedName = escapeClientName(selectedClient);
+    const clientRules = userRules.filter((r: string) => r.includes(`$client='${escapedName}'`));
     const whitelisted = clientRules.filter((r: string) => r.startsWith('@@||'));
     const blocked = clientRules.filter((r: string) => r.startsWith('||'));
 
