@@ -24,6 +24,7 @@ export default function ZonesPage() {
         isActiveDirectory: false,
         dcServers: '',
         forwarder: '',
+        protocol: 'Udp', // Default Technitium protocol value
     });
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -69,13 +70,14 @@ export default function ZonesPage() {
                     isActiveDirectory: newZone.isActiveDirectory,
                     dcServers: newZone.dcServers,
                     forwarder: newZone.forwarder,
+                    protocol: newZone.protocol,
                 }),
             });
 
             const data = await res.json();
             if (data.error) throw new Error(data.error);
 
-            setNewZone({ name: '', type: 'Primary', isActiveDirectory: false, dcServers: '', forwarder: '' });
+            setNewZone({ name: '', type: 'Primary', isActiveDirectory: false, dcServers: '', forwarder: '', protocol: 'Udp' });
             setShowCreateModal(false);
             await fetchZones();
         } catch (err) {
@@ -315,18 +317,60 @@ export default function ZonesPage() {
 
                             {/* Conditional Forwarder Input */}
                             {!newZone.isActiveDirectory && newZone.type === 'ConditionalForwarder' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">
-                                        Forwarder IP
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={newZone.forwarder}
-                                        onChange={(e) => setNewZone(prev => ({ ...prev, forwarder: e.target.value }))}
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                        placeholder="e.g. 1.1.1.1"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                                            Upstream Provider
+                                        </label>
+                                        <select
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val) setNewZone(prev => ({ ...prev, forwarder: val }));
+                                            }}
+                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 mb-2"
+                                        >
+                                            <option value="">Select a provider...</option>
+                                            <option value="1.1.1.1">Cloudflare (1.1.1.1)</option>
+                                            <option value="8.8.8.8">Google (8.8.8.8)</option>
+                                            <option value="9.9.9.9">Quad9 (9.9.9.9)</option>
+                                            <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                                            Forwarder IP
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newZone.forwarder}
+                                            onChange={(e) => setNewZone(prev => ({ ...prev, forwarder: e.target.value }))}
+                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                            placeholder="e.g. 1.1.1.1"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                                            Protocol
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                            {['Udp', 'Tcp', 'Tls', 'Https', 'Quic'].map(p => (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => setNewZone(prev => ({ ...prev, protocol: p }))}
+                                                    className={`px-3 py-2 rounded-lg text-sm border transition-colors ${newZone.protocol === p
+                                                            ? 'bg-blue-500/20 border-blue-500 text-blue-400'
+                                                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                                                        }`}
+                                                >
+                                                    DNS-over-{p.toUpperCase()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <p className="text-xs text-gray-500">
                                         DNS server to forward queries to when records are not found locally
                                     </p>
                                 </div>

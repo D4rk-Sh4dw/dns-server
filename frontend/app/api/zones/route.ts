@@ -80,8 +80,24 @@ export async function POST(request: Request) {
                     });
                 } else {
                     // Regular zone: Create in Technitium + add forwarding in AdGuard
-                    const { forwarder } = body;
-                    await technitium.createZone(zone, type || 'Primary', { forwarder });
+                    const { forwarder, protocol } = body;
+
+                    // Map UI type to Technitium type
+                    // UI 'ConditionalForwarder' -> Technitium 'Forwarder'
+                    const techType = type === 'ConditionalForwarder' ? 'Forwarder' : (type || 'Primary');
+
+                    // If it's a Conditional Forwarder, we might need to add the FWD record manually or use options
+                    // Based on plan: Create zone, then add FWD record if needed.
+                    await technitium.createZone(zone, techType);
+
+                    if (type === 'ConditionalForwarder' && forwarder) {
+                        // Add FWD record for the zone root
+                        await technitium.addRecord(zone, 'FWD', forwarder, 3600, {
+                            protocol: protocol || 'Udp',
+                            useThisServer: 'false' // We want to forward
+                        });
+                    }
+
                     await adguard.addZoneForwarding(zone);
 
                     return NextResponse.json({
