@@ -69,7 +69,7 @@ export default function ZoneDetailPage() {
     const [error, setError] = useState<string | null>(null); // New state for errors
 
     const handleAddRecord = async () => {
-        const domain = newRecord.name ? `${newRecord.name}.${zone}` : zone;
+        const domain = (newRecord.name === '@' || !newRecord.name) ? zone : `${newRecord.name}.${zone}`;
         setError(null); // Clear previous errors
 
         const options: Record<string, string> = {};
