@@ -5,8 +5,13 @@ export async function GET() {
     try {
         const [availableRes, blockedRes] = await Promise.all([
             adguard.getAllBlockedServices(),
-            adguard.getBlockedServices()
+            adguard.getBlockedServices() // this is new /get
         ]);
+
+        // DEBUG LOGS
+        console.log('DEBUG: availableRes type:', typeof availableRes, Array.isArray(availableRes));
+        console.log('DEBUG: availableRes preview:', JSON.stringify(availableRes)?.substring(0, 500));
+        console.log('DEBUG: blockedRes preview:', JSON.stringify(blockedRes)?.substring(0, 500));
 
         // Normalize available services
         let available = [];
@@ -18,13 +23,13 @@ export async function GET() {
             if (!Array.isArray(available)) available = [];
         }
 
-        // Normalize blocked services
+        // Normalize blocked services (from /control/blocked_services/get)
+        // Response is { ids: [], schedule: {} }
         let blocked: string[] = [];
-        if (Array.isArray(blockedRes)) {
-            blocked = blockedRes;
-        } else if (blockedRes && (blockedRes.ids || blockedRes.blocked_services)) {
+        // @ts-ignore
+        if (blockedRes && (blockedRes.ids || Array.isArray(blockedRes))) {
             // @ts-ignore
-            blocked = blockedRes.ids || blockedRes.blocked_services || [];
+            blocked = blockedRes.ids || (Array.isArray(blockedRes) ? blockedRes : []);
         }
 
         return NextResponse.json({
