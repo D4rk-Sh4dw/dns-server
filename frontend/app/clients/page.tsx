@@ -377,27 +377,35 @@ export default function ClientsPage() {
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                                    {filteredServices.map(service => {
-                                                        const isBlocked = (formData.blocked_services || []).includes(service);
-                                                        return (
-                                                            <button
-                                                                key={service}
-                                                                onClick={() => {
-                                                                    const current = formData.blocked_services || [];
-                                                                    const next = isBlocked
-                                                                        ? current.filter(s => s !== service)
-                                                                        : [...current, service];
-                                                                    setFormData({ ...formData, blocked_services: next });
-                                                                }}
-                                                                className={`px-3 py-2 rounded-lg text-left text-[11px] font-medium transition-all border ${isBlocked
-                                                                    ? 'bg-red-500/10 text-red-400 border-red-500/30'
-                                                                    : 'bg-gray-800 text-gray-500 border-gray-700 hover:border-gray-500'
-                                                                    }`}
-                                                            >
-                                                                {service.charAt(0).toUpperCase() + service.slice(1).replace(/_/g, ' ')}
-                                                            </button>
-                                                        );
-                                                    })}
+                                                    {filteredServices.length === 0 ? (
+                                                        <div className="col-span-full py-4 text-center text-gray-500 text-xs italic">
+                                                            {availableServices.length === 0
+                                                                ? "No services available. Check AdGuard connection."
+                                                                : "No services found matching your search."}
+                                                        </div>
+                                                    ) : (
+                                                        filteredServices.map(service => {
+                                                            const isBlocked = (formData.blocked_services || []).includes(service);
+                                                            return (
+                                                                <button
+                                                                    key={service}
+                                                                    onClick={() => {
+                                                                        const current = formData.blocked_services || [];
+                                                                        const next = isBlocked
+                                                                            ? current.filter(s => s !== service)
+                                                                            : [...current, service];
+                                                                        setFormData({ ...formData, blocked_services: next });
+                                                                    }}
+                                                                    className={`px-3 py-2 rounded-lg text-left text-[11px] font-medium transition-all border ${isBlocked
+                                                                        ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                                                                        : 'bg-gray-800 text-gray-500 border-gray-700 hover:border-gray-500'
+                                                                        }`}
+                                                                >
+                                                                    {service.charAt(0).toUpperCase() + service.slice(1).replace(/_/g, ' ')}
+                                                                </button>
+                                                            );
+                                                        })
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

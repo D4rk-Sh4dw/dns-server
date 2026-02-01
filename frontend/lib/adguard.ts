@@ -342,7 +342,7 @@ export async function updateClient(oldName: string, client: AdGuardClient) {
         method: 'POST',
         body: JSON.stringify({
             name: oldName,
-            client: client
+            data: client
         }),
     });
 }
