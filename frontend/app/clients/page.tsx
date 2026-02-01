@@ -46,6 +46,7 @@ export default function ClientsPage() {
     const [error, setError] = useState<string | null>(null);
     const [customRules, setCustomRules] = useState<string[]>([]);
     const [whitelistInput, setWhitelistInput] = useState('');
+    const [blocklistInput, setBlocklistInput] = useState('');
 
     const fetchData = async () => {
         setLoading(true);
@@ -456,6 +457,101 @@ export default function ClientsPage() {
                                                 {!editingClient && (
                                                     <div className="text-center text-gray-500 text-[10px] py-2">
                                                         Please create the client first to add specific rules.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Client Blocklist</h4>
+                                        </div>
+                                        <div className="bg-gray-950/30 rounded-2xl p-5 border border-gray-800 space-y-4">
+                                            <div className="text-xs text-gray-500 italic mb-2">
+                                                Domains blocked specifically for this client (AdGuard User Rules).
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={blocklistInput}
+                                                    onChange={(e) => setBlocklistInput(e.target.value)}
+                                                    onKeyDown={async (e) => {
+                                                        if (e.key === 'Enter' && blocklistInput && editingClient) {
+                                                            e.preventDefault();
+                                                            const domain = blocklistInput.trim();
+                                                            const rule = `||${domain}^$client='${editingClient}'`;
+                                                            try {
+                                                                await fetch('/api/adguard/filtering', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'addRule', rule })
+                                                                });
+                                                                setCustomRules([...customRules, rule]);
+                                                                setBlocklistInput('');
+                                                            } catch (err) {
+                                                                console.error('Failed to add rule', err);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
+                                                    placeholder="example.com"
+                                                />
+                                                <button
+                                                    disabled={!blocklistInput || !editingClient}
+                                                    onClick={async () => {
+                                                        if (blocklistInput && editingClient) {
+                                                            const domain = blocklistInput.trim();
+                                                            const rule = `||${domain}^$client='${editingClient}'`;
+                                                            try {
+                                                                await fetch('/api/adguard/filtering', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'addRule', rule })
+                                                                });
+                                                                setCustomRules([...customRules, rule]);
+                                                                setBlocklistInput('');
+                                                            } catch (err) {
+                                                                console.error('Failed to add rule', err);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors"
+                                                >
+                                                    <Plus size={18} />
+                                                </button>
+                                            </div>
+                                            <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1 custom-scrollbar">
+                                                {customRules
+                                                    .filter(r => editingClient && r.includes(`$client='${editingClient}'`) && r.startsWith('||'))
+                                                    .map(rule => {
+                                                        const domain = rule.replace('||', '').split('^')[0];
+                                                        return (
+                                                            <div key={rule} className="flex items-center justify-between bg-gray-800/50 px-3 py-2 rounded-lg border border-gray-700/50 group">
+                                                                <span className="text-xs font-mono text-red-400">{domain}</span>
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await fetch('/api/adguard/filtering', {
+                                                                                method: 'POST',
+                                                                                headers: { 'Content-Type': 'application/json' },
+                                                                                body: JSON.stringify({ action: 'removeRule', rule })
+                                                                            });
+                                                                            setCustomRules(customRules.filter(r => r !== rule));
+                                                                        } catch (err) {
+                                                                            console.error('Failed to remove rule', err);
+                                                                        }
+                                                                    }}
+                                                                    className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                {editingClient && customRules.filter(r => r.includes(`$client='${editingClient}'`) && r.startsWith('||')).length === 0 && (
+                                                    <div className="text-center text-gray-600 text-[10px] py-2">
+                                                        No custom blocked domains for this client.
                                                     </div>
                                                 )}
                                             </div>
