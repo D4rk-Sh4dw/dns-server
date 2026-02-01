@@ -169,6 +169,109 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
+
+            <DnsCacheSettings />
+        </div>
+    );
+}
+
+function DnsCacheSettings() {
+    const [config, setConfig] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetch('/api/adguard/config')
+            .then(res => res.json())
+            .then(data => setConfig(data))
+            .catch(err => console.error(err));
+    }, []);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await fetch('/api/adguard/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cache_size: parseInt(config.cache_size),
+                    cache_ttl_min: parseInt(config.cache_ttl_min),
+                    cache_ttl_max: parseInt(config.cache_ttl_max),
+                    cache_optimistic: config.cache_optimistic
+                })
+            });
+            alert('Settings saved!');
+        } catch (err) {
+            alert('Failed to save settings');
+        }
+        setSaving(false);
+    };
+
+    if (!config) return null;
+
+    return (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                <Database className="text-green-500" size={24} />
+                DNS Cache Settings (AdGuard)
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Cache Size (bytes)</label>
+                    <input
+                        type="number"
+                        value={config.cache_size}
+                        onChange={e => setConfig({ ...config, cache_size: e.target.value })}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Memory cache size (default: 4194304 = 4MB)</p>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Generic TTL (seconds)</label>
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <span className="text-xs text-gray-500 block mb-1">Min</span>
+                            <input
+                                type="number"
+                                value={config.cache_ttl_min}
+                                onChange={e => setConfig({ ...config, cache_ttl_min: e.target.value })}
+                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <span className="text-xs text-gray-500 block mb-1">Max</span>
+                            <input
+                                type="number"
+                                value={config.cache_ttl_max}
+                                onChange={e => setConfig({ ...config, cache_ttl_max: e.target.value })}
+                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="checkbox"
+                        id="optimistic"
+                        checked={config.cache_optimistic}
+                        onChange={e => setConfig({ ...config, cache_optimistic: e.target.checked })}
+                        className="w-4 h-4 rounded bg-gray-800 border-gray-700"
+                    />
+                    <label htmlFor="optimistic" className="text-white">Optimistic Caching</label>
+                </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                    <Save size={18} />
+                    {saving ? 'Saving...' : 'Save Cache Settings'}
+                </button>
+            </div>
         </div>
     );
 }

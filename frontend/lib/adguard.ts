@@ -46,8 +46,15 @@ export async function getStats() {
     return adguardFetch('/control/stats');
 }
 
-export async function getQueryLog(limit = 100) {
-    return adguardFetch(`/control/querylog?limit=${limit}`);
+export async function getQueryLog(limit = 100, olderThan?: string, search?: string) {
+    let url = `/control/querylog?limit=${limit}`;
+    if (olderThan) url += `&older_than=${olderThan}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return adguardFetch(url);
+}
+
+export async function clearQueryLog() {
+    return adguardFetch('/control/querylog_clear', { method: 'POST' });
 }
 
 export async function getFiltering() {

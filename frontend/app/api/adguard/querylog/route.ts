@@ -2,15 +2,28 @@ import { NextResponse } from 'next/server';
 import * as adguard from '@/lib/adguard';
 
 export async function GET(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url);
-        // Default limit 100, max 1000
-        const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 1000);
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '100');
+    const olderThan = searchParams.get('older_than') || undefined;
+    const search = searchParams.get('search') || undefined;
 
-        const logs = await adguard.getQueryLog(limit);
-        return NextResponse.json(logs);
+    try {
+        const data = await adguard.getQueryLog(limit, olderThan, search);
+        return NextResponse.json(data);
     } catch (error) {
-        console.error('AdGuard logs error:', error);
-        return NextResponse.json({ error: 'Failed to fetch query logs' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
+    }
+}
+
+export async function POST(request: Request) {
+    try {
+        const body = await request.json();
+        if (body.action === 'clear') {
+            await adguard.clearQueryLog();
+            return NextResponse.json({ success: true });
+        }
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to perform action' }, { status: 500 });
     }
 }
