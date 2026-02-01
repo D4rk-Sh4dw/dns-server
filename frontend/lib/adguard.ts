@@ -171,16 +171,30 @@ export async function removeFilterList(url: string, whitelist = false) {
 
 export async function updateFilterList(url: string, name: string, newUrl: string, whitelist = false) {
     // AdGuard doesn't have a direct "update" for URL/Name, so we delete and re-add
-    // Note: This might reset some stats for that list
+    // To preserve state, we fetch the current status first
+    const status = await getFiltering();
+    const listKey = whitelist ? 'whitelist_filters' : 'filters';
+    const currentList = status[listKey]?.find((f: any) => f.url === url);
+    const wasEnabled = currentList ? currentList.enabled : true;
+
     await removeFilterList(url, whitelist);
-    return addFilterList(name, newUrl, whitelist);
+    await addFilterList(name, newUrl, whitelist);
+
+    // If it was disabled, we must explicitly disable it again as add_url defaults to enabled
+    if (!wasEnabled) {
+        await toggleFilterList(newUrl, false, whitelist);
+    }
 }
 
 export async function toggleFilterList(url: string, enabled: boolean, whitelist = false) {
-    const action = enabled ? 'enable' : 'disable';
-    return adguardFetch(`/control/filtering/${action}_url`, {
+    // Modern AdGuard Home uses /control/filtering/set_url for toggling
+    return adguardFetch('/control/filtering/set_url', {
         method: 'POST',
-        body: JSON.stringify({ url, whitelist }),
+        body: JSON.stringify({
+            url,
+            enabled,
+            whitelist
+        }),
     });
 }
 
