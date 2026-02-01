@@ -199,14 +199,30 @@ function TopTable({ title, data, icon: Icon, color }: { title: string, data?: an
     );
   }
 
-  // AdGuard format is often [{ "domain": 100 }]
+  // AdGuard format can be:
+  // 1. [{ "domain.com": 100 }]
+  // 2. [{ "domain": "domain.com", "count": 100 }]
+  // 3. [{ "host": "1.2.3.4", "count": 100 }] (for clients)
   const normalizedData = data.slice(0, 10).map(item => {
+    if (typeof item !== 'object' || item === null) return { key: 'Unknown', value: 0 };
+
+    // Check for nested properties (Format 2 and 3)
+    if ('domain' in item && 'count' in item) {
+      return { key: String(item.domain), value: Number(item.count) };
+    }
+    if ('host' in item && 'count' in item) {
+      return { key: String(item.host), value: Number(item.count) };
+    }
+
+    // Fallback to Format 1
     const key = Object.keys(item)[0];
     const value = item[key];
-    return { key, value };
+    return { key, value: Number(value) || 0 };
   });
 
-  const maxValue = Math.max(...normalizedData.map(d => d.value));
+  if (normalizedData.length === 0) return null; // Should not happen if data check is above
+
+  const maxValue = Math.max(...normalizedData.map(d => d.value), 1);
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm overflow-hidden flex flex-col">

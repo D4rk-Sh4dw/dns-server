@@ -12,7 +12,10 @@ export async function GET() {
 
         return NextResponse.json({
             status,
-            stats, // This contains top_queries, top_clients, etc.
+            stats: {
+                ...(stats.stats || {}),
+                ...stats,
+            },
             safeSearch,
             blockedServices,
         });
