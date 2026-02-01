@@ -70,8 +70,12 @@ export async function listZones() {
     return technitiumFetch('/api/zones/list');
 }
 
-export async function createZone(zone: string, type: string = 'Primary') {
-    return technitiumFetch('/api/zones/create', { zone, type });
+export async function createZone(zone: string, type: string = 'Primary', options: { forwarder?: string } = {}) {
+    const params: Record<string, string> = { zone, type };
+    if (options.forwarder) {
+        params.forwarder = options.forwarder;
+    }
+    return technitiumFetch('/api/zones/create', params);
 }
 
 export async function deleteZone(zone: string) {

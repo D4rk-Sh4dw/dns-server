@@ -80,7 +80,8 @@ export async function POST(request: Request) {
                     });
                 } else {
                     // Regular zone: Create in Technitium + add forwarding in AdGuard
-                    await technitium.createZone(zone, type || 'Primary');
+                    const { forwarder } = body;
+                    await technitium.createZone(zone, type || 'Primary', { forwarder });
                     await adguard.addZoneForwarding(zone);
 
                     return NextResponse.json({

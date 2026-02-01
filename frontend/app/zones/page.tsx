@@ -23,6 +23,7 @@ export default function ZonesPage() {
         type: 'Primary',
         isActiveDirectory: false,
         dcServers: '',
+        forwarder: '',
     });
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -49,6 +50,10 @@ export default function ZonesPage() {
             setError('Please enter at least one Domain Controller IP');
             return;
         }
+        if (newZone.type === 'ConditionalForwarder' && !newZone.forwarder) {
+            setError('Please enter a Forwarder IP for Conditional Forwarder zone');
+            return;
+        }
 
         setCreating(true);
         setError(null);
@@ -63,13 +68,14 @@ export default function ZonesPage() {
                     type: newZone.type,
                     isActiveDirectory: newZone.isActiveDirectory,
                     dcServers: newZone.dcServers,
+                    forwarder: newZone.forwarder,
                 }),
             });
 
             const data = await res.json();
             if (data.error) throw new Error(data.error);
 
-            setNewZone({ name: '', type: 'Primary', isActiveDirectory: false, dcServers: '' });
+            setNewZone({ name: '', type: 'Primary', isActiveDirectory: false, dcServers: '', forwarder: '' });
             setShowCreateModal(false);
             await fetchZones();
         } catch (err) {
@@ -239,7 +245,7 @@ export default function ZonesPage() {
                                         Custom Zone
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                        Create zone in Technitium with custom records
+                                        Create zone in Technitium (Primary or Conditional)
                                     </div>
                                 </div>
                             </button>
@@ -302,7 +308,27 @@ export default function ZonesPage() {
                                     >
                                         <option value="Primary">Primary (Authoritative)</option>
                                         <option value="Secondary">Secondary (Replica)</option>
+                                        <option value="ConditionalForwarder">Conditional Forwarder (Split DNS)</option>
                                     </select>
+                                </div>
+                            )}
+
+                            {/* Conditional Forwarder Input */}
+                            {!newZone.isActiveDirectory && newZone.type === 'ConditionalForwarder' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                                        Forwarder IP
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newZone.forwarder}
+                                        onChange={(e) => setNewZone(prev => ({ ...prev, forwarder: e.target.value }))}
+                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                        placeholder="e.g. 1.1.1.1"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        DNS server to forward queries to when records are not found locally
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -317,9 +343,11 @@ export default function ZonesPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <strong className="text-blue-400">Custom Zone Mode:</strong> Zone will be created in Technitium
-                                        where you can add A, CNAME, TXT, SRV records. AdGuard forwards
-                                        <code className="bg-gray-700 px-1 mx-1 rounded">*.{newZone.name || 'domain'}</code> to Technitium.
+                                        <strong className="text-blue-400">Custom Zone Mode:</strong> Zone will be created in Technitium.
+                                        {newZone.type === 'ConditionalForwarder'
+                                            ? ' Local records will be resolved, unknown records forwarded to ' + (newZone.forwarder || 'upstream') + '.'
+                                            : ' You can add A, CNAME, TXT records manually.'}
+                                        AdGuard forwards <code className="bg-gray-700 px-1 mx-1 rounded">*.{newZone.name || 'domain'}</code> to Technitium.
                                     </>
                                 )}
                             </p>
@@ -338,7 +366,7 @@ export default function ZonesPage() {
                             </button>
                             <button
                                 onClick={handleCreateZone}
-                                disabled={creating || !newZone.name || (newZone.isActiveDirectory && !newZone.dcServers)}
+                                disabled={creating || !newZone.name || (newZone.isActiveDirectory && !newZone.dcServers) || (!newZone.isActiveDirectory && newZone.type === 'ConditionalForwarder' && !newZone.forwarder)}
                                 className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium ${newZone.isActiveDirectory
                                     ? 'bg-purple-600 hover:bg-purple-500 disabled:bg-purple-600/50'
                                     : 'bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50'
