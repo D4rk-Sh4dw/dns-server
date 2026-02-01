@@ -30,14 +30,15 @@ async function checkAndReenableProtection() {
 }
 
 let timerJobInterval: NodeJS.Timeout | null = null;
+let isInitialized = false;
 
 export function initBackgroundJobs() {
     // Prevent multiple instances
-    if (timerJobInterval) {
-        console.log('[Background Jobs] Already running, skipping initialization');
+    if (isInitialized) {
         return;
     }
 
+    isInitialized = true;
     console.log('[Background Jobs] Starting protection timer job (checks every 30 seconds)');
 
     // Check immediately on startup
@@ -51,6 +52,15 @@ export function stopBackgroundJobs() {
     if (timerJobInterval) {
         clearInterval(timerJobInterval);
         timerJobInterval = null;
+        isInitialized = false;
         console.log('[Background Jobs] Stopped');
     }
+}
+
+// Auto-initialize on module load in Node.js environment
+if (typeof window === 'undefined') {
+    // Small delay to ensure all modules are loaded
+    setTimeout(() => {
+        initBackgroundJobs();
+    }, 1000);
 }

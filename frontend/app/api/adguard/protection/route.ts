@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import * as adguard from '@/lib/adguard';
+import '@/lib/background-jobs'; // Initialize background jobs
 
 export async function GET() {
     try {
