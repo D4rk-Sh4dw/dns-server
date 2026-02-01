@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import {
     Users, Plus, Trash2, Edit2, Shield,
     ShieldCheck, Baby, Search, Check, X,
-    Laptop, Tablet, Smartphone, Tv, Cpu, Info
+    Laptop, Tablet, Smartphone, Tv, Cpu, Info, Globe
 } from 'lucide-react';
 
 interface AdGuardClient {
@@ -225,7 +225,7 @@ export default function ClientsPage() {
             {/* Add/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-4xl my-auto shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-6xl my-auto shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
                             <h3 className="text-xl font-semibold text-white">
                                 {editingClient ? 'Edit Client' : 'Add New Client'}
@@ -405,16 +405,20 @@ export default function ClientsPage() {
                                                         Unblock All
                                                     </button>
                                                 </div>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar p-1">
                                                     {filteredServices.length === 0 ? (
-                                                        <div className="col-span-full py-4 text-center text-gray-500 text-xs italic">
+                                                        <div className="col-span-full py-12 text-center text-gray-500 text-xs italic flex flex-col items-center justify-center gap-2">
+                                                            <div className="bg-gray-800/50 p-3 rounded-full">
+                                                                <Globe size={24} className="opacity-20" />
+                                                            </div>
                                                             {availableServices.length === 0
-                                                                ? "No services available. Check AdGuard connection."
-                                                                : "No services found matching your search."}
+                                                                ? "No services available. Check connection."
+                                                                : "No services found."}
                                                         </div>
                                                     ) : (
                                                         filteredServices.map(service => {
                                                             const isBlocked = (formData.blocked_services || []).includes(service);
+                                                            const iconSlug = service.toLowerCase().replace(/_/g, '');
                                                             return (
                                                                 <button
                                                                     key={service}
@@ -425,12 +429,29 @@ export default function ClientsPage() {
                                                                             : [...current, service];
                                                                         setFormData({ ...formData, blocked_services: next });
                                                                     }}
-                                                                    className={`px-3 py-2 rounded-lg text-left text-[11px] font-medium transition-all border ${isBlocked
-                                                                        ? 'bg-red-500/10 text-red-400 border-red-500/30'
-                                                                        : 'bg-gray-800 text-gray-500 border-gray-700 hover:border-gray-500'
+                                                                    className={`relative group p-3 rounded-xl text-center transition-all border flex flex-col items-center justify-center gap-2 h-24 ${isBlocked
+                                                                        ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                                                                        : 'bg-gray-800/50 text-gray-400 border-gray-700/50 hover:border-gray-600 hover:bg-gray-800 hover:text-white'
                                                                         }`}
                                                                 >
-                                                                    {service.charAt(0).toUpperCase() + service.slice(1).replace(/_/g, ' ')}
+                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${isBlocked ? 'bg-red-500/20' : 'bg-gray-700/50'}`}>
+                                                                        <img
+                                                                            src={`https://cdn.simpleicons.org/${iconSlug}/${isBlocked ? 'ff8888' : '9ca3af'}`}
+                                                                            alt=""
+                                                                            className="w-5 h-5"
+                                                                            onError={(e) => {
+                                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                                                            }}
+                                                                        />
+                                                                        <Globe size={16} className={`hidden absolute ${isBlocked ? 'text-red-400' : 'text-gray-500'}`} />
+                                                                    </div>
+                                                                    <span className="text-[10px] font-medium leading-tight line-clamp-2 w-full">
+                                                                        {service.charAt(0).toUpperCase() + service.slice(1).replace(/_/g, ' ')}
+                                                                    </span>
+                                                                    {isBlocked && (
+                                                                        <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                                                                    )}
                                                                 </button>
                                                             );
                                                         })
