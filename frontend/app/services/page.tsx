@@ -2,43 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { RefreshCw, Clock, Save, ShieldOff } from 'lucide-react';
-
-interface Service {
-    id: string;
-    name: string;
-    icon_svg: string;
-    rules_count: number;
-}
-
-interface ServiceGroup {
-    category: string;
-    services: Service[];
-}
+import { POPULAR_SERVICES } from '../../config/services';
 
 export default function ServicesPage() {
-    const [availableServices, setAvailableServices] = useState<Service[]>([]);
     const [blockedServices, setBlockedServices] = useState<string[]>([]);
-    const [schedule, setSchedule] = useState<{
-        ids?: string[],
-        schedule?: {
-            time_zone?: string;
-            days?: string[]; // "sun", "mon" etc
-            start?: string; // HH:mm
-            end?: string; // HH:mm
-        }
-    }>({});
+    const [schedule, setSchedule] = useState<any>({});
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [scheduleSaving, setScheduleSaving] = useState(false);
-
-    // Grouping manually or if API provides categories?
-    // AdGuard `available` list usually is flat array of objects. 
-    // We might need to guess categories or just show a flat list / search.
-    // Wait, the user image shows categories "Artificial intelligence", "Content delivery networks", etc.
-    // This implies AdGuard API DOES return categories or it's hardcoded in AdGuard UI.
-    // If the API returns flat list, we can try to map them or just use a grid.
-    // Let's assume flat list for now but add a search.
     const [filter, setFilter] = useState('');
 
     const fetchData = async () => {
@@ -50,26 +22,15 @@ export default function ServicesPage() {
             ]);
 
             const servicesData = await servicesRes.json();
-            // Ensure array type before setting state to avoid render crashes
-            // Use logical OR to fallback to empty array if response is bad
-            const available = Array.isArray(servicesData.available) ? servicesData.available : [];
+            const scheduleData = await scheduleRes.json();
+
+            // We only need the blocked list from API now
             const blocked = Array.isArray(servicesData.blocked) ? servicesData.blocked : [];
-
-            setAvailableServices(available);
             setBlockedServices(blocked);
-
-            // Handle schedule safely
-            try {
-                const scheduleData = await scheduleRes.json();
-                setSchedule(scheduleData || {});
-            } catch (e) {
-                console.error("Failed to parse schedule", e);
-                setSchedule({});
-            }
+            setSchedule(scheduleData || {});
         } catch (err) {
             console.error('Failed to fetch data:', err);
             // Ensure we don't leave loading state hanging if fetch fails
-            setAvailableServices([]);
             setBlockedServices([]);
         }
         setLoading(false);
@@ -112,15 +73,6 @@ export default function ServicesPage() {
         setSaving(false);
     };
 
-    // ... saveSchedule ...
-
-    // Filter availableServices only if it's an array (now guaranteed by fetchData but state could be initial)
-    const safeAvailableServices = Array.isArray(availableServices) ? availableServices : [];
-    const filteredServices = safeAvailableServices.filter(s =>
-        (s.name || '').toLowerCase().includes(filter.toLowerCase()) ||
-        (s.id || '').toLowerCase().includes(filter.toLowerCase())
-    );
-
     const saveSchedule = async () => {
         setScheduleSaving(true);
         try {
@@ -141,7 +93,10 @@ export default function ServicesPage() {
         setScheduleSaving(false);
     };
 
-
+    const filteredServices = POPULAR_SERVICES.filter(s =>
+        s.name.toLowerCase().includes(filter.toLowerCase()) ||
+        s.id.toLowerCase().includes(filter.toLowerCase())
+    );
 
     return (
         <div className="p-8 space-y-8">
@@ -189,7 +144,7 @@ export default function ServicesPage() {
                             value={formatTime(schedule.schedule?.start)}
                             onChange={e => setSchedule({
                                 ...schedule,
-                                schedule: { ...schedule.schedule, start: e.target.value } // AdGuard expects milliseconds? Or HH:mm? Needs verify. Assuming HH:mm for now.
+                                schedule: { ...schedule.schedule, start: e.target.value }
                             })}
                         />
                     </div>
@@ -216,7 +171,7 @@ export default function ServicesPage() {
                                 onClick={() => {
                                     const currentDays = schedule.schedule?.days || [];
                                     const newDays = currentDays.includes(day)
-                                        ? currentDays.filter(d => d !== day)
+                                        ? currentDays.filter((d: string) => d !== day)
                                         : [...currentDays, day];
                                     setSchedule({
                                         ...schedule,
@@ -265,6 +220,7 @@ export default function ServicesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filteredServices.map(service => {
                         const isBlocked = blockedServices.includes(service.id);
+                        const Icon = service.icon || ShieldOff;
                         return (
                             <div
                                 key={service.id}
@@ -273,26 +229,18 @@ export default function ServicesPage() {
                                 onClick={() => toggleService(service.id)}
                             >
                                 <div className="flex gap-3 items-center">
-                                    {/* Render SVG Icon if available, else placeholder */}
-                                    {service.icon_svg ? (
-                                        <div
-                                            className="w-8 h-8 flex-shrink-0 text-gray-400"
-                                            dangerouslySetInnerHTML={{ __html: service.icon_svg }}
-                                        />
-                                    ) : (
-                                        <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-400">
-                                            {service.name.substring(0, 2)}
-                                        </div>
-                                    )}
+                                    <div className="w-8 h-8 flex items-center justify-center text-gray-400">
+                                        <Icon size={24} />
+                                    </div>
                                     <span className="text-white font-medium">{service.name}</span>
                                 </div>
                                 <Switch checked={isBlocked} />
                             </div>
                         );
                     })}
-                    {filteredServices.length === 0 && !loading && (
+                    {filteredServices.length === 0 && (
                         <div className="col-span-full text-center text-gray-500 py-8">
-                            No services found.
+                            No services found matching term "{filter}".
                         </div>
                     )}
                 </div>
