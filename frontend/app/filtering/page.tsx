@@ -251,9 +251,24 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
         };
     }, []);
 
-    const startPauseTimer = (minutes: number) => {
-        // Now handled by backend mostly. We just set a local UI timer for smooth countdown.
-        toggleProtection('protection', false, minutes);
+    const startPauseTimer = async (minutes: number) => {
+        // Protection is already disabled at this point, just set the timer
+        setShowTimerMenu(false);
+        try {
+            const res = await fetch('/api/adguard/protection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ setting: 'protection', enabled: false, duration: minutes }),
+            });
+
+            if (!res.ok) throw new Error('Failed to set pause timer');
+
+            // Re-fetch to get the exact pauseUntil from server
+            refresh();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to set pause timer. Please try again.');
+        }
     };
 
     // Helper to sync timer with server state
