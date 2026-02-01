@@ -33,6 +33,20 @@ export default function DhcpPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newLease, setNewLease] = useState({ mac: '', ip: '', hostname: '' });
 
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/adguard/dhcp');
+            const data = await res.json();
+            setStatus(data);
+        } catch (err) {
+            setError('Failed to fetch DHCP status');
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
     const handleToggleDhcp = async (enabled: boolean) => {
         if (!status) return;
         try {

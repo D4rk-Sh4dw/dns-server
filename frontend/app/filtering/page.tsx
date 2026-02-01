@@ -236,7 +236,7 @@ export default function FilteringPage() {
                             title="DNS Protection"
                             description="Enable DNS filtering and blocking"
                             checked={protection?.protectionEnabled ?? false}
-                            onChange={(v) => toggleProtection('protection', v)}
+                            onChange={(v: boolean) => toggleProtection('protection', v)}
                         />
                         <ProtectionToggle
                             icon={Baby}
@@ -244,7 +244,7 @@ export default function FilteringPage() {
                             title="Parental Control"
                             description="Block adult content (pornography, etc.)"
                             checked={protection?.parentalEnabled ?? false}
-                            onChange={(v) => toggleProtection('parental', v)}
+                            onChange={(v: boolean) => toggleProtection('parental', v)}
                         />
                         <ProtectionToggle
                             icon={ShieldCheck}
@@ -252,7 +252,7 @@ export default function FilteringPage() {
                             title="Safe Browsing"
                             description="Block malware and phishing domains"
                             checked={protection?.safeBrowsingEnabled ?? false}
-                            onChange={(v) => toggleProtection('safeBrowsing', v)}
+                            onChange={(v: boolean) => toggleProtection('safeBrowsing', v)}
                         />
                         <ProtectionToggle
                             icon={Search}
@@ -260,7 +260,7 @@ export default function FilteringPage() {
                             title="Safe Search"
                             description="Enforce safe search on search engines"
                             checked={protection?.safeSearchEnabled ?? false}
-                            onChange={(v) => toggleProtection('safeSearch', v)}
+                            onChange={(v: boolean) => toggleProtection('safeSearch', v)}
                             showDetails={true}
                             onDetailsToggle={() => setShowSafeSearchDetails(!showSafeSearchDetails)}
                             isOpen={showSafeSearchDetails}
@@ -348,9 +348,9 @@ export default function FilteringPage() {
                     title="Filter Blocklists"
                     description="DNS requests matching these lists will be blocked."
                     lists={filtering?.filters || []}
-                    onToggle={(url, e) => handleToggleList(url, e, false)}
-                    onRemove={(url) => handleRemoveList(url, false)}
-                    onEdit={(list) => {
+                    onToggle={(url: string, e: boolean) => handleToggleList(url, e, false)}
+                    onRemove={(url: string) => handleRemoveList(url, false)}
+                    onEdit={(list: FilterList) => {
                         setEditList({ name: list.name, url: list.url, whitelist: false });
                         setShowEditModal(list);
                     }}
@@ -369,9 +369,9 @@ export default function FilteringPage() {
                     title="Allow Whitelists"
                     description="Domains matching these lists will always be allowed, bypassing blocklists."
                     lists={filtering?.whitelist_filters || []}
-                    onToggle={(url, e) => handleToggleList(url, e, true)}
-                    onRemove={(url) => handleRemoveList(url, true)}
-                    onEdit={(list) => {
+                    onToggle={(url: string, e: boolean) => handleToggleList(url, e, true)}
+                    onRemove={(url: string) => handleRemoveList(url, true)}
+                    onEdit={(list: FilterList) => {
                         setEditList({ name: list.name, url: list.url, whitelist: true });
                         setShowEditModal(list);
                     }}
@@ -417,7 +417,7 @@ export default function FilteringPage() {
                 isOpen={showPredefined}
                 onClose={() => setShowPredefined(false)}
                 whitelist={newList.whitelist}
-                onSelect={(name, url) => {
+                onSelect={(name: string, url: string) => {
                     setNewList({ ...newList, name, url });
                     setShowPredefined(false);
                     setShowAddModal(true);

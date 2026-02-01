@@ -378,40 +378,40 @@ export default function LogsPage() {
             </div >
         );
     }
+}
+function StatusBadge({ log }: { log: QueryLogItem }) {
+    const status = log.status;
+    const reason = log.reason;
+    const blocked = isBlocked(log);
 
-    function StatusBadge({ log }: { log: QueryLogItem }) {
-        const status = log.status;
-        const reason = log.reason;
-        const blocked = isBlocked(log);
-
-        if (blocked) {
-            return (
-                <div className="flex flex-col items-start gap-1">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500">
-                        <Shield size={12} />
-                        Blocked
-                    </span>
-                    {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[150px] truncate">{reason || status}</span>}
-                    {log.rules && log.rules.length > 0 && (
-                        <span className="text-[10px] text-red-400 font-mono max-w-[150px] truncate" title={log.rules[0].text}>
-                            {log.rules[0].text}
-                        </span>
-                    )}
-                </div>
-            );
-        }
-        if (status === 'Filtered') {
-            return (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500">
-                    <AlertTriangle size={12} />
-                    Filtered
-                </span>
-            );
-        }
+    if (blocked) {
         return (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
-                <Check size={12} />
-                Allowed
+            <div className="flex flex-col items-start gap-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500">
+                    <Shield size={12} />
+                    Blocked
+                </span>
+                {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[150px] truncate">{reason || status}</span>}
+                {log.rules && log.rules.length > 0 && (
+                    <span className="text-[10px] text-red-400 font-mono max-w-[150px] truncate" title={log.rules[0].text}>
+                        {log.rules[0].text}
+                    </span>
+                )}
+            </div>
+        );
+    }
+    if (status === 'Filtered') {
+        return (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500">
+                <AlertTriangle size={12} />
+                Filtered
             </span>
         );
     }
+    return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
+            <Check size={12} />
+            Allowed
+        </span>
+    );
+}

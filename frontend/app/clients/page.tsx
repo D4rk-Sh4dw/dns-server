@@ -39,7 +39,6 @@ export default function ClientsPage() {
         blocked_services: [],
         upstreams: []
     });
-    const [idInput, setIdInput] = useState('');
 
     const [availableServices, setAvailableServices] = useState<string[]>([]);
     const [idInput, setIdInput] = useState('');
@@ -302,27 +301,27 @@ export default function ClientsPage() {
                                                 </div>
                                             </div>
                                         </div>
-                               section>
+                                    </section>
 
-                                        <section>
-                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Protection Settings</h4>
-                                            <div className="bg-gray-950/30 rounded-2xl p-5 space-y-5 border border-gray-800">
-                                                <SimpleSwitch
-                                                    label="Global Settings"
-                                                    description="Inherit from server-wide rules"
-                                                    checked={formData.use_global_settings}
-                                                    onChange={(v) => setFormData({ ...formData, use_global_settings: v })}
-                                                />
-                                                {!formData.use_global_settings && (
-                                                    <div className="space-y-4 pt-4 border-t border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                        <SimpleSwitch label="DNS Filtering" checked={formData.filtering_enabled} onChange={(v) => setFormData({ ...formData, filtering_enabled: v })} />
-                                                        <SimpleSwitch label="Safe Browsing" checked={formData.safebrowsing_enabled} onChange={(v) => setFormData({ ...formData, safebrowsing_enabled: v })} />
-                                                        <SimpleSwitch label="Parental Control" checked={formData.parental_enabled} onChange={(v) => setFormData({ ...formData, parental_enabled: v })} />
-                                                        <SimpleSwitch label="Safe Search" checked={formData.safesearch_enabled} onChange={(v) => setFormData({ ...formData, safesearch_enabled: v })} />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </section>
+                                    <section>
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Protection Settings</h4>
+                                        <div className="bg-gray-950/30 rounded-2xl p-5 space-y-5 border border-gray-800">
+                                            <SimpleSwitch
+                                                label="Global Settings"
+                                                description="Inherit from server-wide rules"
+                                                checked={formData.use_global_settings}
+                                                onChange={(v) => setFormData({ ...formData, use_global_settings: v })}
+                                            />
+                                            {!formData.use_global_settings && (
+                                                <div className="space-y-4 pt-4 border-t border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <SimpleSwitch label="DNS Filtering" checked={formData.filtering_enabled} onChange={(v) => setFormData({ ...formData, filtering_enabled: v })} />
+                                                    <SimpleSwitch label="Safe Browsing" checked={formData.safebrowsing_enabled} onChange={(v) => setFormData({ ...formData, safebrowsing_enabled: v })} />
+                                                    <SimpleSwitch label="Parental Control" checked={formData.parental_enabled} onChange={(v) => setFormData({ ...formData, parental_enabled: v })} />
+                                                    <SimpleSwitch label="Safe Search" checked={formData.safesearch_enabled} onChange={(v) => setFormData({ ...formData, safesearch_enabled: v })} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
                                 </div>
 
                                 {/* Right Column: Blocked Services */}
@@ -465,38 +464,40 @@ function ClientCard({ client, onEdit, onDelete }: { client: AdGuardClient; onEdi
                         <Trash2 size={16} />
                     </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 mb-6">
-                    {client.tags?.map(tag => (
-                        <span key={tag} className="text-[9px] font-bold uppercase tracking-wider bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">
-                            {tag}
-                        </span>
-                    ))}
-                    {!client.use_global_blocked_services && client.blocked_services && client.blocked_services.length > 0 && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500 px-2 py-0.5 rounded border border-red-500/20">
-                            {client.blocked_services.length} Services Blocked
-                        </span>
-                    )}
-                </div>
-
-                <div className="mt-auto pt-6 border-t border-gray-800/50 flex items-center justify-between">
-                    <div className="flex gap-3">
-                        <ProtectionIndicator active={client.filtering_enabled || client.use_global_settings} icon={Shield} color="text-blue-400" label="Filt" />
-                        <ProtectionIndicator active={client.safebrowsing_enabled || client.use_global_settings} icon={ShieldCheck} color="text-green-400" label="Safe" />
-                        <ProtectionIndicator active={client.parental_enabled} icon={Baby} color="text-pink-400" label="Kids" />
-                    </div>
-                    {client.use_global_settings && (
-                        <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-600 bg-gray-800/50 px-2 py-0.5 rounded">Global</span>
-                    )}
-                </div>
             </div>
-            );
+
+            <div className="flex flex-wrap gap-1.5 mb-6">
+                {client.tags?.map(tag => (
+                    <span key={tag} className="text-[9px] font-bold uppercase tracking-wider bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">
+                        {tag}
+                    </span>
+                ))}
+                {!client.use_global_blocked_services && client.blocked_services && client.blocked_services.length > 0 && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500 px-2 py-0.5 rounded border border-red-500/20">
+                        {client.blocked_services.length} Services Blocked
+                    </span>
+                )}
+            </div>
+
+            <div className="mt-auto pt-6 border-t border-gray-800/50 flex items-center justify-between">
+                <div className="flex gap-3">
+                    <ProtectionIndicator active={client.filtering_enabled || client.use_global_settings} icon={Shield} color="text-blue-400" label="Filt" />
+                    <ProtectionIndicator active={client.safebrowsing_enabled || client.use_global_settings} icon={ShieldCheck} color="text-green-400" label="Safe" />
+                    <ProtectionIndicator active={client.parental_enabled} icon={Baby} color="text-pink-400" label="Kids" />
+                </div>
+                {client.use_global_settings && (
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-600 bg-gray-800/50 px-2 py-0.5 rounded">Global</span>
+                )}
+            </div>
+        </div>
+    );
 }
 
-            function ProtectionIndicator({active, icon: Icon, color, label }: any) {
+function ProtectionIndicator({ active, icon: Icon, color, label }: any) {
     return (
-            <div className={`flex items-center gap-1 ${active ? color : 'text-gray-700'} transition-colors`} title={`${label}: ${active ? 'Active' : 'Disabled'}`}>
-                <Icon size={14} />
-                <span className="text-[10px] font-bold uppercase">{label}</span>
-            </div>
-            );
+        <div className={`flex items-center gap-1 ${active ? color : 'text-gray-700'} transition-colors`} title={`${label}: ${active ? 'Active' : 'Disabled'}`}>
+            <Icon size={14} />
+            <span className="text-[10px] font-bold uppercase">{label}</span>
+        </div>
+    );
 }
