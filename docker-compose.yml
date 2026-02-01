@@ -22,7 +22,8 @@ services:
       - adguard
       - technitium
     networks:
-      - dns-net
+      dns-net:
+        ipv4_address: 172.25.0.102
 
   # --- AdGuard Home (Recursive DNS & AdBlocking) ---
   adguard:
@@ -37,7 +38,8 @@ services:
       - ./data/adguard/work:/opt/adguardhome/work
       - ./config/adguard:/opt/adguardhome/conf
     networks:
-      - dns-net
+      dns-net:
+        ipv4_address: 172.25.0.100
 
   # --- Technitium DNS (Authoritative DNS) ---
   technitium:
@@ -59,8 +61,12 @@ services:
     volumes:
       - ./data/technitium:/etc/dns
     networks:
-      - dns-net
+      dns-net:
+        ipv4_address: 172.25.0.101
 
 networks:
   dns-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
