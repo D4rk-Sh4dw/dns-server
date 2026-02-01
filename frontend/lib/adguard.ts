@@ -187,13 +187,26 @@ export async function updateFilterList(url: string, name: string, newUrl: string
 }
 
 export async function toggleFilterList(url: string, enabled: boolean, whitelist = false) {
+    // To use set_url, we need the filter's name. Fetch current status first.
+    const status = await getFiltering();
+    const listKey = whitelist ? 'whitelist_filters' : 'filters';
+    const currentList = status[listKey]?.find((f: any) => f.url === url);
+
+    // If list not found, we can't update. But usually we toggle existing ones.
+    const name = currentList ? currentList.name : (url.split('/').pop() || 'Filter');
+
     // Modern AdGuard Home uses /control/filtering/set_url for toggling
+    // It requires a "data" object with name, url, and enabled status
     return adguardFetch('/control/filtering/set_url', {
         method: 'POST',
         body: JSON.stringify({
-            url,
-            enabled,
-            whitelist
+            url, // The key to find the filter
+            whitelist,
+            data: {
+                enabled,
+                name,
+                url
+            }
         }),
     });
 }
