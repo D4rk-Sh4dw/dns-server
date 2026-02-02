@@ -14,7 +14,8 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         // Body should contain the partial config updates
-        await adguard.setDnsConfig(body);
+        // Body should contain the partial config updates
+        await adguard.updateDnsConfig(body);
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update config' }, { status: 500 });
