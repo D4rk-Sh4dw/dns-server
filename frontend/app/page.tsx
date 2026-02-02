@@ -16,7 +16,7 @@ interface AdGuardStats {
   num_blocked_filtering: number;
   avg_processing_time: number;
   dns_queries: number[];
-  top_queries: { [key: string]: number }[];
+  top_queried_domains: { [key: string]: number }[];
   top_blocked_domains: { [key: string]: number }[];
   top_clients: { [key: string]: number }[];
 }
@@ -157,7 +157,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TopTable
               title="Top Queried Domains"
-              data={stats?.top_queries}
+              data={stats?.top_queried_domains}
               icon={Globe}
               color="text-blue-400"
             />
