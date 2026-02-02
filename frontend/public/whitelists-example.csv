@@ -1,0 +1,3 @@
+enabled,url,name,id
+true,https://raw.githubusercontent.com/TSFMarcel/tsf_adguard/refs/heads/main/allow_liste.txt,Marcel's Global Whitelist,1
+false,https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/WhitelistFilter/sections/exclude.txt,AdGuard Whitelist,2

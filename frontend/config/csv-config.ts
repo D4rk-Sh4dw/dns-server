@@ -3,11 +3,10 @@
 
 export const CSV_SOURCES = {
     // Blocklist CSV URL - Update this with your GitHub URL
-    // Example format: https://raw.githubusercontent.com/USER/REPO/main/blocklists.csv
     blocklist: process.env.NEXT_PUBLIC_BLOCKLIST_CSV_URL || '',
 
-    // Whitelist URL (AdGuard rule format)
-    whitelist: process.env.NEXT_PUBLIC_WHITELIST_CSV_URL || 'https://raw.githubusercontent.com/TSFMarcel/tsf_adguard/refs/heads/main/allow_liste.txt'
+    // Whitelist CSV URL - Update this with your GitHub URL
+    whitelist: process.env.NEXT_PUBLIC_WHITELIST_CSV_URL || ''
 };
 
 // Fallback to local example file if no URL is configured
@@ -16,5 +15,6 @@ export function getBlocklistUrl(): string {
 }
 
 export function getWhitelistUrl(): string {
-    return CSV_SOURCES.whitelist;
+    return CSV_SOURCES.whitelist || '/whitelists-example.csv';
 }
+

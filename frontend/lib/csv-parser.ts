@@ -34,7 +34,11 @@ export function parseCSV(csvText: string): ParseResult {
     const data: FilterEntry[] = [];
 
     // Detect format
-    const isAdGuardRules = csvText.trim().startsWith('@@') || csvText.trim().startsWith('||');
+    // Filter out comments and empty lines to look at the first real data line
+    const lines = csvText.split('\n').map(line => line.trim());
+    const firstDataLine = lines.find(line => line && !line.startsWith('#') && !line.startsWith('!') && !line.startsWith('//'));
+
+    const isAdGuardRules = firstDataLine && (firstDataLine.startsWith('@@') || firstDataLine.startsWith('||'));
 
     if (isAdGuardRules) {
         // Parse AdGuard rule format (for whitelists)
@@ -42,17 +46,18 @@ export function parseCSV(csvText: string): ParseResult {
     }
 
     // Parse CSV format
-    const lines = csvText.split('\n').map(line => line.trim()).filter(Boolean);
+    const filteredLines = lines.filter(Boolean);
 
-    if (lines.length === 0) {
+    if (filteredLines.length === 0) {
         return { success: false, data: [], errors: ['CSV file is empty'] };
     }
 
     // Check for header
-    const firstLine = lines[0].toLowerCase();
+    const firstLine = filteredLines[0].toLowerCase();
     const hasHeader = firstLine.includes('enabled') && firstLine.includes('url') && firstLine.includes('name');
 
-    const dataLines = hasHeader ? lines.slice(1) : lines;
+    const dataLines = hasHeader ? filteredLines.slice(1) : filteredLines;
+
 
     dataLines.forEach((line, index) => {
         const lineNumber = hasHeader ? index + 2 : index + 1;
