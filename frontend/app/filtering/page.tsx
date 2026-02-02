@@ -258,6 +258,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     const [showSafeSearchDetails, setShowSafeSearchDetails] = useState(false);
     const [showImportCSV, setShowImportCSV] = useState(false);
     const [importWhitelist, setImportWhitelist] = useState(false);
+    const [returnToPredefined, setReturnToPredefined] = useState(false);
 
     // State for timer
     const [pauseTimer, setPauseTimer] = useState<number | null>(null);
@@ -540,7 +541,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                     onToggle={(url: string, e: boolean) => handleListOp('toggle', { url, enabled: e, whitelist: false })}
                     onRemove={(url: string) => handleListOp('remove', { url, whitelist: false })}
                     onEdit={(list: FilterList) => { setEditList({ name: list.name, url: list.url, whitelist: false }); setShowEditModal(list); }}
-                    onAdd={() => { setNewList({ name: '', url: '', whitelist: false }); setShowAddModal(true); }}
+                    onAdd={() => { setNewList({ name: '', url: '', whitelist: false }); setShowAddModal(true); setReturnToPredefined(false); }}
                     onBrowse={() => { setNewList({ name: '', url: '', whitelist: false }); setShowPredefined(true); }}
                     onImport={() => { setImportWhitelist(false); setShowImportCSV(true); }}
                     onRefresh={() => handleListOp('refresh', { whitelist: false })}
@@ -553,7 +554,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                     onToggle={(url: string, e: boolean) => handleListOp('toggle', { url, enabled: e, whitelist: true })}
                     onRemove={(url: string) => handleListOp('remove', { url, whitelist: true })}
                     onEdit={(list: FilterList) => { setEditList({ name: list.name, url: list.url, whitelist: true }); setShowEditModal(list); }}
-                    onAdd={() => { setNewList({ name: '', url: '', whitelist: true }); setShowAddModal(true); }}
+                    onAdd={() => { setNewList({ name: '', url: '', whitelist: true }); setShowAddModal(true); setReturnToPredefined(false); }}
                     onBrowse={() => { setNewList({ name: '', url: '', whitelist: true }); setShowPredefined(true); }}
                     onImport={() => { setImportWhitelist(true); setShowImportCSV(true); }}
                     onRefresh={() => handleListOp('refresh', { whitelist: true })}
@@ -562,10 +563,10 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             </div>
 
             {/* Modals from Global */}
-            <AddListModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} data={newList} setData={setNewList} onSubmit={() => { handleListOp('add', newList); setShowAddModal(false); }} />
+            <AddListModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} data={newList} setData={setNewList} onSubmit={() => { handleListOp('add', newList); setShowAddModal(false); if (returnToPredefined) setShowPredefined(true); }} />
             <EditListModal isOpen={!!showEditModal} onClose={() => setShowEditModal(null)} data={editList} setData={setEditList} onSubmit={() => { handleListOp('update', { url: showEditModal?.url, name: editList.name, newUrl: editList.url, whitelist: editList.whitelist }); setShowEditModal(null); }} />
             <AddRuleModal isOpen={showRuleModal} onClose={() => setShowRuleModal(false)} rule={newRule} setRule={setNewRule} onSubmit={() => { handleListOp('addRule', { rule: newRule }); setNewRule(''); setShowRuleModal(false); }} />
-            <PredefinedListsModal isOpen={showPredefined} onClose={() => setShowPredefined(false)} whitelist={newList.whitelist} onSelect={(name: string, url: string) => { setNewList({ ...newList, name, url }); setShowPredefined(false); setShowAddModal(true); }} />
+            <PredefinedListsModal isOpen={showPredefined} onClose={() => setShowPredefined(false)} whitelist={newList.whitelist} onSelect={(name: string, url: string) => { setNewList({ ...newList, name, url }); setShowPredefined(false); setShowAddModal(true); setReturnToPredefined(true); }} />
             <ImportCSVModal isOpen={showImportCSV} onClose={() => setShowImportCSV(false)} whitelist={importWhitelist} onImport={(lists: any[]) => { lists.forEach(list => handleListOp('add', { name: list.name, url: list.url, whitelist: importWhitelist })); setShowImportCSV(false); }} />
 
         </div>
