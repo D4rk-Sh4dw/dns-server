@@ -5,31 +5,39 @@ export async function GET() {
     try {
         const [availableRes, blockedRes] = await Promise.all([
             adguard.getAllBlockedServices(),
-            adguard.getBlockedServices() // this is new /get
+            adguard.getBlockedServices()
         ]);
-
-        // DEBUG LOGS
-        console.log('DEBUG: availableRes type:', typeof availableRes, Array.isArray(availableRes));
-        console.log('DEBUG: availableRes preview:', JSON.stringify(availableRes)?.substring(0, 500));
-        console.log('DEBUG: blockedRes preview:', JSON.stringify(blockedRes)?.substring(0, 500));
 
         // Normalize available services
         let available = [];
         if (Array.isArray(availableRes)) {
-            available = availableRes;
+            available = availableRes.map(s => {
+                if (typeof s === 'string') {
+                    return {
+                        id: s,
+                        name: s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                    };
+                }
+                return s;
+            });
         } else if (availableRes && typeof availableRes === 'object') {
-            // @ts-ignore
-            // Go code uses json:"blocked_services" for the list of available services
-            available = availableRes.blocked_services || availableRes.blocking_services || availableRes.services || availableRes.available_services || [];
-            if (!Array.isArray(available)) available = [];
+            const raw = availableRes.blocked_services || availableRes.blocking_services || availableRes.services || availableRes.available_services || [];
+            if (Array.isArray(raw)) {
+                available = raw.map(s => {
+                    if (typeof s === 'string') {
+                        return {
+                            id: s,
+                            name: s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                        };
+                    }
+                    return s;
+                });
+            }
         }
 
-        // Normalize blocked services (from /control/blocked_services/get)
-        // Response is { ids: [], schedule: {} }
+        // Normalize blocked services
         let blocked: string[] = [];
-        // @ts-ignore
-        if (blockedRes && (blockedRes.ids || Array.isArray(blockedRes))) {
-            // @ts-ignore
+        if (blockedRes && typeof blockedRes === 'object') {
             blocked = blockedRes.ids || (Array.isArray(blockedRes) ? blockedRes : []);
         }
 

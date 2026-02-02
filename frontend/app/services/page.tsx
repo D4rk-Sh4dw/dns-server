@@ -127,8 +127,17 @@ export default function ServicesPage() {
         setScheduleSaving(false);
     };
 
-    // Determine which list to show: Dynamic or Static Fallback
-    const displayServices = availableServices.length > 0 ? availableServices : POPULAR_SERVICES;
+    // Determine which list to show: Merge Dynamic with Static Metadata
+    const displayServices = availableServices.length > 0
+        ? availableServices.map(s => {
+            const metadata = POPULAR_SERVICES.find(p => p.id === s.id);
+            return {
+                ...s,
+                ...metadata, // Override with metadata (icons, etc) if found
+                name: metadata?.name || s.name // Metadata name usually cleaner
+            };
+        })
+        : POPULAR_SERVICES;
 
     const filteredServices = displayServices.filter(s =>
         (s.name || '').toLowerCase().includes(filter.toLowerCase()) ||
