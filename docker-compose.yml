@@ -15,6 +15,9 @@ services:
       - ADGUARD_PASS=admin123
       - TECHNITIUM_URL=http://dns-technitium:5380
       - TECHNITIUM_PASSWORD=admin123
+      - AUTH_SECRET=this_is_a_very_secret_key_for_nextauth
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD=admin123
     volumes:
       - ./config:/app/config_mount
       - ./data:/app/data_mount
