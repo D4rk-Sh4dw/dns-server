@@ -21,7 +21,8 @@ export async function GET() {
                 return s;
             });
         } else if (availableRes && typeof availableRes === 'object') {
-            const raw = availableRes.blocked_services || availableRes.blocking_services || availableRes.services || availableRes.available_services || [];
+            const res = availableRes as any;
+            const raw = res.blocked_services || res.blocking_services || res.services || res.available_services || [];
             if (Array.isArray(raw)) {
                 available = raw.map(s => {
                     if (typeof s === 'string') {
