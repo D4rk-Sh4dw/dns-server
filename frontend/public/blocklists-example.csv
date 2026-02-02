@@ -1,0 +1,160 @@
+enabled,url,name,id
+true,https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt,AdGuard DNS filter,1
+true,https://adaway.org/hosts.txt,AdAway Default Blocklist,2
+true,https://someonewhocares.org/hosts/zero/hosts,Dan Pollock's List,1667252933
+true,https://raw.githubusercontent.com/DandelionSprout/adfilt/master/GameConsoleAdblockList.txt,Game Console Adblock List,1667252934
+true,https://abp.oisd.nl/basic/,OISD Blocklist Basic,1667252935
+true,https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV-AGH.txt,Perflyst and Dandelion Sprout's Smart-TV Blocklist,1667252936
+true,https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&showintro=1&mimetype=plaintext,Peter Lowe's List,1667252937
+true,https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareAdGuardHome.txt,Dandelion Sprout's Anti-Malware List,1667252938
+true,https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/hosts.txt,NoCoin Filter List,1667252939
+true,https://raw.githubusercontent.com/durablenapkin/scamblocklist/master/adguard.txt,Scam2 by DurableNapkin,1667252940
+true,https://raw.githubusercontent.com/mitchellkrogza/The-Big-List-of-Hacked-Malware-Web-Sites/master/hosts,The Big List of Hacked Malware Web Sites,1667252941
+true,https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt,WindowsSpyBlocker - Hosts spy rules,1667252942
+true,https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-agh-online.txt,Online Malicious URL Blocklist,1667252943
+true,https://raw.githubusercontent.com/DRSDavidSoft/additional-hosts/master/domains/blacklist/unwanted-iranian.txt,IRN: Unwanted Iranian domains,1667252944
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/hostfile.txt,POL: Polish filters for Pi hole,1667252945
+true,https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt,IDN: ABPindo,1667252946
+true,https://abpvn.com/android/abpvn.txt,VNM: ABPVN List,1667252947
+true,https://anti-ad.net/easylist.txt,CHN: anti-AD,1667252948
+true,https://raw.githubusercontent.com/lassekongo83/Frellwits-filter-lists/master/Frellwits-Swedish-Hosts-File.txt,SWE: Frellwit's Swedish Hosts File,1667252949
+true,https://raw.githubusercontent.com/yous/YousList/master/hosts.txt,KOR: YousList,1667252951
+true,https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianExperimentalList%20alternate%20versions/NordicFiltersAdGuardHome.txt,NOR: Dandelion Sprouts nordiske filtre,1667252952
+true,https://raw.githubusercontent.com/cchevy/macedonian-pi-hole-blocklist/master/hosts.txt,MKD: Macedonian Pi-hole Blocklist,1667252953
+true,https://easylist-downloads.adblockplus.org/easylistdutch.txt,NLD: Easylist,1667252954
+true,https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts,StevenBlack hosts,1667256468
+true,http://sysctl.org/cameleon/hosts,Cameleon Hosts Project,1667256469
+true,https://bitbucket.org/ethanr/dns-blacklists/raw/8575c9f96e5b4a1308f2f12394abd86d0927a4a0/bad_lists/Mandiant_APT1_Report_Appendix_D.txt,ETHANR badlists,1667256470
+true,http://hole.cert.pl/domains/domains_hosts.txt,CERT POLSKA hosts,1667256473
+true,https://dbl.oisd.nl,DBL BLOCKLIST,1667256474
+true,https://github.com/chadmayfield/pihole-blocklists/raw/master/lists/pi_blocklist_porn_all.list,Adult XXX2 Chadmayfield,1667256476
+true,https://gitlab.com/ookangzheng/dbl-oisd-nl/raw/master/dbl.txt,DBL BLOCKLIST MASTER,1667256480
+true,https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt,No-track blocklist,1667256481
+true,https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt,No-track malware,1667256482
+true,https://hostfiles.frogeye.fr/firstparty-trackers-hosts.txt,No-track hosts,1667256483
+true,https://hostfiles.frogeye.fr/multiparty-trackers-hosts.txt,No-track multiparty hosts,1667256484
+true,https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt,OSINT IT Threat Intel,1667256485
+true,https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext,Ad-servers3,1667256487
+true,https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext,Ad-servers2,1667256488
+true,https://phishing.army/download/phishing_army_blocklist_extended.txt,Phishing block,1667256489
+true,https://raw.githubusercontent.com/AmnestyTech/investigations/master/2021-07-18_nso/domains.txt,NSO Pegasus,1667256490
+true,https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt,Ad-servers,1667256491
+true,https://raw.githubusercontent.com/bigdargon/hostsVN/master/hosts,Hosts block,1667256492
+true,https://raw.githubusercontent.com/bogachenko/fuckfuckadblock/master/fuckfuckadblock.txt,Adblock check,1667256493
+true,https://raw.githubusercontent.com/chadmayfield/my-pihole-blocklists/master/lists/pi_blocklist_porn_all.list,Adult XXX,1667256494
+true,https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareHosts.txt,Malware hosts,1667256495
+true,https://raw.githubusercontent.com/deathbybandaid/piholeparser/master/Subscribable-Lists/ParsedBlacklists/AakList.txt,Blocklist,1667256496
+true,https://raw.githubusercontent.com/deathbybandaid/piholeparser/master/Subscribable-Lists/ParsedBlacklists/Prebake-Obtrusive.txt,Obtrusive,1667256497
+true,https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts,Hosts block2,1667256498
+true,https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts,Fademind hosts,1667256499
+true,https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts,Fademind SPAM,1667256500
+true,https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts,UncheckyAds,1667256501
+true,https://raw.githubusercontent.com/hectorm/hmirror/master/data/adaway.org/list.txt,Adaway filter,1667256502
+true,https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts,Ad Wars,1667256504
+true,https://raw.githubusercontent.com/jjjxu/NSO_Pegasus_Blocklist/master/Pegasus-Hosts-Formatted.txt,NSO Pegasus2,1667256505
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/Ad_filter_list_by_Disconnect.txt,Polish Ad filter list Disconnect,1667256506
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/adguard_host.txt,Polish Ads MAJKIT,1667256508
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/adguard_mobile_host.txt,Adguard Mobile MajkiIT,1667256509
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/adservers.txt,Ad-servers4 MajkiIT,1667256510
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/easy_privacy_host.txt,Easy Privacy MajkiIT,1667256511
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/easylist_host.txt,Easylist MajkiIT,1667256512
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/gambling-hosts.txt,Gambling MajkiIT,1667256513
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/kad_host.txt,Polish KAD MajkiIT,1667256514
+true,https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt,Android Tracking Perflyst,1667256515
+true,https://raw.githubusercontent.com/PolishFiltersTeam/KADhosts/master/KADhosts.txt,KADhosts,1667256516
+true,https://raw.githubusercontent.com/root-host/Spotify-AdBlock/master/domains2,Spotify-AdBlock,1667256517
+true,https://raw.githubusercontent.com/Sekhan/TheGreatWall/master/TheGreatWall.txt,TheGreatWall,1667256518
+true,https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt,Spam404,1667256519
+true,https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt,Disconnect List,1667256520
+true,https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt,Simple malvertising,1667256521
+true,https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt,Simple tracking,1667256522
+true,https://urlhaus.abuse.ch/downloads/hostfile/,Abuse,1667256526
+true,https://v.firebog.net/hosts/AdguardDNS.txt,Firebog adguard,1667256527
+true,https://v.firebog.net/hosts/Admiral.txt,Firebog Admiral,1667256528
+true,https://v.firebog.net/hosts/Easylist.txt,Firebog Easylist,1667256529
+true,https://v.firebog.net/hosts/Easyprivacy.txt,Easyprivacy Firebog,1667256530
+true,https://v.firebog.net/hosts/Prigent-Ads.txt,Firebog Prigent-ads,1667256531
+true,https://v.firebog.net/hosts/Prigent-Crypto.txt,Firebog Crypto,1667256532
+true,https://v.firebog.net/hosts/static/w3kbl.txt,Firebog W3KBL,1667256533
+true,https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt,Ad-servers5,1667256534
+true,https://www.github.developerdan.com/hosts/lists/amp-hosts-extended.txt,Google AMP hosts tracking,1667256535
+true,https://www.github.developerdan.com/hosts/lists/dating-services-extended.txt,Dating services block,1667256536
+true,https://www.github.developerdan.com/hosts/lists/facebook-extended.txt,Facebook-extended list,1667256537
+true,https://www.github.developerdan.com/hosts/lists/hate-and-junk-extended.txt,Hate Junk,1667256538
+true,https://www.github.developerdan.com/hosts/lists/tracking-aggressive-extended.txt,Tracking Aggresive,1667256539
+true,https://www.stopforumspam.com/downloads/toxic_domains_whole.txt,Toxic domains,1667256540
+true,https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser,Crypto block2,1667256541
+true,https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt,Adguard Mobile Ads,1667305801
+true,https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Spyware/filter.txt,Adguard Tracking Protection,1667305802
+true,https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt,Adguard URL tracking filter,1667305803
+true,http://hole.cert.pl/domains/domains.txt,CERT POLSKA fraud,1667305804
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/SmartTV_ads.txt,SmartTV,1667305806
+true,https://easylist-downloads.adblockplus.org/easylistpolish.txt,Easylist Polish,1667305811
+true,https://raw.githubusercontent.com/RPiList/specials/master/Blocklisten/spam.mails,Spam4042,1697702837
+true,https://raw.githubusercontent.com/RPiList/specials/master/Blocklisten/child-protection,Child Protection,1697702838
+true,https://big.oisd.nl,OISD Big list,1697702839
+false,https://nsfw.oisd.nl,OISD NFSW,1697702840
+true,https://blocklistproject.github.io/Lists/adobe.txt,Adobe tracking block,1697702841
+true,https://blocklistproject.github.io/Lists/tracking.txt,Tracking,1697702842
+true,https://blocklistproject.github.io/Lists/scam.txt,Scam,1697702843
+true,https://blocklistproject.github.io/Lists/phishing.txt,Phishing block2,1697702844
+true,https://blocklistproject.github.io/Lists/malware.txt,Malware hosts2,1697702845
+true,https://blocklistproject.github.io/Lists/fraud.txt,Fraud,1697702846
+true,https://blocklistproject.github.io/Lists/ransomware.txt,Ransomware,1697702847
+true,https://blocklistproject.github.io/Lists/smart-tv.txt,SmartTV2,1697702848
+true,https://blocklistproject.github.io/Lists/drugs.txt,Drugs,1697702849
+true,https://blocklistproject.github.io/Lists/crypto.txt,Crypto block,1697702850
+true,https://blocklistproject.github.io/Lists/ads.txt,Ad-servers4,1697702851
+true,https://blocklistproject.github.io/Lists/abuse.txt,Abuse2,1697702852
+true,https://hole.cert.pl/domains/domains.txt,CERT POLSKA2,1697702853
+true,https://raw.githubusercontent.com/EnergizedProtection/EnergizedBlu/master/energized/blu.txt,EnergizedBlu,1697702854
+true,https://hosts.anudeep.me/mirror/CoinMiner.txt,Coin block4 miners,1697702855
+true,https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.txt,D3WARD hosts,1697702856
+true,https://easylist.to/easylist/easyprivacy.txt,Easy Privacy3,1697702857
+true,https://secure.fanboy.co.nz/fanboy-cookiemonster.txt,Cookie Monster,1697702858
+true,https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/nocoin.txt,Crypto block3,1697702861
+true,https://raw.githubusercontent.com/FiltersHeroes/KADhosts/master/KADhole.txt,KAD,1697702862
+true,https://raw.githubusercontent.com/AmnestyTech/investigations/master/2023-03-29_android_campaign/domains.txt,Android malware,1697702863
+true,https://dl.threat-list.com/1/domains.txt,NRD Threat List,1697702864
+true,https://raw.githubusercontent.com/jakejarvis/ios-trackers/master/adguard.txt,Iphone tracking,1697702865
+true,https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/SpywareFilter/sections/tracking_servers.txt,Spyware,1697702866
+true,https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/MobileFilter/sections/adservers.txt,Mobile,1697702867
+true,https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/SpywareFilter/sections/tracking_servers_firstparty.txt,Tracking2,1697702868
+true,https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-pihole-filters/android-tracking-pihole.txt,Android tracking MAJKIIT,1697702869
+true,https://raw.githubusercontent.com/laylavish/uBlockOrigin-HUGE-AI-Blocklist/main/noai_hosts.txt,AI-Blocklist,1716865272
+true,https://adguardteam.github.io/HostlistsRegistry/assets/filter_44.txt,HaGeZi's Threat Intelligence Feeds,1718074870
+true,https://adguardteam.github.io/HostlistsRegistry/assets/filter_55.txt,HaGeZi's Badware Hoster Blocklist,1718074871
+true,https://adguardteam.github.io/HostlistsRegistry/assets/filter_11.txt,Malicious URL Blocklist (URLHaus),1718074872
+true,https://adguardteam.github.io/HostlistsRegistry/assets/filter_23.txt,WindowsSpyBlocker - Hosts spy rules,1718074873
+true,https://raw.githubusercontent.com/nextdns/native-tracking-domains/main/domains/apple,Apple NEXTDNS Telemmetry,1718074874
+true,https://raw.githubusercontent.com/nextdns/native-tracking-domains/main/domains/windows,Windows NEXTDNS Telemmetry,1718074875
+true,https://raw.githubusercontent.com/nextdns/native-tracking-domains/main/domains/samsung,Samsung NEXTDNS telemmetry,1718074876
+true,https://raw.githubusercontent.com/nextdns/native-tracking-domains/main/domains/alexa,Alexa NEXTDNS telemmetry,1718074877
+true,https://raw.githubusercontent.com/nextdns/native-tracking-domains/main/domains/sonos,Sonos NEXTDNS telemmetry,1718074879
+true,https://raw.githubusercontent.com/nextdns/native-tracking-domains/main/domains/xiaomi,XIAOMI NEXTDNS telemmetry,1718074880
+true,https://codeberg.org/lumiworx/HPT-AI-Blocklist/raw/commit/a45d8afb6f96b2c8438f45d7cbf389920bfe543d/HPT-Full-AI-List,AI Blocklist HPT,1720321270
+true,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/unbound/native.winoffice.blacklist.conf,Windows & Office Hagezi,1720321271
+true,https://raw.githubusercontent.com/laylavish/uBlockOrigin-HUGE-AI-Blocklist/main/list.txt,AI-Blocklist,1726452075
+false,https://raw.githubusercontent.com/Pyenb/Pi-hole-blocklist/main/blocklist.txt,00 FAILED PYENB - general list,1726452076
+true,https://raw.githubusercontent.com/x0uid/SpotifyAdBlock/refs/heads/master/SpotifyBlocklist.txt,Spotify Blocklist Ads,1741057289
+true,https://raw.githubusercontent.com/mklemmingen/StopTheToken/main/blocklist.txt,AI-Blocklist STOPTHETOKEN,1752717691
+true,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/fake.txt,FAKE websites,1752717692
+true,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.apple.txt,Apple Native,1752717693
+true,https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.winoffice.txt,Windows Office,1752717694
+true,https://raw.githubusercontent.com/klabacita/pmoreno-list/main/proxies.txt,Proxies block,1752717695
+true,https://raw.githubusercontent.com/nextdns/cname-cloaking-blocklist/master/domains,CNAME cloaking,1752717696
+true,https://raw.githubusercontent.com/AdAway/adaway.github.io/master/hosts.txt,Ads list by AdAway - an open source ad blocker for Android,1756260096
+true,https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml&mimetype=plaintext,Peter Lowe's Collection of Bad Domains,1756260097
+true,https://raw.githubusercontent.com/Sinfonietta/hostfiles/master/gambling-hosts,Sinfonietta's collection of gambling websites,1756260098
+true,https://raw.githubusercontent.com/Sinfonietta/hostfiles/master/snuff-hosts,Sinfonietta's Gore List,1756260099
+true,https://raw.githubusercontent.com/Sinfonietta/hostfiles/master/pornography-hosts,Sinfonietta's Pornography List,1756260100
+true,https://raw.githubusercontent.com/StevenBlack/hosts/master/data/StevenBlack/hosts,Steven Black's Original Ad-Hoc List,1756260102
+true,https://raw.githubusercontent.com/safing/intel-data/master/lists/ads.txt,Safing Ads List,1756260105
+true,https://raw.githubusercontent.com/safing/intel-data/master/lists/fraud.txt,Safing Fraud List,1756260107
+true,https://raw.githubusercontent.com/safing/intel-data/master/lists/malware.txt,Safing Malware List,1756260108
+true,https://raw.githubusercontent.com/safing/intel-data/master/lists/telemetry.txt,Safing Telemetry List,1756260110
+false,https://raw.githubusercontent.com/safing/intel-data/master/lists/big-tech/google.txt,00.BIG-TECH-Google (IMPORTANT),1756260115
+false,https://raw.githubusercontent.com/safing/intel-data/master/lists/big-tech/apple.txt,00.BIG-TECH-APPLE (IMPORTANT),1756260116
+false,https://raw.githubusercontent.com/safing/intel-data/master/lists/big-tech/amazon.txt,00.BIG-TECH-AMAZON (IMPORTANT),1756260117
+false,https://raw.githubusercontent.com/safing/intel-data/master/lists/big-tech/microsoft.txt,00.BIG-TECH-MICROSOFT (IMPORTANT),1756260119
+false,https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/adblock/doh-vpn-proxy-bypass.txt,00.VPN-DNS-PROXY-BYPASS-PREVENTION,1756260120

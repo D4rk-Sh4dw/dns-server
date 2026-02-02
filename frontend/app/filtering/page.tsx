@@ -958,19 +958,181 @@ function AddRuleModal({ isOpen, onClose, rule, setRule, onSubmit }: any) {
 }
 
 function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
+    const [lists, setLists] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
+    const [showImport, setShowImport] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Fetch lists from CSV API
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const fetchLists = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const type = whitelist ? 'whitelist' : 'blocklist';
+                const res = await fetch(`/api/adguard/predefined-lists?type=${type}`);
+
+                if (!res.ok) {
+                    throw new Error('Failed to fetch lists');
+                }
+
+                const data = await res.json();
+
+                if (data.success) {
+                    setLists(data.lists || []);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (err) {
+                console.error('Error fetching predefined lists:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load lists');
+                // Fallback to hardcoded lists
+                setLists(whitelist ? PREDEFINED_WHITELISTS : PREDEFINED_BLOCKLISTS);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLists();
+    }, [isOpen, whitelist]);
+
+    // Handle CSV file import
+    const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const csvContent = await file.text();
+            const type = whitelist ? 'whitelist' : 'blocklist';
+
+            const res = await fetch('/api/adguard/import-csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ csvContent, type })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                // Add imported lists to current lists
+                setLists(prev => [...prev, ...data.lists]);
+                setShowImport(false);
+                alert(`Successfully imported ${data.count} lists!`);
+            } else {
+                alert(`Import failed: ${data.error}\n${data.details?.join('\n') || ''}`);
+            }
+        } catch (err) {
+            console.error('Error importing CSV:', err);
+            alert('Failed to import CSV file');
+        }
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    // Filter lists based on search
+    const filteredLists = lists.filter(list =>
+        list.name.toLowerCase().includes(search.toLowerCase()) ||
+        list.url.toLowerCase().includes(search.toLowerCase())
+    );
+
     if (!isOpen) return null;
-    const lists = whitelist ? PREDEFINED_WHITELISTS : PREDEFINED_BLOCKLISTS;
+
     return (
-        <Modal title="Browse Lists" onClose={onClose} maxWidth="max-w-2xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-                {lists.map((list) => (
-                    <div key={list.url} className="p-4 bg-gray-800 border border-gray-700 rounded-xl">
-                        <h4 className="text-white font-medium mb-1">{list.name}</h4>
-                        <p className="text-xs text-gray-500 mb-3 line-clamp-2">{list.description}</p>
-                        <button onClick={() => onSelect(list.name, list.url)} className="w-full py-2 bg-gray-900 text-blue-400 text-sm font-medium rounded-lg border border-gray-700">Select</button>
-                    </div>
-                ))}
+        <Modal title={`Browse ${whitelist ? 'Whitelists' : 'Blocklists'}`} onClose={onClose} maxWidth="max-w-4xl">
+            {/* Header with search and import */}
+            <div className="flex gap-3 mb-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Search lists..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                    />
+                </div>
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium border border-gray-700 transition-colors"
+                >
+                    <Plus size={16} />
+                    Import CSV
+                </button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.txt"
+                    onChange={handleFileImport}
+                    className="hidden"
+                />
             </div>
+
+            {/* Loading state */}
+            {loading && (
+                <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="animate-spin text-blue-500" size={32} />
+                    <span className="ml-3 text-gray-400">Loading lists from GitHub...</span>
+                </div>
+            )}
+
+            {/* Error state */}
+            {error && !loading && (
+                <div className="p-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg mb-4">
+                    <div className="flex items-start gap-2">
+                        <Info className="text-yellow-500 mt-0.5" size={16} />
+                        <div>
+                            <div className="text-yellow-500 font-medium text-sm">Failed to load CSV</div>
+                            <div className="text-yellow-600 text-xs mt-1">{error}</div>
+                            <div className="text-gray-500 text-xs mt-1">Showing fallback lists instead.</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Lists grid */}
+            {!loading && (
+                <>
+                    <div className="text-sm text-gray-500 mb-3">
+                        Showing {filteredLists.length} of {lists.length} lists
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                        {filteredLists.map((list, index) => (
+                            <div key={`${list.url}-${index}`} className="p-4 bg-gray-800 border border-gray-700 rounded-xl hover:border-blue-500/50 transition-colors">
+                                <div className="flex items-start justify-between mb-2">
+                                    <h4 className="text-white font-medium text-sm line-clamp-2 flex-1">{list.name}</h4>
+                                    {list.enabled !== undefined && (
+                                        <span className={`text-xs px-2 py-0.5 rounded ${list.enabled ? 'bg-green-900/30 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
+                                            {list.enabled ? 'Suggested' : 'Optional'}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-500 mb-3 line-clamp-2 break-all">{list.url}</p>
+                                <button
+                                    onClick={() => onSelect(list.name, list.url)}
+                                    className="w-full py-2 bg-gray-900 hover:bg-blue-600 text-blue-400 hover:text-white text-sm font-medium rounded-lg border border-gray-700 hover:border-blue-500 transition-colors"
+                                >
+                                    Select
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {filteredLists.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                            <Search size={48} className="mx-auto mb-3 opacity-50" />
+                            <p>No lists found matching "{search}"</p>
+                        </div>
+                    )}
+                </>
+            )}
         </Modal>
     );
 }
