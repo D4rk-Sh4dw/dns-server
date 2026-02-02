@@ -266,7 +266,7 @@ export async function updateDnsConfig(partialConfig: any) {
         'ratelimit_whitelist', 'blocking_mode', 'blocking_ipv4', 'blocking_ipv6',
         'edns_client_subnet', 'dns_cache_size', 'dns_cache_min_ttl', 'dns_cache_max_ttl',
         'dns_cache_optimistic', 'upstream_dns_file', 'use_private_ptr_resolvers',
-        'local_ptr_upstreams', 'use_dns64', 'dns64_prefixes', 'serve_http3', 'use_http3_upstreams'
+        'local_ptr_upstreams', 'use_dns64', 'dns64_prefixes', 'serve_http3', 'use_http3_upstreams', 'resolve_clients'
     ];
 
     const filteredConfig: any = {};

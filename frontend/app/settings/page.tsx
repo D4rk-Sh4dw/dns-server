@@ -170,7 +170,104 @@ export default function SettingsPage() {
                 </div>
             </div>
 
-            <DnsCacheSettings />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <DnsCacheSettings />
+                <ReverseDnsSettings />
+            </div>
+        </div>
+    );
+}
+
+function ReverseDnsSettings() {
+    const [config, setConfig] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetch('/api/adguard/config')
+            .then(res => res.json())
+            .then(data => setConfig(data))
+            .catch(err => console.error(err));
+    }, []);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await fetch('/api/adguard/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    use_private_ptr_resolvers: config.use_private_ptr_resolvers,
+                    resolve_clients: config.resolve_clients,
+                    local_ptr_upstreams: config.local_ptr_upstreams
+                })
+            });
+            alert('Reverse DNS settings saved!');
+        } catch (err) {
+            alert('Failed to save settings');
+        }
+        setSaving(false);
+    };
+
+    if (!config) return null;
+
+    return (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                <Server className="text-orange-500" size={24} />
+                Reverse DNS & Client Resolution
+            </h2>
+
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <label className="text-white font-medium block">Use Private Reverse DNS</label>
+                        <p className="text-xs text-gray-500">Use local upstream servers for reverse lookups (PTR)</p>
+                    </div>
+                    <input
+                        type="checkbox"
+                        checked={config.use_private_ptr_resolvers}
+                        onChange={e => setConfig({ ...config, use_private_ptr_resolvers: e.target.checked })}
+                        className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div>
+                        <label className="text-white font-medium block">Resolve Client Hostnames</label>
+                        <p className="text-xs text-gray-500">Attempt to resolve IPs to hostnames for dashboard clients</p>
+                    </div>
+                    <input
+                        type="checkbox"
+                        checked={config.resolve_clients}
+                        onChange={e => setConfig({ ...config, resolve_clients: e.target.checked })}
+                        className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Private Reverse DNS Servers</label>
+                    <textarea
+                        value={Array.isArray(config.local_ptr_upstreams) ? config.local_ptr_upstreams.join('\n') : config.local_ptr_upstreams || ''}
+                        onChange={e => setConfig({ ...config, local_ptr_upstreams: e.target.value.split('\n') })}
+                        rows={4}
+                        placeholder="172.25.0.101"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">One IP address per line. Default Technitium: 172.25.0.101</p>
+                </div>
+
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                        <Save size={18} />
+                        {saving ? 'Saving...' : 'Save Reverse DNS'}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

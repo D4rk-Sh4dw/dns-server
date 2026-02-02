@@ -5,7 +5,26 @@ export async function GET() {
     try {
         const status = await adguard.getDhcpStatus();
         return NextResponse.json(status);
-    } catch (error) {
+    } catch (error: any) {
+        // AdGuard returns 400 if DHCP is completely unconfigured/disabled on some versions
+        if (error.message && (error.message.includes('400') || error.message.includes('configuration must be complete'))) {
+            console.log('AdGuard DHCP not configured, returning disabled status.');
+            return NextResponse.json({
+                enabled: false,
+                v4: {
+                    gateway_ip: "",
+                    subnet_mask: "",
+                    range_start: "",
+                    range_end: "",
+                    lease_duration: 0
+                },
+                v6: {
+                    range_start: "",
+                    lease_duration: 0
+                }
+            });
+        }
+
         console.error('AdGuard DHCP API error:', error);
         return NextResponse.json(
             { error: 'Failed to fetch DHCP status' },
