@@ -5,7 +5,7 @@ import { PREDEFINED_BLOCKLISTS, PREDEFINED_WHITELISTS } from '@/constants/predef
 import {
     RefreshCw, Plus, Trash2, Check, X, Shield, ShieldCheck,
     Baby, Search, Edit2, Info, ExternalLink, ChevronDown, ChevronUp,
-    Globe, Server, Laptop, Smartphone, Tablet, Tv, Cpu, Filter, Network, Users
+    Globe, Server, Laptop, Smartphone, Tablet, Tv, Cpu, Filter, Network, Users, Upload
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -238,6 +238,8 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     const [newRule, setNewRule] = useState('');
     const [showDocs, setShowDocs] = useState(false);
     const [showSafeSearchDetails, setShowSafeSearchDetails] = useState(false);
+    const [showImportCSV, setShowImportCSV] = useState(false);
+    const [importWhitelist, setImportWhitelist] = useState(false);
 
     // State for timer
     const [pauseTimer, setPauseTimer] = useState<number | null>(null);
@@ -522,6 +524,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                     onEdit={(list: FilterList) => { setEditList({ name: list.name, url: list.url, whitelist: false }); setShowEditModal(list); }}
                     onAdd={() => { setNewList({ name: '', url: '', whitelist: false }); setShowAddModal(true); }}
                     onBrowse={() => { setNewList({ name: '', url: '', whitelist: false }); setShowPredefined(true); }}
+                    onImport={() => { setImportWhitelist(false); setShowImportCSV(true); }}
                     onRefresh={() => handleListOp('refresh', { whitelist: false })}
                 />
 
@@ -534,6 +537,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                     onEdit={(list: FilterList) => { setEditList({ name: list.name, url: list.url, whitelist: true }); setShowEditModal(list); }}
                     onAdd={() => { setNewList({ name: '', url: '', whitelist: true }); setShowAddModal(true); }}
                     onBrowse={() => { setNewList({ name: '', url: '', whitelist: true }); setShowPredefined(true); }}
+                    onImport={() => { setImportWhitelist(true); setShowImportCSV(true); }}
                     onRefresh={() => handleListOp('refresh', { whitelist: true })}
                     variant="whitelist"
                 />
@@ -544,6 +548,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             <EditListModal isOpen={!!showEditModal} onClose={() => setShowEditModal(null)} data={editList} setData={setEditList} onSubmit={() => { handleListOp('update', { url: showEditModal?.url, name: editList.name, newUrl: editList.url, whitelist: editList.whitelist }); setShowEditModal(null); }} />
             <AddRuleModal isOpen={showRuleModal} onClose={() => setShowRuleModal(false)} rule={newRule} setRule={setNewRule} onSubmit={() => { handleListOp('addRule', { rule: newRule }); setNewRule(''); setShowRuleModal(false); }} />
             <PredefinedListsModal isOpen={showPredefined} onClose={() => setShowPredefined(false)} whitelist={newList.whitelist} onSelect={(name: string, url: string) => { setNewList({ ...newList, name, url }); setShowPredefined(false); setShowAddModal(true); }} />
+            <ImportCSVModal isOpen={showImportCSV} onClose={() => setShowImportCSV(false)} whitelist={importWhitelist} onImport={(lists) => { lists.forEach(list => handleListOp('add', { name: list.name, url: list.url, whitelist: importWhitelist })); setShowImportCSV(false); }} />
 
         </div>
     );
@@ -890,14 +895,15 @@ function ProtectionToggle({ icon: Icon, color, title, description, checked, onCh
     );
 }
 
-function ListSection({ title, description, lists, onToggle, onRemove, onEdit, onAdd, onBrowse, onRefresh, variant = 'blocklist' }: any) {
+function ListSection({ title, description, lists, onToggle, onRemove, onEdit, onAdd, onBrowse, onImport, onRefresh, variant = 'blocklist' }: any) {
     return (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
             <div className="p-6 border-b border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div><h3 className="text-lg font-medium text-white">{title}</h3><p className="text-sm text-gray-500">{description}</p></div>
-                <div className="flex gap-2 w-full md:w-auto">
-                    <button onClick={onRefresh} className="p-2 text-gray-400 hover:text-white bg-gray-800 rounded-lg"><RefreshCw size={18} /></button>
+                <div className="flex gap-2 w-full md:w-auto flex-wrap">
+                    <button onClick={onRefresh} className="p-2 text-gray-400 hover:text-white bg-gray-800 rounded-lg" title="Refresh lists"><RefreshCw size={18} /></button>
                     <button onClick={onBrowse} className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium border border-gray-700">Browse Predefined</button>
+                    <button onClick={onImport} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium"><Upload size={18} /> Import CSV</button>
                     <button onClick={onAdd} className={`flex items-center gap-2 ${variant === 'whitelist' ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} text-white px-4 py-2 rounded-lg text-sm font-medium`}><Plus size={18} /> Add List</button>
                 </div>
             </div>
@@ -962,8 +968,6 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-    const [showImport, setShowImport] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Fetch lists from CSV API
     useEffect(() => {
@@ -1001,42 +1005,6 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
         fetchLists();
     }, [isOpen, whitelist]);
 
-    // Handle CSV file import
-    const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        try {
-            const csvContent = await file.text();
-            const type = whitelist ? 'whitelist' : 'blocklist';
-
-            const res = await fetch('/api/adguard/import-csv', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ csvContent, type })
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                // Add imported lists to current lists
-                setLists(prev => [...prev, ...data.lists]);
-                setShowImport(false);
-                alert(`Successfully imported ${data.count} lists!`);
-            } else {
-                alert(`Import failed: ${data.error}\n${data.details?.join('\n') || ''}`);
-            }
-        } catch (err) {
-            console.error('Error importing CSV:', err);
-            alert('Failed to import CSV file');
-        }
-
-        // Reset file input
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
     // Filter lists based on search
     const filteredLists = lists.filter(list =>
         list.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -1047,8 +1015,8 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
 
     return (
         <Modal title={`Browse ${whitelist ? 'Whitelists' : 'Blocklists'}`} onClose={onClose} maxWidth="max-w-4xl">
-            {/* Header with search and import */}
-            <div className="flex gap-3 mb-4">
+            {/* Header with search */}
+            <div className="flex mb-4">
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                     <input
@@ -1059,20 +1027,6 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
                         className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
                     />
                 </div>
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium border border-gray-700 transition-colors"
-                >
-                    <Plus size={16} />
-                    Import CSV
-                </button>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv,.txt"
-                    onChange={handleFileImport}
-                    className="hidden"
-                />
             </div>
 
             {/* Loading state */}
@@ -1173,3 +1127,202 @@ function Switch({ checked, onChange, size = 'md', variant }: { checked: boolean;
         </button>
     );
 }
+
+// Import CSV Modal
+function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
+    const [csvContent, setCsvContent] = useState('');
+    const [parsedLists, setParsedLists] = useState<any[]>([]);
+    const [selectedLists, setSelectedLists] = useState<Set<string>>(new Set());
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const content = await file.text();
+            setCsvContent(content);
+
+            // Parse CSV via API
+            const res = await fetch('/api/adguard/import-csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ csvContent: content, type: whitelist ? 'whitelist' : 'blocklist' })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setParsedLists(data.lists);
+                // Select all by default
+                setSelectedLists(new Set(data.lists.map((l: any) => l.url)));
+            } else {
+                setError(data.error || 'Failed to parse CSV');
+            }
+        } catch (err) {
+            console.error('Error reading CSV:', err);
+            setError('Failed to read CSV file');
+        } finally {
+            setLoading(false);
+        }
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const toggleSelection = (url: string) => {
+        const newSelected = new Set(selectedLists);
+        if (newSelected.has(url)) {
+            newSelected.delete(url);
+        } else {
+            newSelected.add(url);
+        }
+        setSelectedLists(newSelected);
+    };
+
+    const handleImport = () => {
+        const listsToImport = parsedLists.filter(l => selectedLists.has(l.url));
+        onImport(listsToImport);
+        // Reset state
+        setCsvContent('');
+        setParsedLists([]);
+        setSelectedLists(new Set());
+        setError(null);
+    };
+
+    const handleReset = () => {
+        setCsvContent('');
+        setParsedLists([]);
+        setSelectedLists(new Set());
+        setError(null);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <Modal title={`Import ${whitelist ? 'Whitelist' : 'Blocklist'} CSV`} onClose={onClose} maxWidth="max-w-3xl">
+            {parsedLists.length === 0 ? (
+                // File upload view
+                <div className="space-y-4">
+                    <div className="text-sm text-gray-400 mb-4">
+                        Upload a CSV file containing filter lists. The CSV should have columns: <code className="text-blue-400">enabled,url,name,id</code>
+                    </div>
+
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-gray-700 rounded-xl p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-800/50 transition-colors"
+                    >
+                        <Upload size={48} className="mx-auto text-gray-600 mb-4" />
+                        <div className="text-white font-medium mb-2">Click to upload CSV file</div>
+                        <div className="text-sm text-gray-500">or drag and drop</div>
+                        <div className="text-xs text-gray-600 mt-2">Supports .csv and .txt files</div>
+                    </div>
+
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,.txt"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                    />
+
+                    {error && (
+                        <div className="p-4 bg-red-900/20 border border-red-700/50 rounded-lg text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    {loading && (
+                        <div className="flex items-center justify-center py-8">
+                            <RefreshCw className="animate-spin text-blue-500 mr-3" size={24} />
+                            <span className="text-gray-400">Parsing CSV...</span>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                // Preview and selection view
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+                        <div>
+                            <div className="text-white font-medium">Found {parsedLists.length} lists</div>
+                            <div className="text-sm text-gray-400">{selectedLists.size} selected for import</div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setSelectedLists(new Set(parsedLists.map(l => l.url)))}
+                                className="text-sm text-blue-400 hover:text-blue-300"
+                            >
+                                Select All
+                            </button>
+                            <span className="text-gray-600">|</span>
+                            <button
+                                onClick={() => setSelectedLists(new Set())}
+                                className="text-sm text-blue-400 hover:text-blue-300"
+                            >
+                                Deselect All
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto space-y-2 bg-gray-950/30 p-3 rounded-lg border border-gray-800">
+                        {parsedLists.map((list, index) => (
+                            <div
+                                key={`${list.url}-${index}`}
+                                onClick={() => toggleSelection(list.url)}
+                                className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedLists.has(list.url)
+                                        ? 'bg-blue-900/20 border-blue-700/50'
+                                        : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                                    }`}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${selectedLists.has(list.url)
+                                            ? 'bg-blue-600 border-blue-600'
+                                            : 'border-gray-600'
+                                        }`}>
+                                        {selectedLists.has(list.url) && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-white font-medium text-sm">{list.name}</div>
+                                        <div className="text-xs text-gray-500 truncate">{list.url}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-between gap-3">
+                        <button
+                            onClick={handleReset}
+                            className="text-gray-400 hover:text-white"
+                        >
+                            Upload Different File
+                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-white"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleImport}
+                                disabled={selectedLists.size === 0}
+                                className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-6 py-2 rounded-lg transition-colors"
+                            >
+                                Import {selectedLists.size} List{selectedLists.size !== 1 ? 's' : ''}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </Modal>
+    );
+}
+

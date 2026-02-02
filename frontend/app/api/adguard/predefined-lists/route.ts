@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchAndParseCSV } from '@/lib/csv-parser';
+import { parseCSV, fetchAndParseCSV } from '@/lib/csv-parser';
 import { getBlocklistUrl, getWhitelistUrl } from '@/config/csv-config';
+import { readFile } from 'fs/promises';
+import path from 'path';
 
 // Cache for CSV data (1 hour TTL)
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -43,9 +45,33 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // Fetch and parse CSV
-        console.log(`Fetching ${type} from ${csvUrl}`);
-        const result = await fetchAndParseCSV(csvUrl);
+        // Check if it's a local file path (starts with /)
+        const isLocalFile = csvUrl.startsWith('/');
+        let result;
+
+        if (isLocalFile) {
+            // Read local file from public directory
+            console.log(`Reading local ${type} file from ${csvUrl}`);
+            try {
+                const filePath = path.join(process.cwd(), 'public', csvUrl);
+                const csvContent = await readFile(filePath, 'utf-8');
+                result = parseCSV(csvContent);
+            } catch (err) {
+                console.error(`Failed to read local file:`, err);
+                return NextResponse.json(
+                    {
+                        error: `Failed to read local CSV file`,
+                        details: err instanceof Error ? err.message : 'Unknown error',
+                        source: csvUrl
+                    },
+                    { status: 500 }
+                );
+            }
+        } else {
+            // Fetch from URL
+            console.log(`Fetching ${type} from ${csvUrl}`);
+            result = await fetchAndParseCSV(csvUrl);
+        }
 
         if (!result.success) {
             console.error(`Failed to parse ${type} CSV:`, result.errors);
@@ -87,3 +113,4 @@ export async function DELETE() {
     cache.clear();
     return NextResponse.json({ success: true, message: 'Cache cleared' });
 }
+
