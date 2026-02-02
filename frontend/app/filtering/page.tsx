@@ -59,6 +59,13 @@ interface AdGuardClient {
     tags?: string[];
 }
 
+interface Lease {
+    mac: string;
+    ip: string;
+    hostname: string;
+    expires?: string;
+}
+
 interface Zone {
     name: string;
     type: string;
@@ -123,6 +130,7 @@ export default function FilteringPage() {
 
     // Clients State
     const [clients, setClients] = useState<AdGuardClient[]>([]);
+    const [leases, setLeases] = useState<Lease[]>([]);
     const [selectedClient, setSelectedClient] = useState<string>(''); // Client name
 
     // Forwarding State
@@ -132,22 +140,30 @@ export default function FilteringPage() {
         setLoading(true);
         try {
             // Always fetch basics, optimize later
-            const [filterRes, protectionRes, clientsRes, zonesRes] = await Promise.all([
+            const [filterRes, protectionRes, clientsRes, zonesRes, dhcpRes] = await Promise.all([
                 fetch('/api/adguard/filtering'),
                 fetch('/api/adguard/protection'),
                 fetch('/api/adguard/clients'),
                 fetch('/api/zones'),
+                fetch('/api/adguard/dhcp'),
             ]);
 
             const filterData = await filterRes.json();
             const protectionData = await protectionRes.json();
             const clientsData = await clientsRes.json();
             const zonesData = await zonesRes.json();
+            const dhcpData = await dhcpRes.json();
 
             setFiltering(filterData);
             setProtection(protectionData);
             setClients(clientsData.clients || []);
             setZones(zonesData.zones || []);
+
+            // Handle DHCP status possibly being disabled/empty
+            const activeLeases = [];
+            if (dhcpData && dhcpData.leases) activeLeases.push(...dhcpData.leases);
+            if (dhcpData && dhcpData.static_leases) activeLeases.push(...dhcpData.static_leases);
+            setLeases(activeLeases);
 
         } catch (err) {
             console.error('Failed to fetch data:', err);
@@ -208,6 +224,7 @@ export default function FilteringPage() {
                 {activeTab === 'clients' && (
                     <ClientFilteringTab
                         clients={clients}
+                        leases={leases}
                         selectedClient={selectedClient}
                         setSelectedClient={setSelectedClient}
                         userRules={filtering?.user_rules || []}
@@ -555,19 +572,36 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
     );
 }
 
-function ClientSelector({ clients, selectedClient, onSelect }: any) {
+function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Filter clients
-    const filtered = clients.filter((c: any) =>
+    // Filter already configured clients from leases to avoid duplicates
+    // A lease is "configured" if its MAC or IP matches any client ID
+    const configuredIds = new Set(clients.flatMap((c: any) => c.ids));
+    const availableLeases = (leases || []).filter((l: any) =>
+        !configuredIds.has(l.mac) && !configuredIds.has(l.ip)
+    );
+
+    // Filter lists based on search
+    const filteredClients = clients.filter((c: any) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.ids.some((id: string) => id.includes(search))
     );
 
+    const filteredLeases = availableLeases.filter((l: any) =>
+        (l.hostname || 'Unknown').toLowerCase().includes(search.toLowerCase()) ||
+        l.ip.includes(search) ||
+        l.mac.toLowerCase().includes(search.toLowerCase())
+    );
+
     const clientObj = clients.find((c: any) => c.name === selectedClient);
-    const selectedName = clientObj ? `${clientObj.name} (${clientObj.ids.join(', ')})` : (selectedClient || 'Choose a Client');
+    const leaseObj = !clientObj ? availableLeases.find((l: any) => l.hostname === selectedClient || l.ip === selectedClient) : null;
+
+    let selectedName = selectedClient || 'Choose a Client';
+    if (clientObj) selectedName = `${clientObj.name} (${clientObj.ids.join(', ')})`;
+    else if (leaseObj) selectedName = `[New] ${leaseObj.hostname || leaseObj.ip} (${leaseObj.ip})`;
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -580,8 +614,8 @@ function ClientSelector({ clients, selectedClient, onSelect }: any) {
             </button>
 
             {isOpen && (
-                <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
-                    <div className="p-2 border-b border-gray-700 sticky top-0 bg-gray-800">
+                <div className="absolute z-10 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto overflow-x-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
+                    <div className="p-2 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                             <input
@@ -594,31 +628,103 @@ function ClientSelector({ clients, selectedClient, onSelect }: any) {
                             />
                         </div>
                     </div>
-                    <div className="overflow-y-auto flex-1">
-                        {filtered.length === 0 ? (
-                            <div className="p-3 text-sm text-gray-500 text-center">No clients found</div>
-                        ) : (
-                            filtered.map((c: any) => (
+
+                    {/* Configured Clients Section */}
+                    {filteredClients.length > 0 && (
+                        <div className="border-b border-gray-700/50">
+                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase bg-gray-900/50 sticky top-0">Configured Clients</div>
+                            {filteredClients.map((c: any) => (
                                 <button
                                     key={c.name}
                                     onClick={() => { onSelect(c.name); setIsOpen(false); setSearch(''); }}
-                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800 last:border-0 ${selectedClient === c.name ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800/50 last:border-0 ${selectedClient === c.name ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
                                 >
                                     <div className="font-medium">{c.name}</div>
                                     <div className="text-xs text-gray-500 truncate">{c.ids.join(', ')}</div>
                                 </button>
-                            ))
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Detected Devices Section */}
+                    {filteredLeases.length > 0 && (
+                        <div>
+                            <div className="px-3 py-1.5 text-xs font-semibold text-blue-400/80 uppercase bg-gray-900/50 sticky top-0">Recognized Devices (Create New)</div>
+                            {filteredLeases.map((l: any) => (
+                                <button
+                                    key={l.mac}
+                                    onClick={() => { onSelect(l.hostname || l.ip); setIsOpen(false); setSearch(''); }}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800/50 last:border-0 ${selectedClient === (l.hostname || l.ip) ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
+                                >
+                                    <div className="font-medium truncate">{l.hostname || 'Unknown Device'}</div>
+                                    <div className="text-xs text-gray-500 truncate">{l.ip} • {l.mac}</div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {filteredClients.length === 0 && filteredLeases.length === 0 && (
+                        <div className="p-3 text-sm text-gray-500 text-center">No clients or devices found</div>
+                    )}
                 </div>
             )}
         </div>
     );
 }
 
-function ClientFilteringTab({ clients, selectedClient, setSelectedClient, userRules, refresh }: any) {
+function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient, userRules, refresh }: any) {
     const [whitelistInput, setWhitelistInput] = useState('');
     const [blocklistInput, setBlocklistInput] = useState('');
+
+    // New Client Creation State
+    const [newClientName, setNewClientName] = useState('');
+    const [isCreatingClient, setIsCreatingClient] = useState(false);
+
+    // Identify if the selected "client" is actually a recognized lease that needs creation
+    const configuredClient = clients.find((c: any) => c.name === selectedClient);
+    const activeLease = !configuredClient ? leases?.find((l: any) => (l.hostname || l.ip) === selectedClient) : null;
+
+    useEffect(() => {
+        if (activeLease) {
+            setNewClientName(activeLease.hostname || activeLease.ip);
+        }
+    }, [activeLease]);
+
+    const handleCreateClient = async () => {
+        if (!activeLease || !newClientName) return;
+
+        setIsCreatingClient(true);
+        try {
+            const newClient = {
+                name: newClientName,
+                ids: [activeLease.mac, activeLease.ip], // Add both MAC and IP for robustness
+                use_global_settings: true,
+                filtering_enabled: true,
+                parental_enabled: false,
+                safebrowsing_enabled: false,
+                safesearch_enabled: false,
+                use_global_blocked_services: true,
+                upstreams: [],
+                tags: []
+            };
+
+            const res = await fetch('/api/adguard/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'add', client: newClient })
+            });
+
+            if (!res.ok) throw new Error('Failed to create client');
+
+            // Select the new client name (which is now a real client) and refresh
+            setSelectedClient(newClientName);
+            await refresh();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to create client');
+        }
+        setIsCreatingClient(false);
+    };
 
     const escapeClientName = (name: string) => {
         return name.replace(/'/g, "\\'").replace(/,/g, "\\,");
@@ -649,6 +755,60 @@ function ClientFilteringTab({ clients, selectedClient, setSelectedClient, userRu
         refresh();
     };
 
+
+    if (activeLease) {
+        return (
+            <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Select Client to Manage</label>
+                    <ClientSelector clients={clients} leases={leases} selectedClient={selectedClient} onSelect={setSelectedClient} />
+                </div>
+
+                <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-8 text-center max-w-2xl mx-auto">
+                    <div className="inline-flex p-3 rounded-full bg-blue-500/10 text-blue-400 mb-4">
+                        <Users size={32} />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Configure New Client</h3>
+                    <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                        This device was detected on your network but not yet configured as a client. Create a client entry to manage its filtering rules.
+                    </p>
+
+                    <div className="grid gap-6 max-w-md mx-auto text-left">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">Client Name</label>
+                            <input
+                                type="text"
+                                value={newClientName}
+                                onChange={e => setNewClientName(e.target.value)}
+                                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">IP Address</label>
+                                <div className="font-mono text-sm text-gray-300 bg-gray-900/50 px-3 py-2 rounded-lg border border-gray-800">{activeLease.ip}</div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">MAC Address</label>
+                                <div className="font-mono text-sm text-gray-300 bg-gray-900/50 px-3 py-2 rounded-lg border border-gray-800">{activeLease.mac}</div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleCreateClient}
+                            disabled={isCreatingClient}
+                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2"
+                        >
+                            {isCreatingClient ? <RefreshCw className="animate-spin" size={20} /> : <Check size={20} />}
+                            Create Client
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     const escapedName = escapeClientName(selectedClient);
     const clientRules = userRules.filter((r: string) => r.includes(`$client='${escapedName}'`));
     const whitelisted = clientRules.filter((r: string) => r.startsWith('@@||'));
@@ -659,7 +819,7 @@ function ClientFilteringTab({ clients, selectedClient, setSelectedClient, userRu
             {/* Client Selector */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                 <label className="block text-sm font-medium text-gray-400 mb-2">Select Client to Manage</label>
-                <ClientSelector clients={clients} selectedClient={selectedClient} onSelect={setSelectedClient} />
+                <ClientSelector clients={clients} leases={leases} selectedClient={selectedClient} onSelect={setSelectedClient} />
             </div>
 
             {selectedClient ? (
