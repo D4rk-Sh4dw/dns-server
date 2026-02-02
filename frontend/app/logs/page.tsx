@@ -312,7 +312,26 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                 <td className="px-6 py-4">
                     <StatusBadge log={log} />
                 </td>
-                <td className="px-6 py-4 text-gray-300">{log.client}</td>
+                <td className="px-6 py-4 text-gray-300">
+                    {(() => {
+                        // Resolve client name priority: 1. AdGuard Info, 2. Configured Clients
+                        let name = log.client_info?.name;
+                        if (!name) {
+                            const match = clients.find(c => c.ids.includes(log.client));
+                            if (match) name = match.name;
+                        }
+
+                        if (name && name !== log.client) {
+                            return (
+                                <div>
+                                    <div className="text-white font-medium text-sm">{name}</div>
+                                    <div className="text-xs text-gray-500 font-mono">{log.client}</div>
+                                </div>
+                            );
+                        }
+                        return <span className="font-mono">{log.client}</span>;
+                    })()}
+                </td>
                 <td className="px-6 py-4 text-white">
                     {log.question.name}
                     <span className="ml-2 text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
