@@ -58,7 +58,7 @@ Add to your `.env` or `.env.local` file:
 
 ```bash
 NEXT_PUBLIC_BLOCKLIST_CSV_URL=https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/blocklists.csv
-NEXT_PUBLIC_WHITELIST_CSV_URL=https://raw.githubusercontent.com/TSFMarcel/tsf_adguard/refs/heads/main/allow_liste.txt
+NEXT_PUBLIC_WHITELIST_CSV_URL=https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/whitelists.csv
 ```
 
 **Option B: Edit Config File**
@@ -99,14 +99,12 @@ npm run dev
 
 > **Note:** The Import CSV feature is separate from Browse Predefined. It allows you to upload your own custom CSV files without affecting the centrally managed predefined lists.
 
-## Example CSV File
+Example CSV files have been created in `frontend/public/`:
 
-An example CSV file with 200+ blocklists has been created at:
-```
-frontend/public/blocklists-example.csv
-```
+1.  **Blocklists:** `blocklists-example.csv` (contains 200+ lists from YAML)
+2.  **Whitelists:** `whitelists-example.csv` (contains your custom whitelist)
 
-This file contains all the lists from your YAML configuration.
+These files serve as templates and fallbacks if no URL is configured.
 
 ## Troubleshooting
 
