@@ -72,6 +72,19 @@ export default function LogsPage() {
             .catch(err => console.error('Failed to fetch clients', err));
     }, []);
 
+    const refreshClients = () => {
+        fetch('/api/adguard/clients')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setClients(data);
+                } else if (data.clients && Array.isArray(data.clients)) {
+                    setClients(data.clients);
+                }
+            })
+            .catch(err => console.error('Failed to fetch clients', err));
+    };
+
     const fetchLogs = async (reset = false) => {
         setLoading(true);
         try {
@@ -233,6 +246,7 @@ export default function LogsPage() {
                                 onFilterClient={(client) => setFilter(client)}
                                 handleRule={handleRule}
                                 clients={clients}
+                                onClientCreated={refreshClients}
                             />
                         ))}
                     </tbody>
@@ -258,35 +272,83 @@ export default function LogsPage() {
     );
 }
 
-function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, clients }: {
+function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, clients, onClientCreated }: {
     log: QueryLogItem;
     isExpanded: boolean;
     onToggle: () => void;
     onFilterClient: (client: string) => void;
     handleRule: (domain: string, type: 'block' | 'whitelist' | 'block_client' | 'whitelist_client', clientName?: string) => void;
     clients: Client[];
+    onClientCreated?: () => void;
 }) {
     const blocked = isBlocked(log);
     const [selectedClient, setSelectedClient] = useState<string>('');
     const [clientSearch, setClientSearch] = useState('');
 
+    // Client Creation State
+    const [isCreating, setIsCreating] = useState(false);
+    const [newClientName, setNewClientName] = useState('');
+
+    // Check if this log belongs to a KNOWN client
+    const knownClient = clients.find(c =>
+        c.ids.includes(log.client) ||
+        (log.client_info?.name && c.ids.includes(log.client_info.name)) ||
+        c.name === log.client_info?.name
+    );
+
+    // Initial setup for creating a new client
+    useEffect(() => {
+        if (!knownClient && isExpanded) {
+            // @ts-ignore
+            setNewClientName(log.client_info?.name || '');
+        }
+    }, [isExpanded, knownClient, log.client_info]);
+
+    // Handle Client Creation
+    const handleCreateClient = async () => {
+        if (!newClientName) return;
+        setIsCreating(true);
+        try {
+            const newClient = {
+                name: newClientName,
+                ids: [log.client], // Use the IP from the log
+                use_global_settings: true,
+                filtering_enabled: true,
+                parental_enabled: false,
+                safebrowsing_enabled: false,
+                safesearch_enabled: false,
+                use_global_blocked_services: true,
+                upstreams: [],
+                tags: []
+            };
+
+            const res = await fetch('/api/adguard/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'add', client: newClient })
+            });
+
+            if (!res.ok) throw new Error('Failed to create client');
+
+            // Notify parent to refresh clients list
+            if (onClientCreated) onClientCreated();
+
+            // Auto-select the new client (optimistic)
+            setSelectedClient(newClientName);
+
+        } catch (e) {
+            console.error(e);
+            alert('Failed to create client');
+        }
+        setIsCreating(false);
+    };
+
     // Try to auto-select client if it matches a known client name or IP
     useEffect(() => {
-        if (isExpanded) {
-            const match = clients.find(c =>
-                c.ids.includes(log.client) ||
-                (log.client_info?.name && c.ids.includes(log.client_info.name)) ||
-                c.name === log.client_info?.name
-            );
-            if (match) {
-                setSelectedClient(match.name);
-            } else {
-                // If no exact match, maybe default to empty or the first one?
-                // For now, let's leave it empty so user chooses, or maybe default to 'Client X' if created?
-                // Actually, if we can't map it, user might want to select manually.
-            }
+        if (isExpanded && knownClient) {
+            setSelectedClient(knownClient.name);
         }
-    }, [isExpanded, log.client, log.client_info, clients]);
+    }, [isExpanded, knownClient]);
 
     const filteredClients = useMemo(() => {
         if (!clientSearch) return clients;
@@ -426,46 +488,80 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                             {/* Client Operations */}
                             <div>
                                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Operations</h4>
-                                <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-                                    <div className="flex flex-col md:flex-row gap-4 items-end">
-                                        <div className="flex-1 w-full space-y-1">
-                                            <label className="text-xs text-gray-400">Select Client</label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                                                    value={selectedClient}
-                                                    onChange={(e) => setSelectedClient(e.target.value)}
-                                                >
-                                                    <option value="">-- Select Client --</option>
-                                                    {clients.map(c => (
-                                                        <option key={c.name} value={c.name}>{c.name} ({c.ids.join(', ')})</option>
-                                                    ))}
-                                                </select>
+
+                                {!knownClient ? (
+                                    <div className="bg-blue-900/10 border border-blue-500/20 rounded-lg p-4">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <User size={18} className="text-blue-400" />
+                                            <div className="text-sm text-blue-100">
+                                                Unconfigured Client <span className="text-gray-400 text-xs ml-1">(No client matches IP {log.client})</span>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 items-center">
+                                            <input
+                                                type="text"
+                                                placeholder="Client Name"
+                                                value={newClientName}
+                                                onChange={(e) => setNewClientName(e.target.value)}
+                                                className="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:border-blue-500 outline-none"
+                                            />
                                             <button
-                                                onClick={() => handleRule(log.question.name, 'block_client', selectedClient)}
-                                                disabled={!selectedClient}
-                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-red-900/50"
+                                                onClick={handleCreateClient}
+                                                disabled={isCreating || !newClientName}
+                                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
-                                                <Ban size={14} />
-                                                Block for Client
-                                            </button>
-                                            <button
-                                                onClick={() => handleRule(log.question.name, 'whitelist_client', selectedClient)}
-                                                disabled={!selectedClient}
-                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-900/30 text-green-400 hover:bg-green-900/50 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-green-900/50"
-                                            >
-                                                <Shield size={14} />
-                                                Whitelist for Client
+                                                {isCreating ? <RotateCw size={14} className="animate-spin" /> : <User size={14} />}
+                                                Create Client
                                             </button>
                                         </div>
+                                        <p className="text-[10px] text-gray-500 mt-2">
+                                            Creates a new client with IP <span className="font-mono text-gray-400">{log.client}</span>.
+                                            {/* @ts-ignore */}
+                                            {log.client_info?.name && <span> Detected hostname: <span className="text-gray-400">{log.client_info.name}</span>.</span>}
+                                        </p>
                                     </div>
-                                    <div className="mt-2 text-[10px] text-gray-600">
-                                        Applies rule <code>$client='{selectedClient || '...'}'</code> to domain <code>{log.question.name}</code>.
+                                ) : (
+                                    <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                                            <div className="flex-1 w-full space-y-1">
+                                                <label className="text-xs text-gray-400">Select Client</label>
+                                                <div className="relative">
+                                                    <select
+                                                        className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                                                        value={selectedClient}
+                                                        onChange={(e) => setSelectedClient(e.target.value)}
+                                                    >
+                                                        <option value="">-- Select Client --</option>
+                                                        {clients.map(c => (
+                                                            <option key={c.name} value={c.name}>{c.name} ({c.ids.join(', ')})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleRule(log.question.name, 'block_client', selectedClient)}
+                                                    disabled={!selectedClient}
+                                                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-red-900/50"
+                                                >
+                                                    <Ban size={14} />
+                                                    Block for Client
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRule(log.question.name, 'whitelist_client', selectedClient)}
+                                                    disabled={!selectedClient}
+                                                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-900/30 text-green-400 hover:bg-green-900/50 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-green-900/50"
+                                                >
+                                                    <Shield size={14} />
+                                                    Whitelist for Client
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 text-[10px] text-gray-600">
+                                            Applies rule <code>$client='{selectedClient || '...'}'</code> to domain <code>{log.question.name}</code>.
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             {/* DNS Question */}
