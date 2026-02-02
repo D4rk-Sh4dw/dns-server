@@ -180,7 +180,6 @@ export default function SettingsPage() {
 
 function ReverseDnsSettings() {
     const [config, setConfig] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -191,6 +190,11 @@ function ReverseDnsSettings() {
     }, []);
 
     const handleSave = async () => {
+        if (config.use_private_ptr_resolvers && (!config.local_ptr_upstreams || config.local_ptr_upstreams.length === 0 || (Array.isArray(config.local_ptr_upstreams) && config.local_ptr_upstreams.join('').trim() === ''))) {
+            alert('Please specify at least one Private Reverse DNS Server.');
+            return;
+        }
+
         setSaving(true);
         try {
             await fetch('/api/adguard/config', {
@@ -221,19 +225,6 @@ function ReverseDnsSettings() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <label className="text-white font-medium block">Use Private Reverse DNS</label>
-                        <p className="text-xs text-gray-500">Use local upstream servers for reverse lookups (PTR)</p>
-                    </div>
-                    <input
-                        type="checkbox"
-                        checked={config.use_private_ptr_resolvers}
-                        onChange={e => setConfig({ ...config, use_private_ptr_resolvers: e.target.checked })}
-                        className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div className="flex items-center justify-between">
-                    <div>
                         <label className="text-white font-medium block">Resolve Client Hostnames</label>
                         <p className="text-xs text-gray-500">Attempt to resolve IPs to hostnames for dashboard clients</p>
                     </div>
@@ -245,19 +236,49 @@ function ReverseDnsSettings() {
                     />
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Private Reverse DNS Servers</label>
-                    <textarea
-                        value={Array.isArray(config.local_ptr_upstreams) ? config.local_ptr_upstreams.join('\n') : config.local_ptr_upstreams || ''}
-                        onChange={e => setConfig({ ...config, local_ptr_upstreams: e.target.value.split('\n') })}
-                        rows={4}
-                        placeholder="172.25.0.101"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm"
+                <div className="flex items-center justify-between">
+                    <div>
+                        <label className="text-white font-medium block">Use Private Reverse DNS</label>
+                        <p className="text-xs text-gray-500">Use local upstream servers for reverse lookups (PTR)</p>
+                    </div>
+                    <input
+                        type="checkbox"
+                        checked={config.use_private_ptr_resolvers}
+                        onChange={e => {
+                            const checked = e.target.checked;
+                            let newUpstreams = config.local_ptr_upstreams;
+                            // Pre-fill default if enabling and empty
+                            if (checked && (!newUpstreams || newUpstreams.length === 0)) {
+                                newUpstreams = ['172.25.0.101'];
+                            }
+                            setConfig({ ...config, use_private_ptr_resolvers: checked, local_ptr_upstreams: newUpstreams })
+                        }}
+                        className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500"
                     />
-                    <p className="text-xs text-gray-500 mt-1">One IP address per line. Default Technitium: 172.25.0.101</p>
                 </div>
 
-                <div className="flex justify-end">
+                {config.use_private_ptr_resolvers && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                        <label className="block text-sm font-medium text-white mb-2">
+                            Private Reverse DNS Servers <span className="text-red-500">*</span>
+                        </label>
+                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <textarea
+                                value={Array.isArray(config.local_ptr_upstreams) ? config.local_ptr_upstreams.join('\n') : config.local_ptr_upstreams || ''}
+                                onChange={e => setConfig({ ...config, local_ptr_upstreams: e.target.value.split('\n') })}
+                                rows={3}
+                                placeholder="172.25.0.101"
+                                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                            />
+                            <p className="text-xs text-gray-400 mt-2">
+                                Enter the IP addresses of your private DNS servers (e.g., Technitium) that handle reverse lookups for your local network.
+                                <br />Default Technitium IP: <span className="font-mono text-orange-400">172.25.0.101</span>
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex justify-end pt-2">
                     <button
                         onClick={handleSave}
                         disabled={saving}

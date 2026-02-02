@@ -20,16 +20,15 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - "[/local/lan/home/internal/]172.25.0.101:53"  # Technitium for local domains
-    - https://dns.cloudflare.com/dns-query        # Cloudflare DoH
-    - https://dns.google/dns-query                # Google DoH
+    - "[/local/lan/home/internal/]172.25.0.101:53" # Technitium for local domains
+    - https://dns.cloudflare.com/dns-query # Cloudflare DoH
+    - https://dns.google/dns-query # Google DoH
   upstream_dns_file: ""
   bootstrap_dns:
     - 1.1.1.1
     - 8.8.8.8
   fallback_dns:
     - 9.9.9.9
-
 
   all_servers: false
   fastest_addr: false
@@ -61,7 +60,7 @@ dns:
   bootstrap_prefer_ipv6: false
   upstream_timeout: 10s
   private_networks: []
-  use_private_ptr_resolvers: true
+  use_private_ptr_resolvers: false
   local_ptr_upstreams: []
   use_dns64: false
   dns64_prefixes: []
