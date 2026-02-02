@@ -85,17 +85,19 @@ npm run dev
 
 1. Navigate to **Filtering & Blocklists** page
 2. Click **"Browse Predefined"** button (in either Blocklists or Whitelists section)
-3. Wait for lists to load from GitHub
+3. Wait for lists to load from your GitHub CSV
 4. Use the search box to filter lists
-5. Click **"Select"** on any list to add it
+5. Click **"Select"** on any list to add it to AdGuard
 
 ### Import Custom CSV
 
-1. Click **"Browse Predefined"**
-2. Click **"Import CSV"** button
-3. Select your CSV file
-4. Lists will be added to the current view
-5. Select the ones you want to enable
+1. Click the purple **"Import CSV"** button (separate from Browse Predefined)
+2. Select your CSV file from your computer
+3. Preview the parsed lists
+4. Select/deselect which lists you want to import
+5. Click **"Import X Lists"** to add them to AdGuard
+
+> **Note:** The Import CSV feature is separate from Browse Predefined. It allows you to upload your own custom CSV files without affecting the centrally managed predefined lists.
 
 ## Example CSV File
 

@@ -548,7 +548,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             <EditListModal isOpen={!!showEditModal} onClose={() => setShowEditModal(null)} data={editList} setData={setEditList} onSubmit={() => { handleListOp('update', { url: showEditModal?.url, name: editList.name, newUrl: editList.url, whitelist: editList.whitelist }); setShowEditModal(null); }} />
             <AddRuleModal isOpen={showRuleModal} onClose={() => setShowRuleModal(false)} rule={newRule} setRule={setNewRule} onSubmit={() => { handleListOp('addRule', { rule: newRule }); setNewRule(''); setShowRuleModal(false); }} />
             <PredefinedListsModal isOpen={showPredefined} onClose={() => setShowPredefined(false)} whitelist={newList.whitelist} onSelect={(name: string, url: string) => { setNewList({ ...newList, name, url }); setShowPredefined(false); setShowAddModal(true); }} />
-            <ImportCSVModal isOpen={showImportCSV} onClose={() => setShowImportCSV(false)} whitelist={importWhitelist} onImport={(lists) => { lists.forEach(list => handleListOp('add', { name: list.name, url: list.url, whitelist: importWhitelist })); setShowImportCSV(false); }} />
+            <ImportCSVModal isOpen={showImportCSV} onClose={() => setShowImportCSV(false)} whitelist={importWhitelist} onImport={(lists: any[]) => { lists.forEach(list => handleListOp('add', { name: list.name, url: list.url, whitelist: importWhitelist })); setShowImportCSV(false); }} />
 
         </div>
     );
@@ -1277,14 +1277,14 @@ function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
                                 key={`${list.url}-${index}`}
                                 onClick={() => toggleSelection(list.url)}
                                 className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedLists.has(list.url)
-                                        ? 'bg-blue-900/20 border-blue-700/50'
-                                        : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                                    ? 'bg-blue-900/20 border-blue-700/50'
+                                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
                                     }`}
                             >
                                 <div className="flex items-start gap-3">
                                     <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${selectedLists.has(list.url)
-                                            ? 'bg-blue-600 border-blue-600'
-                                            : 'border-gray-600'
+                                        ? 'bg-blue-600 border-blue-600'
+                                        : 'border-gray-600'
                                         }`}>
                                         {selectedLists.has(list.url) && <Check size={12} className="text-white" />}
                                     </div>
