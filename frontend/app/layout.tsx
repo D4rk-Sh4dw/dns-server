@@ -3,7 +3,7 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network } from 'lucide-react'
+import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
@@ -80,6 +80,11 @@ export default function RootLayout({
                     Technitium Controls
                   </div>
                   <NavItem href="/zones" icon={Globe} label="Zones & Records" active={pathname.startsWith('/zones')} />
+
+                  <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    System
+                  </div>
+                  <NavItem href="/advanced" icon={Layers} label="Advanced Access" active={pathname === '/advanced'} />
 
                   <div className="mt-auto pt-4 border-t border-gray-900/50">
                     <NavItem href="/settings" icon={Settings} label="Settings" active={pathname === '/settings'} />
