@@ -34,16 +34,31 @@ export default function SettingsPage() {
         checkConnection();
     }, []);
 
+    const [dhcpProvider, setDhcpProvider] = useState<'adguard' | 'technitium'>('adguard');
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setDhcpProvider((localStorage.getItem('dhcp_provider') as 'technitium') || 'adguard');
+        }
+    }, []);
+
+    const handleSetProvider = (provider: 'adguard' | 'technitium') => {
+        setDhcpProvider(provider);
+        localStorage.setItem('dhcp_provider', provider);
+        // Dispatch event for other components to potentially react
+        window.dispatchEvent(new Event('storage'));
+    };
+
+
+
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Settings</h1>
-                <p className="text-gray-400 text-sm md:text-base">
-                    System configuration and status.
-                </p>
+        <div className="p-8 max-w-7xl mx-auto space-y-8">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold tracking-tight text-white">System Settings</h1>
+                <p className="text-gray-400">Manage global configurations and integrations.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* System Status Card */}
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-6">
@@ -119,39 +134,31 @@ export default function SettingsPage() {
 
                         <div className="grid grid-cols-1 gap-3">
                             <button
-                                onClick={() => {
-                                    localStorage.setItem('dhcp_provider', 'adguard');
-                                    window.dispatchEvent(new Event('storage'));
-                                    alert('DHCP Provider set to AdGuard Home');
-                                }}
-                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') !== 'technitium')
-                                        ? 'bg-blue-600/10 border-blue-600 text-white'
-                                        : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
+                                onClick={() => handleSetProvider('adguard')}
+                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${dhcpProvider === 'adguard'
+                                    ? 'bg-blue-600/10 border-blue-600 text-white'
+                                    : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
                                     }`}
                             >
                                 <div className="text-left">
                                     <div className="font-medium">AdGuard Home DHCP</div>
                                     <div className="text-xs opacity-70">Standard filtering-focused DHCP</div>
                                 </div>
-                                {(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') !== 'technitium') && <CheckCircle size={20} />}
+                                {dhcpProvider === 'adguard' && <CheckCircle size={20} />}
                             </button>
 
                             <button
-                                onClick={() => {
-                                    localStorage.setItem('dhcp_provider', 'technitium');
-                                    window.dispatchEvent(new Event('storage'));
-                                    alert('DHCP Provider set to Technitium');
-                                }}
-                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') === 'technitium')
-                                        ? 'bg-blue-600/10 border-blue-600 text-white'
-                                        : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
+                                onClick={() => handleSetProvider('technitium')}
+                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${dhcpProvider === 'technitium'
+                                    ? 'bg-blue-600/10 border-blue-600 text-white'
+                                    : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
                                     }`}
                             >
                                 <div className="text-left">
                                     <div className="font-medium">Technitium DHCP</div>
                                     <div className="text-xs opacity-70">Full-featured DHCP with integrated DNS/Reverse DNS updates</div>
                                 </div>
-                                {(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') === 'technitium') && <CheckCircle size={20} />}
+                                {dhcpProvider === 'technitium' && <CheckCircle size={20} />}
                             </button>
                         </div>
 
