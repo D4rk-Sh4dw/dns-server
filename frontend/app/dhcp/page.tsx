@@ -112,6 +112,25 @@ export default function DhcpPage() {
         }
     };
 
+    const handleEditScope = async (scope: any) => {
+        try {
+            const res = await fetch(`/api/technitium/dhcp/scope?name=${encodeURIComponent(scope.name)}`);
+            if (res.ok) {
+                const fullScope = await res.json();
+                setEditingScope(fullScope);
+                setShowScopeModal(true);
+            } else {
+                // Fallback to basic info if fetch fails
+                setEditingScope(scope);
+                setShowScopeModal(true);
+            }
+        } catch (err) {
+            console.error('Failed to fetch scope details', err);
+            setEditingScope(scope);
+            setShowScopeModal(true);
+        }
+    };
+
     // Technitium Scope Actions
     const handleSaveScope = async (scopeData: any) => {
         try {
@@ -266,7 +285,7 @@ export default function DhcpPage() {
                                         {scope.enabled ? <Pause size={16} /> : <Play size={16} />}
                                     </button>
                                     <button
-                                        onClick={() => { setEditingScope(scope); setShowScopeModal(true); }}
+                                        onClick={() => handleEditScope(scope)}
                                         className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                                         title="Configure Scope"
                                     >
