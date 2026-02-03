@@ -321,8 +321,8 @@ export default function DhcpPage() {
                                 <Network size={24} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-medium text-white">{provider === 'technitium' ? 'Technitium DHCP' : 'AdGuard DHCP'} Status</h3>
-                                <p className="text-sm text-gray-500">{status?.enabled ? (provider === 'technitium' ? 'All scopes running' : `Running on ${status.interface_name}`) : 'Server is disabled'}</p>
+                                <h3 className="text-lg font-medium text-white">AdGuard DHCP Status</h3>
+                                <p className="text-sm text-gray-500">{status?.enabled ? `Running on ${status.interface_name}` : 'Server is disabled'}</p>
                             </div>
                         </div>
                         {provider === 'adguard' && (
@@ -339,19 +339,11 @@ export default function DhcpPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
                                 <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">IP Range</span>
-                                <div className="text-white font-mono mt-1">
-                                    {provider === 'technitium'
-                                        ? (status.scopes && status.scopes.length > 0 ? `${status.scopes[0].startAddress} — ${status.scopes[0].endAddress}` : 'N/A')
-                                        : `${status.conf.range_start} — ${status.conf.range_end}`}
-                                </div>
+                                <div className="text-white font-mono mt-1">{status.conf.range_start} — {status.conf.range_end}</div>
                             </div>
                             <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
                                 <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Gateway</span>
-                                <div className="text-white font-mono mt-1">
-                                    {provider === 'technitium'
-                                        ? (status.scopes && status.scopes.length > 0 ? status.scopes[0].gateway : 'N/A')
-                                        : status.conf.gateway_ip}
-                                </div>
+                                <div className="text-white font-mono mt-1">{status.conf.gateway_ip}</div>
                             </div>
                             <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
                                 <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Active Leases</span>
@@ -361,7 +353,7 @@ export default function DhcpPage() {
                     ) : (
                         <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-lg text-yellow-500/80 text-sm flex items-center gap-3">
                             <Info size={16} />
-                            The DHCP server must be enabled for {provider === 'technitium' ? 'Technitium' : 'AdGuard'} to manage your network addresses.
+                            The DHCP server must be enabled for AdGuard to manage your network addresses.
                         </div>
                     )}
                 </div>
