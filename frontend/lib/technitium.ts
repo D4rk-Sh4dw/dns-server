@@ -342,52 +342,42 @@ export async function getDHCPScope(name: string): Promise<DHCPScope> {
  * Let's assume /api/dhcp/scopes/add creates, and we might need /set for updates.
  * Wait, usually for this API, creating a scope that exists might fail.
  */
+// We will try sending the scope object directly flattened or as proper JSON.
 export async function createDhcpScope(scope: Partial<DHCPScope>) {
-    // Basic validation / transformation if needed
-    // The API likely expects flat parameters or a JSON body. 
-    // technitiumFetch sends JSON body if params are provided.
+    return await technitiumFetch('/api/dhcp/scopes/add', {}, {
+        method: 'POST',
+        body: scope
+    });
+}
 
-    // We need to make sure we map our structured object to what the API likely expects.
-    // If the API takes a single JSON object 'scope', we wrap it.
-    // If it takes flat params, we rely on the implementation.
-    // Given the complexity (arrays etc), it's highly likely it accepts a JSON body representing the scope.
+/**
+ * Delete a DHCP scope
+ */
+export async function deleteDhcpScope(name: string) {
+    // Delete typically takes 'name' as query param or body. 
+    // Technitium usually prefers query for simple deletes/gets, but let's be safe or check docs.
+    // Docs say for scopes/delete: "name" (string).
+    // We can send as query param to be consistent with GET-like deletes, or body if it supports it.
+    // Let's try query param first as it's simple string, if that failed we'd move to body.
+    // However, since we just fixed POST support, let's use query param for the name as previous implementation used query params (via second arg).
+    return await technitiumFetch('/api/dhcp/scopes/delete', { name }, { method: 'POST' });
+}
 
-    // We will try sending the scope object directly flattened or as proper JSON.
-    export async function createDhcpScope(scope: Partial<DHCPScope>) {
-        return await technitiumFetch('/api/dhcp/scopes/add', {}, {
-            method: 'POST',
-            body: scope
-        });
-    }
+/**
+ * List all active and reserved DHCP leases
+ */
+export async function listDHCPLeases(): Promise<TechnitiumDHCPLease[]> {
+    const data = await technitiumFetch('/api/dhcp/leases/list');
+    return data.leases || [];
+}
 
-    /**
-     * Delete a DHCP scope
-     */
-    export async function deleteDhcpScope(name: string) {
-        // Delete typically takes 'name' as query param or body. 
-        // Technitium usually prefers query for simple deletes/gets, but let's be safe or check docs.
-        // Docs say for scopes/delete: "name" (string).
-        // We can send as query param to be consistent with GET-like deletes, or body if it supports it.
-        // Let's try query param first as it's simple string, if that failed we'd move to body.
-        // However, since we just fixed POST support, let's use query param for the name as previous implementation used query params (via second arg).
-        return await technitiumFetch('/api/dhcp/scopes/delete', { name }, { method: 'POST' });
-    }
-
-    /**
-     * List all active and reserved DHCP leases
-     */
-    export async function listDHCPLeases(): Promise<TechnitiumDHCPLease[]> {
-        const data = await technitiumFetch('/api/dhcp/leases/list');
-        return data.leases || [];
-    }
-
-    /**
-     * Remove a DHCP lease (active or reserved)
-     */
-    export async function removeDHCPLease(scope: string, ipAddress: string, hardwareAddress: string) {
-        return await technitiumFetch('/api/dhcp/leases/remove', {
-            name: scope,
-            ipAddress,
-            hardwareAddress
-        });
-    }
+/**
+ * Remove a DHCP lease (active or reserved)
+ */
+export async function removeDHCPLease(scope: string, ipAddress: string, hardwareAddress: string) {
+    return await technitiumFetch('/api/dhcp/leases/remove', {
+        name: scope,
+        ipAddress,
+        hardwareAddress
+    });
+}
