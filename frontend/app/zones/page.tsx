@@ -110,7 +110,7 @@ export default function ZonesPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'create',
-                    zone: newZone.name,
+                    zone: (newZone as any).formattedReverse || newZone.name,
                     type: newZone.type,
                     isActiveDirectory: newZone.isActiveDirectory,
                     dcServers: newZone.dcServers,
@@ -225,10 +225,12 @@ export default function ZonesPage() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`text-xs font-medium px-2 py-1 rounded ${zone.source === 'active-directory'
-                                        ? 'text-purple-400 bg-purple-400/10'
-                                        : 'text-blue-400 bg-blue-400/10'
+                                            ? 'text-purple-400 bg-purple-400/10'
+                                            : zone.name.endsWith('.in-addr.arpa')
+                                                ? 'text-yellow-400 bg-yellow-400/10'
+                                                : 'text-blue-400 bg-blue-400/10'
                                         }`}>
-                                        {zone.source === 'active-directory' ? 'Active Directory' : zone.type || 'Primary'}
+                                        {zone.source === 'active-directory' ? 'Active Directory' : zone.name.endsWith('.in-addr.arpa') ? 'Reverse DNS' : zone.type || 'Primary'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-gray-400 text-sm font-mono">
@@ -328,20 +330,61 @@ export default function ZonesPage() {
                                     </div>
                                 </div>
                             </button>
+                            <button
+                                onClick={() => {
+                                    setNewZone(prev => ({
+                                        ...prev,
+                                        isActiveDirectory: false,
+                                        type: 'Primary',
+                                        isReverse: true
+                                    }));
+                                }}
+                                className={`flex-1 p-4 rounded-lg border-2 transition-all ${!newZone.isActiveDirectory && (newZone as any).isReverse
+                                    ? 'border-yellow-500 bg-yellow-500/10'
+                                    : 'border-gray-700 hover:border-gray-600'
+                                    }`}
+                            >
+                                <RefreshCw size={24} className={!newZone.isActiveDirectory && (newZone as any).isReverse ? 'text-yellow-400' : 'text-gray-500'} />
+                                <div className="mt-2 text-left">
+                                    <div className={`font-medium ${!newZone.isActiveDirectory && (newZone as any).isReverse ? 'text-white' : 'text-gray-400'}`}>
+                                        Reverse DNS
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        PTR Lookup Helper (in-addr.arpa)
+                                    </div>
+                                </div>
+                            </button>
                         </div>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">
-                                    {newZone.isActiveDirectory ? 'AD Domain Name' : 'Zone Name'}
+                                    {newZone.isActiveDirectory ? 'AD Domain Name' : (newZone as any).isReverse ? 'Subnet (e.g. 192.168.1.0)' : 'Zone Name'}
                                 </label>
                                 <input
                                     type="text"
                                     value={newZone.name}
-                                    onChange={(e) => setNewZone(prev => ({ ...prev, name: e.target.value }))}
+                                    onChange={(e) => {
+                                        let val = e.target.value;
+                                        if ((newZone as any).isReverse && val.match(/^\d+\.\d+\.\d+(\.\d+)?$/)) {
+                                            const parts = val.split('.');
+                                            if (parts.length >= 3) {
+                                                // Take first 3 parts and reverse them
+                                                const rev = `${parts[2]}.${parts[1]}.${parts[0]}.in-addr.arpa`;
+                                                setNewZone(prev => ({ ...prev, name: val, formattedReverse: rev }));
+                                                return;
+                                            }
+                                        }
+                                        setNewZone(prev => ({ ...prev, name: val }));
+                                    }}
                                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                    placeholder={newZone.isActiveDirectory ? 'e.g. corp.vmhaus.de' : 'e.g. vmhaus.de'}
+                                    placeholder={newZone.isActiveDirectory ? 'e.g. corp.vmhaus.de' : (newZone as any).isReverse ? 'e.g. 192.168.1.0' : 'e.g. vmhaus.de'}
                                 />
+                                {(newZone as any).isReverse && (newZone as any).formattedReverse && (
+                                    <p className="text-xs text-yellow-400 mt-1">
+                                        Will create zone: <strong>{(newZone as any).formattedReverse}</strong>
+                                    </p>
+                                )}
                             </div>
 
                             {newZone.isActiveDirectory ? (

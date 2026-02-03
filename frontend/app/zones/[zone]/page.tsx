@@ -43,6 +43,12 @@ export default function ZoneDetailPage() {
         weight: 0,
         port: 0,
     });
+
+    useEffect(() => {
+        if (zone.endsWith('.in-addr.arpa')) {
+            setNewRecord(prev => ({ ...prev, type: 'PTR' }));
+        }
+    }, [zone]);
     const [isEditing, setIsEditing] = useState(false);
     const [originalRecord, setOriginalRecord] = useState<DnsRecord | null>(null);
 
@@ -297,13 +303,15 @@ export default function ZoneDetailPage() {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Name (subdomain)</label>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                                        {zone.endsWith('.in-addr.arpa') ? 'Last IP octet' : 'Name (subdomain)'}
+                                    </label>
                                     <input
                                         type="text"
                                         value={newRecord.name}
                                         onChange={(e) => setNewRecord(prev => ({ ...prev, name: e.target.value }))}
                                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                        placeholder="@ for root, or subdomain"
+                                        placeholder={zone.endsWith('.in-addr.arpa') ? 'e.g. 50' : '@ for root, or subdomain'}
                                     />
                                 </div>
                                 <div>

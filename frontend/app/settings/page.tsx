@@ -174,6 +174,128 @@ export default function SettingsPage() {
                 <DnsCacheSettings />
                 <ReverseDnsSettings />
             </div>
+
+            <OpnsenseSettings />
+        </div>
+    );
+}
+
+function OpnsenseSettings() {
+    const [config, setConfig] = useState<any>({
+        url: '',
+        key: '',
+        secret: '',
+        backend: 'kea'
+    });
+    const [saving, setSaving] = useState(false);
+    const [testing, setTesting] = useState(false);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('opnsense_config');
+        if (saved) {
+            try { setConfig(JSON.parse(saved)); } catch (e) { }
+        }
+    }, []);
+
+    const handleSave = () => {
+        localStorage.setItem('opnsense_config', JSON.stringify(config));
+        alert('OPNsense configuration saved locally!');
+    };
+
+    const handleTest = async () => {
+        setTesting(true);
+        try {
+            const res = await fetch('/api/opnsense/leases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`Success! Found ${data.leases?.length || 0} leases.`);
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (err) {
+            alert('Test failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
+        }
+        setTesting(false);
+    };
+
+    return (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                <Wifi className="text-red-500" size={24} />
+                OPNsense DHCP Discovery Integration
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">OPNsense URL</label>
+                        <input
+                            type="text"
+                            value={config.url}
+                            onChange={e => setConfig({ ...config, url: e.target.value })}
+                            placeholder="https://192.168.1.1"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">DHCP Backend</label>
+                        <select
+                            value={config.backend}
+                            onChange={e => setConfig({ ...config, backend: e.target.value })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                        >
+                            <option value="kea">Kea DHCP (Modern)</option>
+                            <option value="dnsmasq">Dnsmasq (Legacy/Small)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">API Key</label>
+                        <input
+                            type="password"
+                            value={config.key}
+                            onChange={e => setConfig({ ...config, key: e.target.value })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">API Secret</label>
+                        <input
+                            type="password"
+                            value={config.secret}
+                            onChange={e => setConfig({ ...config, secret: e.target.value })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+                <button
+                    onClick={handleTest}
+                    disabled={testing}
+                    className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                    <RefreshCw size={18} className={testing ? 'animate-spin' : ''} />
+                    {testing ? 'Testing...' : 'Test Connection'}
+                </button>
+                <button
+                    onClick={handleSave}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                    <Save size={18} />
+                    Save OPNsense Config
+                </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-4">
+                Note: Credentials are saved in your local browser storage for security. They are not stored on the persistent dashboard server.
+            </p>
         </div>
     );
 }
