@@ -566,7 +566,27 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             <AddListModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} data={newList} setData={setNewList} onSubmit={() => { handleListOp('add', newList); setShowAddModal(false); if (returnToPredefined) setShowPredefined(true); }} />
             <EditListModal isOpen={!!showEditModal} onClose={() => setShowEditModal(null)} data={editList} setData={setEditList} onSubmit={() => { handleListOp('update', { url: showEditModal?.url, name: editList.name, newUrl: editList.url, whitelist: editList.whitelist }); setShowEditModal(null); }} />
             <AddRuleModal isOpen={showRuleModal} onClose={() => setShowRuleModal(false)} rule={newRule} setRule={setNewRule} onSubmit={() => { handleListOp('addRule', { rule: newRule }); setNewRule(''); setShowRuleModal(false); }} />
-            <PredefinedListsModal isOpen={showPredefined} onClose={() => setShowPredefined(false)} whitelist={newList.whitelist} onSelect={(name: string, url: string) => { setNewList({ ...newList, name, url }); setShowPredefined(false); setShowAddModal(true); setReturnToPredefined(true); }} />
+            <PredefinedListsModal
+                isOpen={showPredefined}
+                onClose={() => setShowPredefined(false)}
+                whitelist={newList.whitelist}
+                existingUrls={(newList.whitelist ? filtering?.whitelist_filters : filtering?.filters)?.map((f: any) => f.url) || []}
+                onSelect={(name: string, url: string) => {
+                    setNewList({ ...newList, name, url });
+                    setShowPredefined(false);
+                    setShowAddModal(true);
+                    setReturnToPredefined(true);
+                }}
+                onBatchSelect={async (selectedLists: any[]) => {
+                    setLoading(true);
+                    for (const list of selectedLists) {
+                        await handleListOp('add', { name: list.name, url: list.url, whitelist: newList.whitelist });
+                    }
+                    setLoading(false);
+                    setShowPredefined(false);
+                    refresh();
+                }}
+            />
             <ImportCSVModal isOpen={showImportCSV} onClose={() => setShowImportCSV(false)} whitelist={importWhitelist} onImport={(lists: any[]) => { lists.forEach(list => handleListOp('add', { name: list.name, url: list.url, whitelist: importWhitelist })); setShowImportCSV(false); }} />
 
         </div>
@@ -1125,12 +1145,14 @@ function AddRuleModal({ isOpen, onClose, rule, setRule, onSubmit }: any) {
     );
 }
 
-function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
+function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSelect, existingUrls = [] }: any) {
     const [lists, setLists] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
 
     // Fetch lists from CSV API
     useEffect(() => {
@@ -1174,6 +1196,26 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
         list.url.toLowerCase().includes(search.toLowerCase())
     );
 
+    const toggleList = (url: string) => {
+        if (existingUrls.includes(url)) return;
+        const newSelected = new Set(selectedUrls);
+        if (newSelected.has(url)) {
+            newSelected.delete(url);
+        } else {
+            newSelected.add(url);
+        }
+        setSelectedUrls(newSelected);
+    };
+
+    const handleBatchAdd = async () => {
+        if (selectedUrls.size === 0) return;
+        setSubmitting(true);
+        const listsToAdd = lists.filter(l => selectedUrls.has(l.url));
+        await onBatchSelect(listsToAdd);
+        setSubmitting(false);
+        setSelectedUrls(new Set());
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -1209,6 +1251,25 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
                 </div>
             </div>
 
+            {/* Select All Toggle */}
+            {!loading && filteredLists.length > 0 && (
+                <div className="flex justify-end mb-2">
+                    <button
+                        onClick={() => {
+                            const available = filteredLists.filter(l => !existingUrls.includes(l.url));
+                            if (selectedUrls.size === available.length) {
+                                setSelectedUrls(new Set());
+                            } else {
+                                setSelectedUrls(new Set(available.map(l => l.url)));
+                            }
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1.5 px-2 py-1 hover:bg-blue-400/10 rounded-lg transition-all"
+                    >
+                        {selectedUrls.size === filteredLists.filter(l => !existingUrls.includes(l.url)).length ? 'Deselect All' : 'Select All Available'}
+                    </button>
+                </div>
+            )}
+
             {/* Loading state */}
             {loading && (
                 <div className="flex items-center justify-center py-12">
@@ -1242,22 +1303,54 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
                         {viewMode === 'grid' ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {filteredLists.map((list, index) => (
-                                    <div key={`${list.url}-${index}`} className="p-4 bg-gray-800/40 border border-gray-700/50 rounded-xl hover:border-blue-500/50 transition-all group shadow-sm flex flex-col h-full">
+                                    <div
+                                        key={`${list.url}-${index}`}
+                                        onClick={() => toggleList(list.url)}
+                                        className={`p-4 bg-gray-800/40 border rounded-xl transition-all group shadow-sm flex flex-col h-full cursor-pointer relative ${selectedUrls.has(list.url)
+                                            ? 'border-blue-500/50 bg-blue-500/5 ring-1 ring-blue-500/20'
+                                            : existingUrls.includes(list.url)
+                                                ? 'border-gray-800 opacity-60 grayscale'
+                                                : 'border-gray-700/50 hover:border-blue-500/30'
+                                            }`}
+                                    >
                                         <div className="flex items-start justify-between mb-2 gap-2">
-                                            <h4 className="text-white font-medium text-sm line-clamp-2 flex-1 group-hover:text-blue-400 transition-colors leading-tight">{list.name}</h4>
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                {!existingUrls.includes(list.url) && (
+                                                    <div className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all ${selectedUrls.has(list.url) ? 'bg-blue-600 border-blue-500' : 'border-gray-600'
+                                                        }`}>
+                                                        {selectedUrls.has(list.url) && <Check size={12} className="text-white" />}
+                                                    </div>
+                                                )}
+                                                <h4 className={`font-medium text-sm line-clamp-2 leading-tight transition-colors ${selectedUrls.has(list.url) ? 'text-blue-400' : 'text-white'
+                                                    }`}>{list.name}</h4>
+                                            </div>
                                             {list.enabled !== undefined && (
                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider shrink-0 ${list.enabled ? 'bg-green-900/30 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
                                                     {list.enabled ? 'Suggested' : 'Optional'}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-500 mb-4 line-clamp-2 break-all opacity-60 group-hover:opacity-100 transition-opacity flex-1">{list.url}</p>
-                                        <button
-                                            onClick={() => onSelect(list.name, list.url)}
-                                            className="w-full py-2 bg-gray-900/80 hover:bg-blue-600 text-blue-400 hover:text-white text-sm font-medium rounded-lg border border-gray-700 hover:border-blue-500 transition-all shadow-sm"
-                                        >
-                                            Select
-                                        </button>
+                                        <div className="text-xs text-gray-500 mb-4 line-clamp-2 break-all opacity-60 group-hover:opacity-100 transition-opacity flex-1">{list.url}</div>
+                                        <div className="flex gap-2">
+                                            {existingUrls.includes(list.url) ? (
+                                                <div className="w-full py-2 bg-gray-900/50 text-gray-500 text-sm font-medium rounded-lg border border-gray-800 flex items-center justify-center gap-2">
+                                                    <Check size={14} /> Added
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleList(list.url); }}
+                                                        className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2 ${selectedUrls.has(list.url)
+                                                            ? 'bg-blue-600 border-blue-500 text-white'
+                                                            : 'bg-gray-900/80 border-gray-700 text-blue-400 hover:border-blue-500'
+                                                            }`}
+                                                    >
+                                                        {selectedUrls.has(list.url) ? <Check size={16} /> : <Plus size={16} />}
+                                                        {selectedUrls.has(list.url) ? 'Selected' : 'Select'}
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -1266,278 +1359,332 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect }: any) {
                                 {filteredLists.map((list, index) => (
                                     <div
                                         key={`${list.url}-${index}`}
-                                        className="flex items-center justify-between p-3 hover:bg-gray-800/40 transition-colors border-b border-gray-800/30 last:border-0 group"
+                                        onClick={() => toggleList(list.url)}
+                                        className={`flex items-center justify-between p-3 transition-colors border-b border-gray-800/30 last:border-0 group cursor-pointer ${selectedUrls.has(list.url) ? 'bg-blue-500/5' : 'hover:bg-gray-800/40'
+                                            } ${existingUrls.includes(list.url) ? 'opacity-60 grayscale' : ''}`}
                                     >
-                                        <div className="flex-1 min-w-0 pr-4">
-                                            <div className="flex items-center gap-3 mb-0.5">
-                                                <h4 className="text-white font-medium text-sm truncate group-hover:text-blue-400 transition-colors">{list.name}</h4>
-                                                {list.enabled !== undefined && (
-                                                    <span className={`text-[9px] px-1.5 py-0.25 rounded uppercase font-bold tracking-wider ${list.enabled ? 'bg-green-900/30 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
-                                                        {list.enabled ? 'Suggested' : 'Optional'}
-                                                    </span>
-                                                )}
+                                        <div className="flex-1 min-w-0 pr-4 flex items-center gap-3">
+                                            {!existingUrls.includes(list.url) && (
+                                                <div className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all ${selectedUrls.has(list.url) ? 'bg-blue-600 border-blue-500' : 'border-gray-600'
+                                                    }`}>
+                                                    {selectedUrls.has(list.url) && <Check size={12} className="text-white" />}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-3 mb-0.5">
+                                                    <h4 className={`font-medium text-sm truncate transition-colors ${selectedUrls.has(list.url) ? 'text-blue-400' : 'text-white'
+                                                        }`}>{list.name}</h4>
+                                                    {list.enabled !== undefined && (
+                                                        <span className={`text-[9px] px-1.5 py-0.25 rounded uppercase font-bold tracking-wider ${list.enabled ? 'bg-green-900/30 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
+                                                            {list.enabled ? 'Suggested' : 'Optional'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-[11px] text-gray-500 truncate font-mono opacity-50 group-hover:opacity-80 transition-opacity">{list.url}</div>
                                             </div>
-                                            <div className="text-[11px] text-gray-500 truncate font-mono opacity-50 group-hover:opacity-80 transition-opacity">{list.url}</div>
+                                            {existingUrls.includes(list.url) ? (
+                                                <div className="px-4 py-1.5 text-gray-500 text-xs font-medium flex items-center gap-1.5 opacity-60">
+                                                    <Check size={14} /> Added
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => toggleList(list.url)}
+                                                    className={`px-6 py-1.5 rounded-lg border transition-all whitespace-nowrap text-xs font-medium flex items-center gap-2 ${selectedUrls.has(list.url)
+                                                        ? 'bg-blue-600 border-blue-500 text-white'
+                                                        : 'bg-gray-900/50 border-gray-700 text-blue-400 hover:border-blue-500'
+                                                        }`}
+                                                >
+                                                    {selectedUrls.has(list.url) ? <Check size={14} /> : <Plus size={14} />}
+                                                    {selectedUrls.has(list.url) ? 'Selected' : 'Select'}
+                                                </button>
+                                            )}
                                         </div>
-                                        <button
-                                            onClick={() => onSelect(list.name, list.url)}
-                                            className="px-6 py-1.5 bg-gray-900/50 hover:bg-blue-600 text-blue-400 hover:text-white text-xs font-medium rounded-lg border border-gray-700 hover:border-blue-500 transition-all whitespace-nowrap"
-                                        >
-                                            Select
-                                        </button>
-                                    </div>
                                 ))}
+                                    </div>
+                                )}
+
+                                {filteredLists.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                                        <div className="p-4 bg-gray-800/30 rounded-full mb-4 ring-1 ring-gray-700">
+                                            <Search size={32} className="text-gray-600" />
+                                        </div>
+                                        <h3 className="text-white font-medium">No results found</h3>
+                                        <p className="text-gray-500 text-sm mt-1 max-w-[200px]">No lists found matching "{search}". Try a different terms.</p>
+                                    </div>
+                                )}
                             </div>
+                            </>
                         )}
 
-                        {filteredLists.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-20 text-center">
-                                <div className="p-4 bg-gray-800/30 rounded-full mb-4 ring-1 ring-gray-700">
-                                    <Search size={32} className="text-gray-600" />
-                                </div>
-                                <h3 className="text-white font-medium">No results found</h3>
-                                <p className="text-gray-500 text-sm mt-1 max-w-[200px]">No lists found matching "{search}". Try a different terms.</p>
+                    {/* Modal Footer for Batch Action */}
+                    {!loading && selectedUrls.size > 0 && (
+                        <div className="mt-6 pt-4 border-t border-gray-800 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-300">
+                            <div className="text-sm text-gray-400">
+                                <span className="text-blue-400 font-medium">{selectedUrls.size}</span> list{selectedUrls.size === 1 ? '' : 's'} selected
                             </div>
-                        )}
-                    </div>
-                </>
-            )}
-        </Modal>
-    );
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setSelectedUrls(new Set())}
+                                    className="text-sm text-gray-500 hover:text-white transition-colors"
+                                >
+                                    Clear Selection
+                                </button>
+                                <button
+                                    onClick={handleBatchAdd}
+                                    disabled={submitting}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-6 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/20"
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            Adding...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus size={16} />
+                                            Add Selected Lists
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </Modal>
+            );
 }
 
-function Modal({ children, title, onClose, maxWidth = "max-w-md" }: any) {
+            function Modal({children, title, onClose, maxWidth = "max-w-md"}: any) {
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className={`bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full ${maxWidth} overflow-hidden`}>
-                <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50"><h3 className="text-xl font-semibold text-white">{title}</h3><button onClick={onClose}><X size={20} className="text-gray-500 hover:text-white" /></button></div>
-                <div className="p-6">{children}</div>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className={`bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full ${maxWidth} overflow-hidden`}>
+                    <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50"><h3 className="text-xl font-semibold text-white">{title}</h3><button onClick={onClose}><X size={20} className="text-gray-500 hover:text-white" /></button></div>
+                    <div className="p-6">{children}</div>
+                </div>
             </div>
-        </div>
-    );
+            );
 }
 
-function Switch({ checked, onChange, size = 'md', variant }: { checked: boolean; onChange: (v: boolean) => void; size?: 'sm' | 'md'; variant?: 'protection' }) {
+            function Switch({checked, onChange, size = 'md', variant}: {checked: boolean; onChange: (v: boolean) => void; size?: 'sm' | 'md'; variant?: 'protection' }) {
     const isSm = size === 'sm';
 
-    // Determine colors
-    let activeColor = 'bg-blue-600';
-    let inactiveColor = 'bg-gray-700';
+            // Determine colors
+            let activeColor = 'bg-blue-600';
+            let inactiveColor = 'bg-gray-700';
 
-    if (variant === 'protection') {
-        activeColor = 'bg-green-500';
-        inactiveColor = 'bg-red-500/80';
+            if (variant === 'protection') {
+                activeColor = 'bg-green-500';
+            inactiveColor = 'bg-red-500/80';
     }
 
-    return (
-        <button
-            onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onChange(!checked);
-            }}
-            className={`${isSm ? 'w-8 h-4.5' : 'w-11 h-6'} rounded-full relative transition-all duration-300 ${checked ? activeColor : inactiveColor}`}
-        >
-            <div className={`absolute top-1 left-1 bg-white ${isSm ? 'w-2.5 h-2.5 translate-x-0' : 'w-4 h-4'} rounded-full shadow-sm transition-transform duration-300 ${checked ? (isSm ? 'translate-x-3.5' : 'translate-x-5') : ''}`} />
-        </button>
-    );
+            return (
+            <button
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onChange(!checked);
+                }}
+                className={`${isSm ? 'w-8 h-4.5' : 'w-11 h-6'} rounded-full relative transition-all duration-300 ${checked ? activeColor : inactiveColor}`}
+            >
+                <div className={`absolute top-1 left-1 bg-white ${isSm ? 'w-2.5 h-2.5 translate-x-0' : 'w-4 h-4'} rounded-full shadow-sm transition-transform duration-300 ${checked ? (isSm ? 'translate-x-3.5' : 'translate-x-5') : ''}`} />
+            </button>
+            );
 }
 
-// Import CSV Modal
-function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
+            // Import CSV Modal
+            function ImportCSVModal({isOpen, onClose, whitelist, onImport}: any) {
     const [csvContent, setCsvContent] = useState('');
-    const [parsedLists, setParsedLists] = useState<any[]>([]);
-    const [selectedLists, setSelectedLists] = useState<Set<string>>(new Set());
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+            const [parsedLists, setParsedLists] = useState<any[]>([]);
+            const [selectedLists, setSelectedLists] = useState<Set<string>>(new Set());
+                const [error, setError] = useState<string | null>(null);
+                const [loading, setLoading] = useState(false);
+                const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+                    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
+                        if (!file) return;
 
-        setLoading(true);
-        setError(null);
+                        setLoading(true);
+                        setError(null);
 
-        try {
+                        try {
             const content = await file.text();
-            setCsvContent(content);
+                        setCsvContent(content);
 
-            // Parse CSV via API
-            const res = await fetch('/api/adguard/import-csv', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ csvContent: content, type: whitelist ? 'whitelist' : 'blocklist' })
+                        // Parse CSV via API
+                        const res = await fetch('/api/adguard/import-csv', {
+                            method: 'POST',
+                        headers: {'Content-Type': 'application/json' },
+                        body: JSON.stringify({csvContent: content, type: whitelist ? 'whitelist' : 'blocklist' })
             });
 
-            const data = await res.json();
+                        const data = await res.json();
 
-            if (data.success) {
-                setParsedLists(data.lists);
+                        if (data.success) {
+                            setParsedLists(data.lists);
                 // Select all by default
                 setSelectedLists(new Set(data.lists.map((l: any) => l.url)));
             } else {
-                setError(data.error || 'Failed to parse CSV');
+                            setError(data.error || 'Failed to parse CSV');
             }
         } catch (err) {
-            console.error('Error reading CSV:', err);
-            setError('Failed to read CSV file');
+                            console.error('Error reading CSV:', err);
+                        setError('Failed to read CSV file');
         } finally {
-            setLoading(false);
+                            setLoading(false);
         }
 
-        // Reset file input
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+                        // Reset file input
+                        if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
         }
     };
 
     const toggleSelection = (url: string) => {
         const newSelected = new Set(selectedLists);
-        if (newSelected.has(url)) {
-            newSelected.delete(url);
+                        if (newSelected.has(url)) {
+                            newSelected.delete(url);
         } else {
-            newSelected.add(url);
+                            newSelected.add(url);
         }
-        setSelectedLists(newSelected);
+                        setSelectedLists(newSelected);
     };
 
     const handleImport = () => {
         const listsToImport = parsedLists.filter(l => selectedLists.has(l.url));
-        onImport(listsToImport);
-        // Reset state
-        setCsvContent('');
-        setParsedLists([]);
-        setSelectedLists(new Set());
-        setError(null);
+                        onImport(listsToImport);
+                        // Reset state
+                        setCsvContent('');
+                        setParsedLists([]);
+                        setSelectedLists(new Set());
+                        setError(null);
     };
 
     const handleReset = () => {
-        setCsvContent('');
-        setParsedLists([]);
-        setSelectedLists(new Set());
-        setError(null);
+                            setCsvContent('');
+                        setParsedLists([]);
+                        setSelectedLists(new Set());
+                        setError(null);
     };
 
-    if (!isOpen) return null;
+                        if (!isOpen) return null;
 
-    return (
-        <Modal title={`Import ${whitelist ? 'Whitelist' : 'Blocklist'} CSV`} onClose={onClose} maxWidth="max-w-3xl">
-            {parsedLists.length === 0 ? (
-                // File upload view
-                <div className="space-y-4">
-                    <div className="text-sm text-gray-400 mb-4">
-                        Upload a CSV file containing filter lists. The CSV should have columns: <code className="text-blue-400">enabled,url,name,id</code>
-                    </div>
-
-                    <div
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-gray-700 rounded-xl p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-800/50 transition-colors"
-                    >
-                        <Upload size={48} className="mx-auto text-gray-600 mb-4" />
-                        <div className="text-white font-medium mb-2">Click to upload CSV file</div>
-                        <div className="text-sm text-gray-500">or drag and drop</div>
-                        <div className="text-xs text-gray-600 mt-2">Supports .csv and .txt files</div>
-                    </div>
-
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".csv,.txt"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
-
-                    {error && (
-                        <div className="p-4 bg-red-900/20 border border-red-700/50 rounded-lg text-red-400 text-sm">
-                            {error}
-                        </div>
-                    )}
-
-                    {loading && (
-                        <div className="flex items-center justify-center py-8">
-                            <RefreshCw className="animate-spin text-blue-500 mr-3" size={24} />
-                            <span className="text-gray-400">Parsing CSV...</span>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                // Preview and selection view
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
-                        <div>
-                            <div className="text-white font-medium">Found {parsedLists.length} lists</div>
-                            <div className="text-sm text-gray-400">{selectedLists.size} selected for import</div>
-                        </div>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setSelectedLists(new Set(parsedLists.map(l => l.url)))}
-                                className="text-sm text-blue-400 hover:text-blue-300"
-                            >
-                                Select All
-                            </button>
-                            <span className="text-gray-600">|</span>
-                            <button
-                                onClick={() => setSelectedLists(new Set())}
-                                className="text-sm text-blue-400 hover:text-blue-300"
-                            >
-                                Deselect All
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="max-h-96 overflow-y-auto space-y-2 bg-gray-950/30 p-3 rounded-lg border border-gray-800">
-                        {parsedLists.map((list, index) => (
-                            <div
-                                key={`${list.url}-${index}`}
-                                onClick={() => toggleSelection(list.url)}
-                                className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedLists.has(list.url)
-                                    ? 'bg-blue-900/20 border-blue-700/50'
-                                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
-                                    }`}
-                            >
-                                <div className="flex items-start gap-3">
-                                    <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${selectedLists.has(list.url)
-                                        ? 'bg-blue-600 border-blue-600'
-                                        : 'border-gray-600'
-                                        }`}>
-                                        {selectedLists.has(list.url) && <Check size={12} className="text-white" />}
+                        return (
+                        <Modal title={`Import ${whitelist ? 'Whitelist' : 'Blocklist'} CSV`} onClose={onClose} maxWidth="max-w-3xl">
+                            {parsedLists.length === 0 ? (
+                                // File upload view
+                                <div className="space-y-4">
+                                    <div className="text-sm text-gray-400 mb-4">
+                                        Upload a CSV file containing filter lists. The CSV should have columns: <code className="text-blue-400">enabled,url,name,id</code>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-white font-medium text-sm">{list.name}</div>
-                                        <div className="text-xs text-gray-500 truncate">{list.url}</div>
+
+                                    <div
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="border-2 border-dashed border-gray-700 rounded-xl p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-800/50 transition-colors"
+                                    >
+                                        <Upload size={48} className="mx-auto text-gray-600 mb-4" />
+                                        <div className="text-white font-medium mb-2">Click to upload CSV file</div>
+                                        <div className="text-sm text-gray-500">or drag and drop</div>
+                                        <div className="text-xs text-gray-600 mt-2">Supports .csv and .txt files</div>
+                                    </div>
+
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".csv,.txt"
+                                        onChange={handleFileSelect}
+                                        className="hidden"
+                                    />
+
+                                    {error && (
+                                        <div className="p-4 bg-red-900/20 border border-red-700/50 rounded-lg text-red-400 text-sm">
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    {loading && (
+                                        <div className="flex items-center justify-center py-8">
+                                            <RefreshCw className="animate-spin text-blue-500 mr-3" size={24} />
+                                            <span className="text-gray-400">Parsing CSV...</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                // Preview and selection view
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+                                        <div>
+                                            <div className="text-white font-medium">Found {parsedLists.length} lists</div>
+                                            <div className="text-sm text-gray-400">{selectedLists.size} selected for import</div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setSelectedLists(new Set(parsedLists.map(l => l.url)))}
+                                                className="text-sm text-blue-400 hover:text-blue-300"
+                                            >
+                                                Select All
+                                            </button>
+                                            <span className="text-gray-600">|</span>
+                                            <button
+                                                onClick={() => setSelectedLists(new Set())}
+                                                className="text-sm text-blue-400 hover:text-blue-300"
+                                            >
+                                                Deselect All
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="max-h-96 overflow-y-auto space-y-2 bg-gray-950/30 p-3 rounded-lg border border-gray-800">
+                                        {parsedLists.map((list, index) => (
+                                            <div
+                                                key={`${list.url}-${index}`}
+                                                onClick={() => toggleSelection(list.url)}
+                                                className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedLists.has(list.url)
+                                                    ? 'bg-blue-900/20 border-blue-700/50'
+                                                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${selectedLists.has(list.url)
+                                                        ? 'bg-blue-600 border-blue-600'
+                                                        : 'border-gray-600'
+                                                        }`}>
+                                                        {selectedLists.has(list.url) && <Check size={12} className="text-white" />}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-white font-medium text-sm">{list.name}</div>
+                                                        <div className="text-xs text-gray-500 truncate">{list.url}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex justify-between gap-3">
+                                        <button
+                                            onClick={handleReset}
+                                            className="text-gray-400 hover:text-white"
+                                        >
+                                            Upload Different File
+                                        </button>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={onClose}
+                                                className="text-gray-400 hover:text-white"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleImport}
+                                                disabled={selectedLists.size === 0}
+                                                className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-6 py-2 rounded-lg transition-colors"
+                                            >
+                                                Import {selectedLists.size} List{selectedLists.size !== 1 ? 's' : ''}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="flex justify-between gap-3">
-                        <button
-                            onClick={handleReset}
-                            className="text-gray-400 hover:text-white"
-                        >
-                            Upload Different File
-                        </button>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={onClose}
-                                className="text-gray-400 hover:text-white"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleImport}
-                                disabled={selectedLists.size === 0}
-                                className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-6 py-2 rounded-lg transition-colors"
-                            >
-                                Import {selectedLists.size} List{selectedLists.size !== 1 ? 's' : ''}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </Modal>
-    );
+                            )}
+                        </Modal>
+                        );
 }
 
