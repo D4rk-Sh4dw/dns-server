@@ -59,9 +59,9 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
 export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]> {
     // Both Kea and Dnsmasq search endpoints require POST
     if (config.backend === 'kea') {
-        const data = await opnsenseFetch(config, '/api/kea/leases4/searchLeases', {
+        const data = await opnsenseFetch(config, '/api/kea/leases4/search', {
             method: 'POST',
-            body: JSON.stringify({}), // searchLeases often expects a search body
+            body: JSON.stringify({ rowCount: 1000, current: 1, searchPhrase: "" }),
             headers: { 'Content-Type': 'application/json' }
         });
 
@@ -78,9 +78,9 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
         }));
     } else {
         // dnsmasq leases search
-        const data = await opnsenseFetch(config, '/api/dnsmasq/service/searchLeases', {
+        const data = await opnsenseFetch(config, '/api/dnsmasq/service/search', {
             method: 'POST',
-            body: JSON.stringify({}),
+            body: JSON.stringify({ rowCount: 1000, current: 1, searchPhrase: "" }),
             headers: { 'Content-Type': 'application/json' }
         });
 
