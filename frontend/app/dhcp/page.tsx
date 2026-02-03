@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Network, RefreshCw, Cpu, Activity, Plus, Trash2, Search, Info, ShieldAlert } from 'lucide-react';
+import TechnitiumScopeModal from '@/components/TechnitiumScopeModal';
+import { Settings, Play, Pause } from 'lucide-react';
 
 interface Lease {
     mac: string;
@@ -38,6 +40,10 @@ export default function DhcpPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newLease, setNewLease] = useState({ mac: '', ip: '', hostname: '' });
 
+    // Technitium Scope Management
+    const [showScopeModal, setShowScopeModal] = useState(false);
+    const [editingScope, setEditingScope] = useState<any>(null);
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const savedProvider = localStorage.getItem('dhcp_provider') as any;
@@ -45,7 +51,7 @@ export default function DhcpPage() {
         }
     }, []);
 
-    const fetchOpnsenseData = async () => {
+    const fetchOpnsenseData = async () => { /* ... existing fetchOpnsenseData ... */
         const config = localStorage.getItem('opnsense_config');
         if (!config) return;
 
@@ -106,7 +112,51 @@ export default function DhcpPage() {
         }
     };
 
-    const handleAddStatic = async () => {
+    // Technitium Scope Actions
+    const handleSaveScope = async (scopeData: any) => {
+        try {
+            const res = await fetch('/api/technitium/dhcp/scope', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(scopeData)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Failed to save scope');
+            }
+
+            setShowScopeModal(false);
+            setEditingScope(null);
+            fetchData();
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
+
+    const handleDeleteScope = async (scopeName: string) => {
+        if (!confirm(`Are you sure you want to delete scope "${scopeName}"?`)) return;
+        try {
+            const res = await fetch('/api/technitium/dhcp/scope', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', name: scopeName })
+            });
+
+            if (!res.ok) throw new Error('Failed to delete scope');
+            fetchData();
+        } catch (err) {
+            alert('Failed to delete scope');
+        }
+    };
+
+    const handleToggleScope = async (scope: any) => {
+        // Just update the scope with enabled flipped
+        const updatedScope = { ...scope, enabled: !scope.enabled };
+        await handleSaveScope(updatedScope);
+    };
+
+    const handleAddStatic = async () => { /* ... existing handleAddStatic ... */
         try {
             const res = await fetch('/api/adguard/dhcp', {
                 method: 'POST',
@@ -169,61 +219,153 @@ export default function DhcpPage() {
                     >
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
-                </div>
-            </div>
-
-            {/* Main Config Card */}
-            <div className={`bg-gray-900 border ${status?.enabled ? 'border-gray-800' : 'border-yellow-500/30'} rounded-xl p-6`}>
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl ${status?.enabled ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-800 text-gray-500'}`}>
-                            <Network size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-medium text-white">{provider === 'technitium' ? 'Technitium DHCP' : 'AdGuard DHCP'} Status</h3>
-                            <p className="text-sm text-gray-500">{status?.enabled ? (provider === 'technitium' ? 'All scopes running' : `Running on ${status.interface_name}`) : 'Server is disabled'}</p>
-                        </div>
-                    </div>
-                    {provider === 'adguard' && (
+                    {provider === 'technitium' && (
                         <button
-                            onClick={() => handleToggleDhcp(!status?.enabled)}
-                            className={`w-14 h-7 rounded-full relative transition-colors ${status?.enabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+                            onClick={() => { setEditingScope(null); setShowScopeModal(true); }}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                         >
-                            <div className={`absolute top-1 left-1 bg-white w-5 h-5 rounded-full transition-transform ${status?.enabled ? 'translate-x-7' : ''}`} />
+                            <Plus size={18} />
+                            Create Scope
                         </button>
                     )}
                 </div>
-
-                {status?.enabled ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
-                            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">IP Range</span>
-                            <div className="text-white font-mono mt-1">
-                                {provider === 'technitium'
-                                    ? (status.scopes && status.scopes.length > 0 ? `${status.scopes[0].startAddress} — ${status.scopes[0].endAddress}` : 'N/A')
-                                    : `${status.conf.range_start} — ${status.conf.range_end}`}
-                            </div>
-                        </div>
-                        <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
-                            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Gateway</span>
-                            <div className="text-white font-mono mt-1">
-                                {provider === 'technitium'
-                                    ? (status.scopes && status.scopes.length > 0 ? status.scopes[0].gateway : 'N/A')
-                                    : status.conf.gateway_ip}
-                            </div>
-                        </div>
-                        <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
-                            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Active Leases</span>
-                            <div className="text-white font-mono mt-1">{status.leases.length} Dynamic / {status.static_leases.length} Static</div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-lg text-yellow-500/80 text-sm flex items-center gap-3">
-                        <Info size={16} />
-                        The DHCP server must be enabled for {provider === 'technitium' ? 'Technitium' : 'AdGuard'} to manage your network addresses.
-                    </div>
-                )}
             </div>
+
+            {/* Technitium Scope List (if provider is Technitium) */}
+            {provider === 'technitium' && status?.scopes && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {status.scopes.map((scope: any, idx: number) => (
+                        <div key={idx} className={`bg-gray-900 border ${scope.enabled ? 'border-gray-800' : 'border-yellow-900/50'} rounded-xl p-6 relative group hover:border-blue-500/50 transition-colors`}>
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="font-semibold text-white flex items-center gap-2">
+                                        {scope.name}
+                                        {scope.enabled ? (
+                                            <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                                        ) : (
+                                            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                        )}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-1">{scope.description || 'No description'}</p>
+                                </div>
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={() => handleToggleScope(scope)}
+                                        className={`p-1.5 rounded-lg transition-colors ${scope.enabled ? 'text-green-400 hover:bg-green-400/10' : 'text-gray-500 hover:text-green-400 hover:bg-gray-800'}`}
+                                        title={scope.enabled ? 'Disable Scope' : 'Enable Scope'}
+                                    >
+                                        {scope.enabled ? <Pause size={16} /> : <Play size={16} />}
+                                    </button>
+                                    <button
+                                        onClick={() => { setEditingScope(scope); setShowScopeModal(true); }}
+                                        className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                                        title="Configure Scope"
+                                    >
+                                        <Settings size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteScope(scope.name)}
+                                        className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                        title="Delete Scope"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between py-1 border-b border-gray-800/50">
+                                    <span className="text-gray-500">Range</span>
+                                    <span className="text-gray-300 font-mono text-xs">{scope.startAddress} - {scope.endAddress}</span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-gray-800/50">
+                                    <span className="text-gray-500">Gateway</span>
+                                    <span className="text-gray-300 font-mono text-xs">{scope.gateway}</span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-gray-800/50">
+                                    <span className="text-gray-500">Mask</span>
+                                    <span className="text-gray-300 font-mono text-xs">{scope.subnetMask}</span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                    <span className="text-gray-500">DNS</span>
+                                    <span className="text-gray-300 font-mono text-xs truncate max-w-[120px]" title={scope.dnsServers?.join(', ') || 'Local System'}>
+                                        {scope.dnsServers && scope.dnsServers.length > 0 ? scope.dnsServers.join(', ') : 'Local System'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Empty State for Technitium Scopes */}
+                    {status.scopes.length === 0 && (
+                        <button
+                            onClick={() => { setEditingScope(null); setShowScopeModal(true); }}
+                            className="bg-gray-900 border border-gray-800 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-gray-600 hover:bg-gray-800 transition-all min-h-[200px] group"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-gray-700 transition-colors">
+                                <Plus size={24} />
+                            </div>
+                            <h3 className="font-medium">Create First Scope</h3>
+                            <p className="text-sm text-gray-600 mt-2 text-center max-w-[200px]">Define a subnet range to start serving IP addresses.</p>
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Keeping the old AdGuard Status card only if AdGuard is active provider */}
+            {provider === 'adguard' && (
+                <div className={`bg-gray-900 border ${status?.enabled ? 'border-gray-800' : 'border-yellow-500/30'} rounded-xl p-6`}>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${status?.enabled ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-800 text-gray-500'}`}>
+                                <Network size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-medium text-white">{provider === 'technitium' ? 'Technitium DHCP' : 'AdGuard DHCP'} Status</h3>
+                                <p className="text-sm text-gray-500">{status?.enabled ? (provider === 'technitium' ? 'All scopes running' : `Running on ${status.interface_name}`) : 'Server is disabled'}</p>
+                            </div>
+                        </div>
+                        {provider === 'adguard' && (
+                            <button
+                                onClick={() => handleToggleDhcp(!status?.enabled)}
+                                className={`w-14 h-7 rounded-full relative transition-colors ${status?.enabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+                            >
+                                <div className={`absolute top-1 left-1 bg-white w-5 h-5 rounded-full transition-transform ${status?.enabled ? 'translate-x-7' : ''}`} />
+                            </button>
+                        )}
+                    </div>
+
+                    {status?.enabled ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
+                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">IP Range</span>
+                                <div className="text-white font-mono mt-1">
+                                    {provider === 'technitium'
+                                        ? (status.scopes && status.scopes.length > 0 ? `${status.scopes[0].startAddress} — ${status.scopes[0].endAddress}` : 'N/A')
+                                        : `${status.conf.range_start} — ${status.conf.range_end}`}
+                                </div>
+                            </div>
+                            <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
+                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Gateway</span>
+                                <div className="text-white font-mono mt-1">
+                                    {provider === 'technitium'
+                                        ? (status.scopes && status.scopes.length > 0 ? status.scopes[0].gateway : 'N/A')
+                                        : status.conf.gateway_ip}
+                                </div>
+                            </div>
+                            <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
+                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Active Leases</span>
+                                <div className="text-white font-mono mt-1">{status.leases.length} Dynamic / {status.static_leases.length} Static</div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-lg text-yellow-500/80 text-sm flex items-center gap-3">
+                            <Info size={16} />
+                            The DHCP server must be enabled for {provider === 'technitium' ? 'Technitium' : 'AdGuard'} to manage your network addresses.
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Tabs & Search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-900 border border-gray-800 rounded-xl p-2">
@@ -287,7 +429,7 @@ export default function DhcpPage() {
                                     <tr key={idx} className="hover:bg-gray-800/30 group transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="text-white font-medium">{lease.hostname || 'Unknown'}</div>
-                                            {lease.expires && <div className="text-[10px] text-gray-500 mt-0.5">Expires: {lease.expires}</div>}
+                                            {lease.expires && <div className="text-[10px] text-gray-500 mt-0.5">Expires: {new Date(lease.expires).toLocaleString()}</div>}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="text-blue-400 font-mono">{lease.ip}</span>
@@ -300,7 +442,8 @@ export default function DhcpPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {lease.type === 'Static' && (
+                                            {/* TODO: Add Technitium Lease Deletion support */}
+                                            {provider === 'adguard' && lease.type === 'Static' && (
                                                 <button
                                                     onClick={() => handleRemoveStatic(lease)}
                                                     className="p-2 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
@@ -398,7 +541,15 @@ export default function DhcpPage() {
                 </div>
             )}
 
-            {/* Add Static Lease Modal */}
+            {/* Technitium Scope Modal */}
+            <TechnitiumScopeModal
+                isOpen={showScopeModal}
+                onClose={() => setShowScopeModal(false)}
+                onSave={handleSaveScope}
+                existingScope={editingScope}
+            />
+
+            {/* Existing AdGuard Static Lease Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">

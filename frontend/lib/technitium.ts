@@ -246,14 +246,50 @@ export async function getSummary() {
 
 export interface DHCPScope {
     name: string;
+    description?: string;
     enabled: boolean;
     startAddress: string;
     endAddress: string;
     subnetMask: string;
     gateway: string;
-    leaseExpiry: number;
-    dnsServers?: string[];
+    leaseTime: number; // in seconds
+    offerDelay: number; // in milliseconds
+
+    // Ping Check
+    pingCheckEnabled: boolean;
+    pingCheckTimeout: number;
+    pingCheckRetries: number;
+
+    // Domain & DNS
     domainName?: string;
+    domainSearchList?: string[];
+    dnsUpdatesEnabled: boolean;
+    dnsOverwriteDynamicLeaseEnabled: boolean;
+    dnsTtl: number;
+    dnsServers?: string[]; // If empty, use server's own address as DNS? User UI says "Use This DNS Server"
+
+    // Network Options
+    winsServers?: string[];
+    ntpServers?: string[];
+    ntpServerDomainNames?: string[];
+    staticRoutes?: string[]; // Format: Destination,SubnetMask,Router
+
+    // Boot / TFTP
+    bootstrapServerAddress?: string;
+    bootstrapServerHostName?: string;
+    bootFileName?: string;
+    tftpServerAddresses?: string[];
+
+    // Advanced / Other
+    genericOptions?: { code: number; value: string }[];
+    exclusions?: { startAddress: string; endAddress: string }[];
+
+    // Advanced Booleans
+    allowOnlyReservedLeaseAllocations: boolean;
+    blockLocallyAdministeredMacAddresses: boolean;
+    ignoreClientIdentifier: boolean;
+
+    reservedLeases?: TechnitiumDHCPLease[];
 }
 
 export interface TechnitiumDHCPLease {
@@ -263,6 +299,7 @@ export interface TechnitiumDHCPLease {
     hostname: string;
     expiresAt: string;
     isReserved: boolean;
+    comments?: string;
 }
 
 /**
@@ -279,6 +316,36 @@ export async function listDHCPScopes(): Promise<DHCPScope[]> {
 export async function getDHCPScope(name: string): Promise<DHCPScope> {
     const data = await technitiumFetch('/api/dhcp/scopes/get', { name });
     return data.scope;
+}
+
+/**
+ * Create or Update a DHCP scope
+ * Note: The API likely uses 'add' for creation. For update, 'set' might be used or 'add' might overwrite?
+ * Based on common patterns in this API, usually 'add' creates and 'set' updates, or they are separate.
+ * Let's assume /api/dhcp/scopes/add creates, and we might need /set for updates.
+ * Wait, usually for this API, creating a scope that exists might fail.
+ */
+export async function createDhcpScope(scope: Partial<DHCPScope>) {
+    // Basic validation / transformation if needed
+    // The API likely expects flat parameters or a JSON body. 
+    // technitiumFetch sends JSON body if params are provided.
+
+    // We need to make sure we map our structured object to what the API likely expects.
+    // If the API takes a single JSON object 'scope', we wrap it.
+    // If it takes flat params, we rely on the implementation.
+    // Given the complexity (arrays etc), it's highly likely it accepts a JSON body representing the scope.
+
+    // We will try sending the scope object directly flattened or as proper JSON.
+    // Usually Technitium API takes query params for GET and JSON/Form for POST.
+    // We will start by sending the scope properties.
+    return await technitiumFetch('/api/dhcp/scopes/add', scope as any);
+}
+
+/**
+ * Delete a DHCP scope
+ */
+export async function deleteDhcpScope(name: string) {
+    return await technitiumFetch('/api/dhcp/scopes/delete', { name });
 }
 
 /**
