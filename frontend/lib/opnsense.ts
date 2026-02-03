@@ -18,15 +18,16 @@ export interface OPNsenseConfig {
     key: string;
     secret: string;
     backend: 'kea' | 'dnsmasq';
+    skip_ssl_verify?: boolean;
 }
 
 async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: RequestInit = {}) {
     const auth = Buffer.from(`${config.key}:${config.secret}`).toString('base64');
     const url = `${config.url.replace(/\/$/, '')}${endpoint}`;
 
-    // OPNsense often uses self-signed certificates. We allow them here.
+    // OPNsense often uses self-signed certificates. We allow skipping verification if configured.
     if (typeof process !== 'undefined') {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = config.skip_ssl_verify ? '0' : '1';
     }
 
     const res = await fetch(url, {

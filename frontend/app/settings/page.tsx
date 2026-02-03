@@ -252,6 +252,18 @@ function OpnsenseSettings() {
                             <option value="dnsmasq">Dnsmasq (Legacy/Small)</option>
                         </select>
                     </div>
+                    <div className="flex items-center gap-3">
+                        <input
+                            type="checkbox"
+                            id="skip_ssl_verify"
+                            checked={config.skip_ssl_verify}
+                            onChange={e => setConfig({ ...config, skip_ssl_verify: e.target.checked })}
+                            className="w-4 h-4 bg-gray-800 border-gray-700 rounded text-red-600 focus:ring-red-500"
+                        />
+                        <label htmlFor="skip_ssl_verify" className="text-sm font-medium text-gray-400 cursor-pointer">
+                            Skip SSL Verification (for self-signed certs)
+                        </label>
+                    </div>
                 </div>
 
                 <div className="space-y-4">
