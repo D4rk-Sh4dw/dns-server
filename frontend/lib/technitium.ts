@@ -31,31 +31,34 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
         const data = await response.json();
 
         // Check for session expiry or invalid token
-        const errorMsg = data.errorMessage?.toLowerCase() || '';
-        if (data.status === 'error' && (
-            errorMsg.includes('session expired') ||
-            errorMsg.includes('invalid token')
-        )) {
-            console.log('Technitium token expired, retrying with fresh token...');
-
-            // Clear cache and get new token
-            cachedToken = null;
-            const newToken = await getToken(true);
-
-            // Retry the request
-            const retryParams = new URLSearchParams({ token: newToken, ...params });
-            const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
-
-            const retryResponse = await fetch(retryUrl);
-            const retryData = await retryResponse.json();
-
-            if (retryData.status !== 'ok') {
-                throw new Error(`Technitium API error after retry: ${retryData.errorMessage}`);
-            }
-            return retryData.response;
-        }
-
         if (data.status !== 'ok') {
+            const errorMsg = data.errorMessage?.toLowerCase() || '';
+            const isAuthError = errorMsg.includes('session expired') ||
+                errorMsg.includes('invalid token') ||
+                errorMsg.includes('token expired');
+
+            if (isAuthError) {
+                console.log(`Technitium session issue detected: "${data.errorMessage}". Retrying with fresh token...`);
+
+                // Clear cache and get new token
+                cachedToken = null;
+                const newToken = await getToken(true);
+
+                // Retry the request
+                const retryParams = new URLSearchParams({ token: newToken, ...params });
+                const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
+
+                const retryResponse = await fetch(retryUrl);
+                const retryData = await retryResponse.json();
+
+                if (retryData.status !== 'ok') {
+                    console.error(`Technitium retry failed: ${retryData.errorMessage}`);
+                    throw new Error(`Technitium API error after retry: ${retryData.errorMessage}`);
+                }
+                return retryData.response;
+            }
+
+            // Regular error
             throw new Error(`Technitium API error: ${data.errorMessage}`);
         }
 
