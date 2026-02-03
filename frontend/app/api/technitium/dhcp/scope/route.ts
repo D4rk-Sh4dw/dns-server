@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDHCPScope, createDhcpScope, deleteDhcpScope, DHCPScope } from '@/lib/technitium';
+import { getDHCPScope, createDhcpScope, deleteDhcpScope, toggleDhcpScope, DHCPScope } from '@/lib/technitium';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
         if (action === 'delete') {
             if (!scopeData.name) return NextResponse.json({ error: 'Name required for deletion' }, { status: 400 });
             await deleteDhcpScope(scopeData.name);
+            return NextResponse.json({ success: true });
+        }
+
+        if (action === 'toggle') {
+            if (!scopeData.name) return NextResponse.json({ error: 'Name required for toggle' }, { status: 400 });
+            await toggleDhcpScope(scopeData.name, scopeData.enabled);
             return NextResponse.json({ success: true });
         }
 

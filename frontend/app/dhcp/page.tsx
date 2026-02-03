@@ -151,9 +151,18 @@ export default function DhcpPage() {
     };
 
     const handleToggleScope = async (scope: any) => {
-        // Just update the scope with enabled flipped
-        const updatedScope = { ...scope, enabled: !scope.enabled };
-        await handleSaveScope(updatedScope);
+        try {
+            const res = await fetch('/api/technitium/dhcp/scope', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'toggle', name: scope.name, enabled: !scope.enabled })
+            });
+
+            if (!res.ok) throw new Error('Failed to toggle scope');
+            fetchData();
+        } catch (err) {
+            alert('Failed to toggle scope');
+        }
     };
 
     const handleAddStatic = async () => { /* ... existing handleAddStatic ... */

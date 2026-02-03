@@ -444,6 +444,15 @@ export async function createDhcpScope(scope: Partial<DHCPScope>) {
 }
 
 /**
+ * Enable or Disable a DHCP scope
+ */
+export async function toggleDhcpScope(name: string, enable: boolean) {
+    const endpoint = enable ? '/api/dhcp/scopes/enable' : '/api/dhcp/scopes/disable';
+    // Both endpoints just take 'name' as query param
+    return await technitiumFetch(endpoint, { name }, { method: 'POST' });
+}
+
+/**
  * Delete a DHCP scope
  */
 export async function deleteDhcpScope(name: string) {
