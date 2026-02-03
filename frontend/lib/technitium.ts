@@ -344,9 +344,27 @@ export async function getDHCPScope(name: string): Promise<DHCPScope> {
  */
 // We will try sending the scope object directly flattened or as proper JSON.
 export async function createDhcpScope(scope: Partial<DHCPScope>) {
+    // Map frontend DHCPScope interface to Technitium API parameters
+    // Based on standard Technitium DHCP naming conventions
+    const apiParams: any = {
+        name: scope.name,
+        firstIpAddress: scope.startAddress,
+        lastIpAddress: scope.endAddress,
+        subnetMask: scope.subnetMask,
+        routerIpAddress: scope.gateway,
+        leaseTime: scope.leaseTime?.toString(),
+        domainName: scope.domainName,
+        ...scope // Spread rest for custom fields, though explicit mapping is safer
+    };
+
+    // Remove mapped fields to avoid duplication/confusion if using spread
+    delete apiParams.startAddress;
+    delete apiParams.endAddress;
+    delete apiParams.gateway;
+
     return await technitiumFetch('/api/dhcp/scopes/add', {}, {
         method: 'POST',
-        body: scope
+        body: apiParams
     });
 }
 
