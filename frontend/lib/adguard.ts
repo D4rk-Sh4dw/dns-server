@@ -264,8 +264,8 @@ export async function updateDnsConfig(partialConfig: any) {
         'bootstrap_dns', 'upstream_dns', 'fallback_dns', 'all_servers',
         'fastest_addr', 'fastest_timeout', 'protection_enabled', 'ratelimit',
         'ratelimit_whitelist', 'blocking_mode', 'blocking_ipv4', 'blocking_ipv6',
-        'edns_client_subnet', 'dns_cache_size', 'dns_cache_min_ttl', 'dns_cache_max_ttl',
-        'dns_cache_optimistic', 'upstream_dns_file', 'use_private_ptr_resolvers',
+        'edns_client_subnet', 'cache_size', 'cache_ttl_min', 'cache_ttl_max',
+        'cache_optimistic', 'upstream_dns_file', 'use_private_ptr_resolvers',
         'local_ptr_upstreams', 'use_dns64', 'dns64_prefixes', 'serve_http3', 'use_http3_upstreams', 'resolve_clients'
     ];
 
