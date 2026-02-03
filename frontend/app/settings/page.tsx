@@ -105,6 +105,64 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
+                {/* DHCP Provider Selection */}
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                    <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                        <Database className="text-green-500" size={24} />
+                        DHCP Server Provider
+                    </h2>
+
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-400">
+                            Select which service should be used for DHCP management.
+                        </p>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            <button
+                                onClick={() => {
+                                    localStorage.setItem('dhcp_provider', 'adguard');
+                                    window.dispatchEvent(new Event('storage'));
+                                    alert('DHCP Provider set to AdGuard Home');
+                                }}
+                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') !== 'technitium')
+                                        ? 'bg-blue-600/10 border-blue-600 text-white'
+                                        : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
+                                    }`}
+                            >
+                                <div className="text-left">
+                                    <div className="font-medium">AdGuard Home DHCP</div>
+                                    <div className="text-xs opacity-70">Standard filtering-focused DHCP</div>
+                                </div>
+                                {(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') !== 'technitium') && <CheckCircle size={20} />}
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    localStorage.setItem('dhcp_provider', 'technitium');
+                                    window.dispatchEvent(new Event('storage'));
+                                    alert('DHCP Provider set to Technitium');
+                                }}
+                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') === 'technitium')
+                                        ? 'bg-blue-600/10 border-blue-600 text-white'
+                                        : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
+                                    }`}
+                            >
+                                <div className="text-left">
+                                    <div className="font-medium">Technitium DHCP</div>
+                                    <div className="text-xs opacity-70">Full-featured DHCP with integrated DNS/Reverse DNS updates</div>
+                                </div>
+                                {(typeof window !== 'undefined' && localStorage.getItem('dhcp_provider') === 'technitium') && <CheckCircle size={20} />}
+                            </button>
+                        </div>
+
+                        <div className="p-3 bg-blue-900/20 border border-blue-800/50 rounded-lg">
+                            <p className="text-xs text-blue-300">
+                                <strong>Tip:</strong> Use Technitium DHCP if you want automatic <strong>Reverse DNS</strong> (PTR) updates for all your devices.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Configuration Backup & Restore */}
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                     <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">

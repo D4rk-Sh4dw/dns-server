@@ -241,3 +241,61 @@ export async function getServerStatus() {
 export async function getSummary() {
     return technitiumFetch('/api/dashboard/summary');
 }
+
+// --- DHCP Management ---
+
+export interface DHCPScope {
+    name: string;
+    enabled: boolean;
+    startAddress: string;
+    endAddress: string;
+    subnetMask: string;
+    gateway: string;
+    leaseExpiry: number;
+    dnsServers?: string[];
+    domainName?: string;
+}
+
+export interface TechnitiumDHCPLease {
+    scope: string;
+    ipAddress: string;
+    hardwareAddress: string;
+    hostname: string;
+    expiresAt: string;
+    isReserved: boolean;
+}
+
+/**
+ * List all DHCP scopes
+ */
+export async function listDHCPScopes(): Promise<DHCPScope[]> {
+    const data = await technitiumFetch('/api/dhcp/scopes/list');
+    return data.scopes || [];
+}
+
+/**
+ * Get detailed configuration for a specific DHCP scope
+ */
+export async function getDHCPScope(name: string): Promise<DHCPScope> {
+    const data = await technitiumFetch('/api/dhcp/scopes/get', { name });
+    return data.scope;
+}
+
+/**
+ * List all active and reserved DHCP leases
+ */
+export async function listDHCPLeases(): Promise<TechnitiumDHCPLease[]> {
+    const data = await technitiumFetch('/api/dhcp/leases/list');
+    return data.leases || [];
+}
+
+/**
+ * Remove a DHCP lease (active or reserved)
+ */
+export async function removeDHCPLease(scope: string, ipAddress: string, hardwareAddress: string) {
+    return await technitiumFetch('/api/dhcp/leases/remove', {
+        name: scope,
+        ipAddress,
+        hardwareAddress
+    });
+}

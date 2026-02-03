@@ -22,6 +22,7 @@ interface DhcpStatus {
     };
     leases: Lease[];
     static_leases: Lease[];
+    scopes?: any[];
 }
 
 export default function DhcpPage() {
@@ -29,12 +30,20 @@ export default function DhcpPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'adguard' | 'opnsense'>('adguard');
+    const [activeTab, setActiveTab] = useState<'dhcp' | 'opnsense'>('dhcp'); // Renamed adguard to dhcp Generic
     const [opnsenseLeases, setOpnsenseLeases] = useState<any[]>([]);
     const [opnsenseLoading, setOpnsenseLoading] = useState(false);
+    const [provider, setProvider] = useState<'adguard' | 'technitium'>('adguard');
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [newLease, setNewLease] = useState({ mac: '', ip: '', hostname: '' });
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedProvider = localStorage.getItem('dhcp_provider') as any;
+            if (savedProvider) setProvider(savedProvider);
+        }
+    }, []);
 
     const fetchOpnsenseData = async () => {
         const config = localStorage.getItem('opnsense_config');
@@ -58,11 +67,14 @@ export default function DhcpPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/adguard/dhcp');
+            const savedProvider = localStorage.getItem('dhcp_provider') || 'adguard';
+            const endpoint = savedProvider === 'technitium' ? '/api/technitium/dhcp' : '/api/adguard/dhcp';
+
+            const res = await fetch(endpoint);
             const data = await res.json();
             setStatus(data);
 
-            // Auto-switch tab if AdGuard DHCP is disabled but OPNsense is likely used
+            // Auto-switch tab if DHCP is disabled but OPNsense is likely used
             if (!data.enabled && localStorage.getItem('opnsense_config')) {
                 setActiveTab('opnsense');
             }
@@ -168,27 +180,37 @@ export default function DhcpPage() {
                             <Network size={24} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-medium text-white">DHCP Status</h3>
-                            <p className="text-sm text-gray-500">{status?.enabled ? `Running on ${status.interface_name}` : 'Server is disabled'}</p>
+                            <h3 className="text-lg font-medium text-white">{provider === 'technitium' ? 'Technitium DHCP' : 'AdGuard DHCP'} Status</h3>
+                            <p className="text-sm text-gray-500">{status?.enabled ? (provider === 'technitium' ? 'All scopes running' : `Running on ${status.interface_name}`) : 'Server is disabled'}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => handleToggleDhcp(!status?.enabled)}
-                        className={`w-14 h-7 rounded-full relative transition-colors ${status?.enabled ? 'bg-blue-600' : 'bg-gray-700'}`}
-                    >
-                        <div className={`absolute top-1 left-1 bg-white w-5 h-5 rounded-full transition-transform ${status?.enabled ? 'translate-x-7' : ''}`} />
-                    </button>
+                    {provider === 'adguard' && (
+                        <button
+                            onClick={() => handleToggleDhcp(!status?.enabled)}
+                            className={`w-14 h-7 rounded-full relative transition-colors ${status?.enabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+                        >
+                            <div className={`absolute top-1 left-1 bg-white w-5 h-5 rounded-full transition-transform ${status?.enabled ? 'translate-x-7' : ''}`} />
+                        </button>
+                    )}
                 </div>
 
                 {status?.enabled ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
                             <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">IP Range</span>
-                            <div className="text-white font-mono mt-1">{status.conf.range_start} — {status.conf.range_end}</div>
+                            <div className="text-white font-mono mt-1">
+                                {provider === 'technitium'
+                                    ? (status.scopes && status.scopes.length > 0 ? `${status.scopes[0].startAddress} — ${status.scopes[0].endAddress}` : 'N/A')
+                                    : `${status.conf.range_start} — ${status.conf.range_end}`}
+                            </div>
                         </div>
                         <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
                             <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Gateway</span>
-                            <div className="text-white font-mono mt-1">{status.conf.gateway_ip}</div>
+                            <div className="text-white font-mono mt-1">
+                                {provider === 'technitium'
+                                    ? (status.scopes && status.scopes.length > 0 ? status.scopes[0].gateway : 'N/A')
+                                    : status.conf.gateway_ip}
+                            </div>
                         </div>
                         <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
                             <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Active Leases</span>
@@ -198,7 +220,7 @@ export default function DhcpPage() {
                 ) : (
                     <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-lg text-yellow-500/80 text-sm flex items-center gap-3">
                         <Info size={16} />
-                        The DHCP server must be enabled for AdGuard to manage your network addresses.
+                        The DHCP server must be enabled for {provider === 'technitium' ? 'Technitium' : 'AdGuard'} to manage your network addresses.
                     </div>
                 )}
             </div>
@@ -207,10 +229,10 @@ export default function DhcpPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-900 border border-gray-800 rounded-xl p-2">
                 <div className="flex p-1 bg-gray-950 rounded-lg w-full md:w-auto">
                     <button
-                        onClick={() => setActiveTab('adguard')}
-                        className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'adguard' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                        onClick={() => setActiveTab('dhcp')}
+                        className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'dhcp' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                        AdGuard DHCP
+                        {provider === 'technitium' ? 'Technitium Leases' : 'AdGuard DHCP'}
                     </button>
                     <button
                         onClick={() => setActiveTab('opnsense')}
@@ -234,17 +256,19 @@ export default function DhcpPage() {
                 </div>
             </div>
 
-            {activeTab === 'adguard' ? (
+            {activeTab === 'dhcp' ? (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-medium text-white">AdGuard Leases</h3>
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        >
-                            <Plus size={18} />
-                            Static Lease
-                        </button>
+                        <h3 className="text-lg font-medium text-white">{provider === 'technitium' ? 'Technitium Leases' : 'AdGuard Leases'}</h3>
+                        {provider === 'adguard' && (
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                <Plus size={18} />
+                                Static Lease
+                            </button>
+                        )}
                     </div>
 
                     <div className="overflow-x-auto">
