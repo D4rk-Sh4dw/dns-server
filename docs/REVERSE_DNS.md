@@ -31,11 +31,13 @@ Beyond simple DNS resolution, this method uses the OPNsense API to directly fetc
 - **Metadata:** Retrieve MAC addresses, lease expiration times, and static vs. dynamic status.
 
 ### Setup Guide
-1. **Create API Key in OPNsense:**
-   - Go to **System -> Access -> Users**.
-   - Go to the **API keys** section and click the **+** button.
-   - Download the generated `.key` and `.secret`.
-2. **Configure in Dashboard:**
+3. **Set Permissions (ACLs) in OPNsense:**
+   - Go to **System > Access > Users** and select your API user.
+   - Under **Effective Privileges**, add:
+     - **For Kea:** `Services: Kea DHCP: Leases4`
+     - **For Dnsmasq:** `Services: Dnsmasq: Leases`
+   - **Note on SSL:** The dashboard automatically supports self-signed certificates, which is common for firewalls in local networks.
+4. **Configure in Dashboard:**
    - Go to **Settings -> OPNsense Integration**.
    - Select your **DHCP Backend** (Kea or Dnsmasq).
    - Enter your **OPNsense URL**, **API Key**, and **API Secret**.

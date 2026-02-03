@@ -24,6 +24,11 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
     const auth = Buffer.from(`${config.key}:${config.secret}`).toString('base64');
     const url = `${config.url.replace(/\/$/, '')}${endpoint}`;
 
+    // OPNsense often uses self-signed certificates. We allow them here.
+    if (typeof process !== 'undefined') {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+
     const res = await fetch(url, {
         ...options,
         headers: {
