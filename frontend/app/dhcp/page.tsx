@@ -29,9 +29,31 @@ export default function DhcpPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState<'adguard' | 'opnsense'>('adguard');
+    const [opnsenseLeases, setOpnsenseLeases] = useState<any[]>([]);
+    const [opnsenseLoading, setOpnsenseLoading] = useState(false);
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [newLease, setNewLease] = useState({ mac: '', ip: '', hostname: '' });
+
+    const fetchOpnsenseData = async () => {
+        const config = localStorage.getItem('opnsense_config');
+        if (!config) return;
+
+        setOpnsenseLoading(true);
+        try {
+            const res = await fetch('/api/opnsense/leases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: config
+            });
+            const data = await res.json();
+            setOpnsenseLeases(data.leases || []);
+        } catch (err) {
+            console.error('Failed to fetch OPNsense leases:', err);
+        }
+        setOpnsenseLoading(false);
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -39,10 +61,16 @@ export default function DhcpPage() {
             const res = await fetch('/api/adguard/dhcp');
             const data = await res.json();
             setStatus(data);
+
+            // Auto-switch tab if AdGuard DHCP is disabled but OPNsense is likely used
+            if (!data.enabled && localStorage.getItem('opnsense_config')) {
+                setActiveTab('opnsense');
+            }
         } catch (err) {
             setError('Failed to fetch DHCP status');
         }
         setLoading(false);
+        fetchOpnsenseData();
     };
 
     useEffect(() => { fetchData(); }, []);
@@ -175,29 +203,48 @@ export default function DhcpPage() {
                 )}
             </div>
 
-            {status?.enabled && (
+            {/* Tabs & Search */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-900 border border-gray-800 rounded-xl p-2">
+                <div className="flex p-1 bg-gray-950 rounded-lg w-full md:w-auto">
+                    <button
+                        onClick={() => setActiveTab('adguard')}
+                        className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'adguard' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        AdGuard DHCP
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('opnsense')}
+                        className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'opnsense' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        OPNsense Discovery
+                    </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 w-full md:w-auto pr-2">
+                    <div className="relative flex-1 md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search leases..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {activeTab === 'adguard' ? (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <h3 className="text-lg font-medium text-white">Network Leases</h3>
-                        <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="Search leases..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-                            <button
-                                onClick={() => setShowAddModal(true)}
-                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                            >
-                                <Plus size={18} />
-                                <span className="hidden sm:inline">Static Lease</span>
-                            </button>
-                        </div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-medium text-white">AdGuard Leases</h3>
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            <Plus size={18} />
+                            Static Lease
+                        </button>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -240,6 +287,87 @@ export default function DhcpPage() {
                                         </td>
                                     </tr>
                                 ))}
+                                {!filteredLeases.length && (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                            No leases found matching your search.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ) : (
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                            OPNsense Leases
+                            {opnsenseLoading && <RefreshCw size={16} className="animate-spin text-gray-500" />}
+                        </h3>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
+                                <tr>
+                                    <th className="px-6 py-4">Hostname</th>
+                                    <th className="px-6 py-4">IP Address</th>
+                                    <th className="px-6 py-4">MAC Address</th>
+                                    <th className="px-6 py-4">Type</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800 text-sm">
+                                {opnsenseLeases
+                                    .filter(l =>
+                                        l.address.includes(searchTerm) ||
+                                        l.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        l.mac.toLowerCase().includes(searchTerm.toLowerCase())
+                                    )
+                                    .map((lease, idx) => (
+                                        <tr key={idx} className="hover:bg-gray-800/30 group transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="text-white font-medium">{lease.hostname || 'Unknown'}</div>
+                                                {lease.descr && <div className="text-[10px] text-gray-500 mt-0.5">{lease.descr}</div>}
+                                                {lease.end && <div className="text-[10px] text-gray-500 mt-0.5 text-xs">Ends: {lease.end}</div>}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-red-400 font-mono">{lease.address}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-400 font-mono uppercase text-xs">{lease.mac}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${lease.type === 'static' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-blue-500/20 text-blue-400'
+                                                    }`}>
+                                                    {lease.type}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button
+                                                    title="Sync to Technitium DNS"
+                                                    onClick={() => {
+                                                        const parts = lease.address.split('.');
+                                                        const subnet = `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+                                                        const revZone = `${parts[2]}.${parts[1]}.${parts[0]}.in-addr.arpa`;
+                                                        // This would ideally open the zone creation modal with prefilled data
+                                                        window.location.href = `/zones?create_ptr=${lease.address}&hostname=${lease.hostname}`;
+                                                    }}
+                                                    className="p-2 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all"
+                                                >
+                                                    <RefreshCw size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                {!opnsenseLeases.length && !opnsenseLoading && (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                            {localStorage.getItem('opnsense_config')
+                                                ? 'No leases found in OPNsense.'
+                                                : 'OPNsense is not configured in Settings.'}
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

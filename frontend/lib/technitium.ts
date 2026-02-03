@@ -31,9 +31,10 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
         const data = await response.json();
 
         // Check for session expiry or invalid token
+        const errorMsg = data.errorMessage?.toLowerCase() || '';
         if (data.status === 'error' && (
-            data.errorMessage?.includes('session expired') ||
-            data.errorMessage?.includes('invalid token')
+            errorMsg.includes('session expired') ||
+            errorMsg.includes('invalid token')
         )) {
             console.log('Technitium token expired, retrying with fresh token...');
 

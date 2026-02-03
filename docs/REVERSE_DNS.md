@@ -40,6 +40,20 @@ Beyond simple DNS resolution, this method uses the OPNsense API to directly fetc
    - Select your **DHCP Backend** (Kea or Dnsmasq).
    - Enter your **OPNsense URL**, **API Key**, and **API Secret**.
 
+## Strategic Choice: OPNsense vs. Technitium
+
+It is important to understand when to use which system for Reverse DNS to avoid stale records.
+
+### Case A: Dynamic Devices (DHCP)
+- **Examples:** Laptops, Smartphones, dynamic VMs.
+- **Handling:** **Do not create manual PTR records.**
+- **Workflow:** Let OPNsense handle these. Ensure "Register DHCP Leases" is enabled in OPNsense Unbound/Dnsmasq. AdGuard will query OPNsense via the configured Reverse DNS IP and get the current, live hostname.
+
+### Case B: Critical Infrastructure (Fixed IPs)
+- **Examples:** Switches, NAS, Proxies, fixed Servers.
+- **Handling:** **Create manual PTR records in Technitium.**
+- **Workflow:** Assign a "Static Lease" (Reservation) in OPNsense or hardcode the IP on the device. Then, create the matching PTR record in our "Zones & Records" dashboard. This ensures the name is always resolvable, even if the DHCP server is down.
+
 ---
 
 ## Method 3: Manual Static Mapping (The "Clean" Way)
