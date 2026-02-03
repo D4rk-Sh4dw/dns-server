@@ -28,10 +28,18 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
         const url = `${TECHNITIUM_URL}${endpoint}?${queryParams}`;
 
         const response = await fetch(url);
-        const data = await response.json();
+        const text = await response.text();
+
+        let data;
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch (e) {
+            console.error('Failed to parse Technitium response:', text);
+            throw new Error(`Invalid JSON response from Technitium: ${text.substring(0, 100)}...`);
+        }
 
         // Check for session expiry or invalid token
-        if (data.status !== 'ok') {
+        if (data.status === 'error') {
             const errorMsg = data.errorMessage?.toLowerCase() || '';
             const isAuthError = errorMsg.includes('session expired') ||
                 errorMsg.includes('invalid token') ||
@@ -49,9 +57,10 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
                 const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
 
                 const retryResponse = await fetch(retryUrl);
-                const retryData = await retryResponse.json();
+                const retryText = await retryResponse.text();
+                const retryData = retryText ? JSON.parse(retryText) : {};
 
-                if (retryData.status !== 'ok') {
+                if (retryData.status === 'error') {
                     console.error(`Technitium retry failed: ${retryData.errorMessage}`);
                     throw new Error(`Technitium API error after retry: ${retryData.errorMessage}`);
                 }
@@ -62,7 +71,7 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
             throw new Error(`Technitium API error: ${data.errorMessage}`);
         }
 
-        return data.response;
+        return data.response !== undefined ? data.response : data;
     } catch (error) {
         console.error(`Technitium API call failed for ${endpoint}:`, error);
         throw error;
