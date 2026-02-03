@@ -21,13 +21,21 @@ async function getToken(forceRefresh = false): Promise<string> {
     throw new Error(`Technitium login failed: ${data.errorMessage}`);
 }
 
-async function technitiumFetch(endpoint: string, params: Record<string, string> = {}) {
+async function technitiumFetch(endpoint: string, params: Record<string, string> = {}, options: { method?: string; body?: any } = {}) {
     try {
         const token = await getToken();
+        // For GET requests, params go in URL. For POST, they might be query params OR body, depending on API.
+        // Usually Technitium takes 'token' in query even for POST.
         const queryParams = new URLSearchParams({ token, ...params });
         const url = `${TECHNITIUM_URL}${endpoint}?${queryParams}`;
 
-        const response = await fetch(url);
+        const fetchOptions: RequestInit = {
+            method: options.method || 'GET',
+            headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+            body: options.body ? JSON.stringify(options.body) : undefined,
+        };
+
+        const response = await fetch(url, fetchOptions);
         const text = await response.text();
 
         let data;
@@ -56,7 +64,7 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
                 const retryParams = new URLSearchParams({ token: newToken, ...params });
                 const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
 
-                const retryResponse = await fetch(retryUrl);
+                const retryResponse = await fetch(retryUrl, fetchOptions);
                 const retryText = await retryResponse.text();
                 const retryData = retryText ? JSON.parse(retryText) : {};
 
@@ -64,7 +72,7 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
                     console.error(`Technitium retry failed: ${retryData.errorMessage}`);
                     throw new Error(`Technitium API error after retry: ${retryData.errorMessage}`);
                 }
-                return retryData.response;
+                return retryData.response !== undefined ? retryData.response : retryData;
             }
 
             // Regular error
@@ -345,33 +353,41 @@ export async function createDhcpScope(scope: Partial<DHCPScope>) {
     // Given the complexity (arrays etc), it's highly likely it accepts a JSON body representing the scope.
 
     // We will try sending the scope object directly flattened or as proper JSON.
-    // Usually Technitium API takes query params for GET and JSON/Form for POST.
-    // We will start by sending the scope properties.
-    return await technitiumFetch('/api/dhcp/scopes/add', scope as any);
-}
+    export async function createDhcpScope(scope: Partial<DHCPScope>) {
+        return await technitiumFetch('/api/dhcp/scopes/add', {}, {
+            method: 'POST',
+            body: scope
+        });
+    }
 
-/**
- * Delete a DHCP scope
- */
-export async function deleteDhcpScope(name: string) {
-    return await technitiumFetch('/api/dhcp/scopes/delete', { name });
-}
+    /**
+     * Delete a DHCP scope
+     */
+    export async function deleteDhcpScope(name: string) {
+        // Delete typically takes 'name' as query param or body. 
+        // Technitium usually prefers query for simple deletes/gets, but let's be safe or check docs.
+        // Docs say for scopes/delete: "name" (string).
+        // We can send as query param to be consistent with GET-like deletes, or body if it supports it.
+        // Let's try query param first as it's simple string, if that failed we'd move to body.
+        // However, since we just fixed POST support, let's use query param for the name as previous implementation used query params (via second arg).
+        return await technitiumFetch('/api/dhcp/scopes/delete', { name }, { method: 'POST' });
+    }
 
-/**
- * List all active and reserved DHCP leases
- */
-export async function listDHCPLeases(): Promise<TechnitiumDHCPLease[]> {
-    const data = await technitiumFetch('/api/dhcp/leases/list');
-    return data.leases || [];
-}
+    /**
+     * List all active and reserved DHCP leases
+     */
+    export async function listDHCPLeases(): Promise<TechnitiumDHCPLease[]> {
+        const data = await technitiumFetch('/api/dhcp/leases/list');
+        return data.leases || [];
+    }
 
-/**
- * Remove a DHCP lease (active or reserved)
- */
-export async function removeDHCPLease(scope: string, ipAddress: string, hardwareAddress: string) {
-    return await technitiumFetch('/api/dhcp/leases/remove', {
-        name: scope,
-        ipAddress,
-        hardwareAddress
-    });
-}
+    /**
+     * Remove a DHCP lease (active or reserved)
+     */
+    export async function removeDHCPLease(scope: string, ipAddress: string, hardwareAddress: string) {
+        return await technitiumFetch('/api/dhcp/leases/remove', {
+            name: scope,
+            ipAddress,
+            hardwareAddress
+        });
+    }
