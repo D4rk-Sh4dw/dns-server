@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Network, RefreshCw, Cpu, Activity, Plus, Trash2, Search, Info, ShieldAlert } from 'lucide-react';
-import TechnitiumScopeModal from '@/components/TechnitiumScopeModal';
+import TechnitiumScopeModal from '@/app/components/TechnitiumScopeModal';
 import { Settings, Play, Pause } from 'lucide-react';
 
 interface Lease {
