@@ -57,41 +57,85 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
  * Fetch DHCPv4 leases based on the configured backend
  */
 export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]> {
-    // Both Kea and Dnsmasq search endpoints require POST
+    // Standard OPNsense MVC search body for grids
+    const searchBody = { rowCount: 1000, current: 1, searchPhrase: "" };
+
     if (config.backend === 'kea') {
-        const data = await opnsenseFetch(config, '/api/kea/leases4/search', {
-            method: 'POST',
-            body: JSON.stringify({ rowCount: 1000, current: 1, searchPhrase: "" }),
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const [dynamicRes, staticRes] = await Promise.allSettled([
+            opnsenseFetch(config, '/api/kea/leases4/search', {
+                method: 'POST',
+                body: JSON.stringify(searchBody),
+                headers: { 'Content-Type': 'application/json' }
+            }),
+            opnsenseFetch(config, '/api/kea/dhcpv4/searchSubnetReservations', {
+                method: 'POST',
+                body: JSON.stringify(searchBody),
+                headers: { 'Content-Type': 'application/json' }
+            })
+        ]);
 
-        if (!data || !Array.isArray(data.rows)) return [];
+        const leases: DHCPLease[] = [];
 
-        return data.rows.map((row: any) => ({
-            address: row.address,
-            mac: row.hwaddr,
-            hostname: row.hostname || 'Unknown',
-            type: row.type === 'static' ? 'static' : 'dynamic',
-            state: row.state,
-            start: row.cltt,
-            end: row.expire
-        }));
+        if (dynamicRes.status === 'fulfilled' && Array.isArray(dynamicRes.value.rows)) {
+            leases.push(...dynamicRes.value.rows.map((row: any) => ({
+                address: row.address,
+                mac: row.hwaddr,
+                hostname: row.hostname || 'Unknown',
+                type: 'dynamic' as const,
+                state: row.state,
+                start: row.cltt,
+                end: row.expire
+            })));
+        }
+
+        if (staticRes.status === 'fulfilled' && Array.isArray(staticRes.value.rows)) {
+            leases.push(...staticRes.value.rows.map((row: any) => ({
+                address: row.ip_address || row.address,
+                mac: row.hwaddr || row.mac,
+                hostname: row.hostname || 'Unknown',
+                type: 'static' as const,
+                descr: row.description || row.descr
+            })));
+        }
+
+        return leases;
     } else {
-        // dnsmasq leases search
-        const data = await opnsenseFetch(config, '/api/dnsmasq/service/search', {
-            method: 'POST',
-            body: JSON.stringify({ rowCount: 1000, current: 1, searchPhrase: "" }),
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // dnsmasq leases search (Dynamic)
+        const [dynamicRes, staticRes] = await Promise.allSettled([
+            opnsenseFetch(config, '/api/dnsmasq/service/search', {
+                method: 'POST',
+                body: JSON.stringify(searchBody),
+                headers: { 'Content-Type': 'application/json' }
+            }),
+            opnsenseFetch(config, '/api/dnsmasq/service/searchStatic', {
+                method: 'POST',
+                body: JSON.stringify(searchBody),
+                headers: { 'Content-Type': 'application/json' }
+            })
+        ]);
 
-        if (!data || !Array.isArray(data.rows)) return [];
+        const leases: DHCPLease[] = [];
 
-        return data.rows.map((row: any) => ({
-            address: row.address,
-            mac: row.hwaddr,
-            hostname: row.hostname || 'Unknown',
-            type: row.type === 'static' ? 'static' : 'dynamic',
-            descr: row.description
-        }));
+        if (dynamicRes.status === 'fulfilled' && Array.isArray(dynamicRes.value.rows)) {
+            leases.push(...dynamicRes.value.rows.map((row: any) => ({
+                address: row.address,
+                mac: row.hwaddr,
+                hostname: row.hostname || 'Unknown',
+                type: 'dynamic' as const,
+                descr: row.description
+            })));
+        }
+
+        if (staticRes.status === 'fulfilled' && Array.isArray(staticRes.value.rows)) {
+            leases.push(...staticRes.value.rows.map((row: any) => ({
+                address: row.address || row.ip,
+                mac: row.hwaddr || row.mac,
+                hostname: row.hostname || 'Unknown',
+                type: 'static' as const,
+                descr: row.description || row.descr
+            })));
+        }
+
+        return leases;
     }
 }
