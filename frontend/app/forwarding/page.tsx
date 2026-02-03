@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, Plus, Trash2, Check, Server, Globe, AlertCircle } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, Check, Server, Globe, AlertCircle, Save, X, Shield, Lock } from 'lucide-react';
 
 interface Zone {
     name: string;
@@ -59,34 +59,39 @@ const PROVIDERS: Record<string, { name: string; protocols: Record<string, string
 
 export default function ForwardingPage() {
     const [zones, setZones] = useState<Zone[]>([]);
+    const [upstreams, setUpstreams] = useState<string[]>([]);
+    const [originalUpstreams, setOriginalUpstreams] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-
-    // State for creating zone
-    const [newZone, setNewZone] = useState({
-        name: '',
-        type: 'ConditionalForwarder',
-        isActiveDirectory: false,
-        dcServers: '',
-        forwarder: '',
-        protocol: 'Udp'
-    });
-
-    const [selectedProvider, setSelectedProvider] = useState('');
-    const [creating, setCreating] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [newUpstream, setNewUpstream] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
+        setError(null);
         try {
-            const res = await fetch('/api/zones');
-            const data = await res.json();
-            if (data.zones) {
-                setZones(data.zones);
+            const [zonesRes, configRes] = await Promise.all([
+                fetch('/api/zones'),
+                fetch('/api/adguard/config')
+            ]);
+
+            const zonesData = await zonesRes.json();
+            const configData = await configRes.json();
+
+            if (zonesData.zones) {
+                setZones(zonesData.zones);
+            }
+
+            if (configData.upstream_dns) {
+                // Filter out upstream rules that are actually zone rules (contain [/domain/])
+                // We only want to manage global upstreams here
+                const globalUpstreams = configData.upstream_dns.filter((u: string) => !u.includes('[/'));
+                setUpstreams(globalUpstreams);
+                setOriginalUpstreams(globalUpstreams);
             }
         } catch (e) {
-            console.error('Failed to fetch zones:', e);
-            setError('Failed to fetch zones');
+            console.error('Failed to fetch data:', e);
+            setError('Failed to fetch data');
         }
         setLoading(false);
     };
@@ -95,70 +100,56 @@ export default function ForwardingPage() {
         fetchData();
     }, []);
 
-    const handleCreateZone = async () => {
-        if (!newZone.name) return;
-        if (newZone.type === 'ConditionalForwarder' && !newZone.forwarder) {
-            setError('Please enter a forwarder IP');
-            return;
-        }
-
-        setCreating(true);
-        setError(null);
+    const handleSaveUpstreams = async () => {
+        setSaving(true);
         try {
-            await fetch('/api/zones', {
+            // We need to fetch the current config first to preserve zone forwarding rules
+            const configRes = await fetch('/api/adguard/config');
+            const currentConfig = await configRes.json();
+            const currentZoneRules = (currentConfig.upstream_dns || []).filter((u: string) => u.includes('[/'));
+
+            // Merge our global upstreams with the existing zone rules
+            const mergedUpstreams = [...currentZoneRules, ...upstreams];
+
+            const res = await fetch('/api/adguard/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'create',
-                    zone: newZone.name,
-                    type: newZone.type,
-                    isActiveDirectory: newZone.isActiveDirectory,
-                    dcServers: newZone.dcServers,
-                    forwarder: newZone.forwarder,
-                    protocol: newZone.protocol
-                }),
+                body: JSON.stringify({ upstream_dns: mergedUpstreams }),
             });
-            setShowCreateModal(false);
-            setNewZone({
-                name: '',
-                type: 'ConditionalForwarder',
-                isActiveDirectory: false,
-                dcServers: '',
-                forwarder: '',
-                protocol: 'Udp'
-            });
-            setSelectedProvider('');
+
+            if (!res.ok) throw new Error('Failed to save upstreams');
+
+            setOriginalUpstreams([...upstreams]);
+            // Re-fetch to ensure sync
             fetchData();
         } catch (e) {
             console.error(e);
-            setError('Failed to create zone');
+            setError('Failed to save upstream servers');
         }
-        setCreating(false);
+        setSaving(false);
     };
 
-    const handleDeleteZone = async (zone: Zone) => {
-        if (zone.source === 'technitium') {
-            if (!confirm(`Warning: This is a Technitium-managed zone.\nDeleting it may affect local DNS resolution or internal services.\n\nAre you sure you want to delete ${zone.name}?`)) return;
-        } else {
-            if (!confirm(`Delete zone ${zone.name}?`)) return;
-        }
-
-        try {
-            await fetch('/api/zones', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', zone: zone.name }),
-            });
-            fetchData();
-        } catch (e) { console.error(e); }
+    const addUpstream = () => {
+        if (!newUpstream) return;
+        if (upstreams.includes(newUpstream)) return;
+        setUpstreams([...upstreams, newUpstream]);
+        setNewUpstream('');
     };
+
+    const removeUpstream = (index: number) => {
+        const newList = [...upstreams];
+        newList.splice(index, 1);
+        setUpstreams(newList);
+    };
+
+    const hasChanges = JSON.stringify(upstreams) !== JSON.stringify(originalUpstreams);
 
     return (
         <div className="p-4 md:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Forwarding Management</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Manage DNS forwarding zones and upstream servers.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Forwarding & Upstreams</h1>
+                    <p className="text-gray-400 text-sm md:text-base">Manage global AdGuard upstream servers and view forwarding zones.</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -166,9 +157,6 @@ export default function ForwardingPage() {
                         className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
                     >
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                    <button onClick={() => setShowCreateModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                        <Plus size={18} /> Add Forwarding Zone
                     </button>
                 </div>
             </div>
@@ -183,128 +171,135 @@ export default function ForwardingPage() {
                 </div>
             )}
 
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
-                        <tr>
-                            <th className="px-6 py-4">Domain / Zone</th>
-                            <th className="px-6 py-4">Type</th>
-                            <th className="px-6 py-4">Target Forwarder</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                        {zones.map((zone: Zone) => (
-                            <tr key={zone.name} className="group hover:bg-gray-800/50 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        {zone.source === 'active-directory' ? <Server size={16} className="text-purple-400" /> : <Globe size={16} className="text-blue-400" />}
-                                        <span className="text-white font-medium">{zone.name}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`text-xs px-2 py-1 rounded border ${zone.source === 'technitium'
-                                        ? 'bg-blue-900/20 text-blue-400 border-blue-800'
-                                        : (zone.source === 'active-directory' ? 'bg-purple-900/20 text-purple-400 border-purple-800' : 'bg-gray-800 text-gray-400 border-gray-700')
-                                        }`}>
-                                        {zone.source === 'active-directory' ? 'AD Domain' : (zone.source === 'technitium' ? 'Technitium Zone' : zone.type)}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-gray-400 font-mono text-sm">{zone.source === 'active-directory' ? zone.dcServers : (zone.forwarder || 'Local')}</td>
-                                <td className="px-6 py-4 text-green-400 text-xs flex items-center gap-1"><Check size={12} /> Active</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button onClick={() => handleDeleteZone(zone)} className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
-                                </td>
-                            </tr>
-                        ))}
-                        {zones.length === 0 && !loading && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No forwarding zones configured.</td></tr>}
-                        {loading && zones.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">Loading zones...</td></tr>}
-                    </tbody>
-                </table>
-            </div>
+            {/* AdGuard Upstreams Section */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 className="text-lg font-medium text-white flex items-center gap-2">
+                            <Shield className="text-blue-400" size={20} />
+                            AdGuard Upstream Servers
+                        </h2>
+                        <p className="text-sm text-gray-500">Default DNS servers used for resolving non-local queries.</p>
+                    </div>
+                    {hasChanges && (
+                        <button
+                            onClick={handleSaveUpstreams}
+                            disabled={saving}
+                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all animate-in fade-in"
+                        >
+                            {saving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
+                            Save Changes
+                        </button>
+                    )}
+                </div>
 
-            {showCreateModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-lg">
-                        <h3 className="text-lg font-medium text-white mb-4">Add Forwarding Zone</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Domain Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. internal.corp"
-                                    value={newZone.name}
-                                    onChange={e => setNewZone({ ...newZone, name: e.target.value })}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
+                <div className="space-y-4 max-w-2xl">
+                    <div className="flex gap-2">
+                        <select
+                            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                            onChange={(e) => {
+                                const p = PROVIDERS[e.target.value];
+                                if (p) setNewUpstream(p.protocols['Udp'] || ''); // Default to UDP
+                            }}
+                            defaultValue=""
+                        >
+                            <option value="" disabled>Predefined Providers...</option>
+                            {Object.keys(PROVIDERS).map(k => (
+                                <option key={k} value={k}>{PROVIDERS[k].name}</option>
+                            ))}
+                        </select>
+                        <input
+                            type="text"
+                            value={newUpstream}
+                            onChange={(e) => setNewUpstream(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && addUpstream()}
+                            placeholder="IP Address or URL (e.g. 1.1.1.1)"
+                            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                            onClick={addUpstream}
+                            disabled={!newUpstream}
+                            className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white p-2 rounded-lg transition-colors"
+                        >
+                            <Plus size={20} />
+                        </button>
+                    </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Zone Type</label>
-                                <select
-                                    value={newZone.type}
-                                    onChange={e => setNewZone({ ...newZone, type: e.target.value })}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    <div className="space-y-2">
+                        {upstreams.map((upstream, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-800/50 border border-gray-700/50 rounded-lg group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                                    <span className="font-mono text-gray-300">{upstream}</span>
+                                </div>
+                                <button
+                                    onClick={() => removeUpstream(idx)}
+                                    className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                    <option value="ConditionalForwarder">Conditional Forwarder</option>
-                                    <option value="Primary">Primary (Authoritative)</option>
-                                </select>
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
-
-                            {newZone.type === 'ConditionalForwarder' && (
-                                <>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Upstream Provider (Optional)</label>
-                                        <select onChange={(e) => {
-                                            const p = e.target.value; setSelectedProvider(p);
-                                            if (p && PROVIDERS[p]) setNewZone({ ...newZone, forwarder: PROVIDERS[p].protocols[newZone.protocol] });
-                                        }} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
-                                            <option value="">Select Provider...</option>
-                                            {Object.keys(PROVIDERS).map(k => <option key={k} value={k}>{PROVIDERS[k].name}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Forwarder IP</label>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g. 1.1.1.1"
-                                            value={newZone.forwarder}
-                                            onChange={e => setNewZone({ ...newZone, forwarder: e.target.value })}
-                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Protocol</label>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {['Udp', 'Tcp', 'Tls', 'Https', 'Quic'].map(p => (
-                                                <button
-                                                    key={p}
-                                                    onClick={() => setNewZone(prev => ({ ...prev, protocol: p }))}
-                                                    className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors ${newZone.protocol === p
-                                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400'
-                                                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                                                        }`}
-                                                >
-                                                    DNS-over-{p.toUpperCase()}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6">
-                            <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white px-4 py-2">Cancel</button>
-                            <button onClick={handleCreateZone} disabled={creating} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50">
-                                {creating ? 'Creating...' : 'Create Zone'}
-                            </button>
-                        </div>
+                        ))}
+                        {upstreams.length === 0 && (
+                            <div className="p-4 text-center text-gray-500 border border-dashed border-gray-800 rounded-lg">
+                                No upstream servers configured. DNS resolution might fail.
+                            </div>
+                        )}
                     </div>
                 </div>
-            )}
+            </div>
+
+            {/* Technitium Zones Section (Read-Only) */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="p-6 border-b border-gray-800">
+                    <h2 className="text-lg font-medium text-white flex items-center gap-2">
+                        <Globe className="text-purple-400" size={20} />
+                        Technitium Zones (Read-Only)
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                        These zones are managed via <span className="text-gray-300 font-medium">Technitium Controls &gt; Zones & Records</span>.
+                    </p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
+                            <tr>
+                                <th className="px-6 py-4">Domain / Zone</th>
+                                <th className="px-6 py-4">Type</th>
+                                <th className="px-6 py-4">Target Forwarder</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Managed By</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                            {zones.map((zone: Zone) => (
+                                <tr key={zone.name} className="group hover:bg-gray-800/50 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            {zone.source === 'active-directory' ? <Server size={16} className="text-purple-400" /> : <Globe size={16} className="text-blue-400" />}
+                                            <span className="text-white font-medium">{zone.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`text-xs px-2 py-1 rounded border ${zone.source === 'technitium'
+                                            ? 'bg-blue-900/20 text-blue-400 border-blue-800'
+                                            : (zone.source === 'active-directory' ? 'bg-purple-900/20 text-purple-400 border-purple-800' : 'bg-gray-800 text-gray-400 border-gray-700')
+                                            }`}>
+                                            {zone.source === 'active-directory' ? 'AD Domain' : (zone.source === 'technitium' ? 'Technitium Zone' : zone.type)}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-400 font-mono text-sm">{zone.source === 'active-directory' ? zone.dcServers : (zone.forwarder || 'Local')}</td>
+                                    <td className="px-6 py-4 text-green-400 text-xs flex items-center gap-1"><Check size={12} /> Active</td>
+                                    <td className="px-6 py-4 text-right text-gray-500 text-xs flex items-center justify-end gap-1">
+                                        <Lock size={12} /> Technitium
+                                    </td>
+                                </tr>
+                            ))}
+                            {zones.length === 0 && !loading && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No forwarding zones configured.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }
