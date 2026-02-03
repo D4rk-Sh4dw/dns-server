@@ -342,29 +342,60 @@ export async function getDHCPScope(name: string): Promise<DHCPScope> {
  * Let's assume /api/dhcp/scopes/add creates, and we might need /set for updates.
  * Wait, usually for this API, creating a scope that exists might fail.
  */
-// We will try sending the scope object directly flattened or as proper JSON.
+// Helper to convert seconds to days/hours/minutes for API
+function secondsToDhcpTime(seconds: number) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return {
+        leaseTimeDays: days.toString(),
+        leaseTimeHours: hours.toString(),
+        leaseTimeMinutes: minutes.toString()
+    };
+}
+
+// Docs: https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md#set-dhcp-scope
+// Endpoint is /api/dhcp/scopes/set (handles both create and update)
+// Parameters must be passed in Query String (or Form Data), NOT JSON Body.
 export async function createDhcpScope(scope: Partial<DHCPScope>) {
-    // Map frontend DHCPScope interface to Technitium API parameters
-    // Based on standard Technitium DHCP naming conventions
-    const apiParams: any = {
-        name: scope.name,
-        firstIpAddress: scope.startAddress,
-        lastIpAddress: scope.endAddress,
-        subnetMask: scope.subnetMask,
-        routerIpAddress: scope.gateway,
-        leaseTime: scope.leaseTime?.toString(),
-        domainName: scope.domainName,
-        ...scope // Spread rest for custom fields, though explicit mapping is safer
+    const timeParams = secondsToDhcpTime(scope.leaseTime || 86400);
+
+    // Map frontend DHCPScope interface to Technitium API parameters (Query Params)
+    const apiParams: Record<string, string> = {
+        name: scope.name || 'Scope',
+        startingAddress: scope.startAddress || '',
+        endingAddress: scope.endAddress || '',
+        subnetMask: scope.subnetMask || '255.255.255.0',
+        routerAddress: scope.gateway || '', // Default Gateway
+        ...timeParams,
+        offerDelayTime: (scope.offerDelay || 0).toString(),
+
+        pingCheckEnabled: String(scope.pingCheckEnabled ?? true),
+        pingCheckTimeout: (scope.pingCheckTimeout || 1000).toString(),
+        pingCheckRetries: (scope.pingCheckRetries || 2).toString(),
+
+        domainName: scope.domainName || '',
+        dnsUpdates: String(scope.dnsUpdatesEnabled ?? true),
+        dnsOverwriteForDynamicLease: String(scope.dnsOverwriteDynamicLeaseEnabled ?? false),
+        dnsTtl: (scope.dnsTtl || 900).toString(),
+        useThisDnsServer: 'false', // We allow custom DNS servers
+        dnsServers: (scope.dnsServers || []).join(','), // Comma separated
+
+        ntpServers: (scope.ntpServers || []).join(','),
+
+        bootFileName: scope.bootFileName || '',
+        serverAddress: scope.bootstrapServerAddress || '', // Next Server IP
+
+        allowOnlyReservedLeases: String(scope.allowOnlyReservedLeaseAllocations ?? false),
+        blockLocallyAdministeredMacAddresses: String(scope.blockLocallyAdministeredMacAddresses ?? false),
+        ignoreClientIdentifierOption: String(scope.ignoreClientIdentifier ?? false)
     };
 
-    // Remove mapped fields to avoid duplication/confusion if using spread
-    delete apiParams.startAddress;
-    delete apiParams.endAddress;
-    delete apiParams.gateway;
-
-    return await technitiumFetch('/api/dhcp/scopes/add', {}, {
-        method: 'POST',
-        body: apiParams
+    // Remove empty optional fields if necessary, but Technitium usually handles empty strings fine or expects them.
+    // Sending them as query params via technitiumFetch (2nd arg).
+    return await technitiumFetch('/api/dhcp/scopes/set', apiParams, {
+        method: 'POST'
+        // No body, parameters via URL query string as per docs/convention for this API
     });
 }
 
