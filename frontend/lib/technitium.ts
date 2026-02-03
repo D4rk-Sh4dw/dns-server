@@ -324,7 +324,7 @@ export interface TechnitiumDHCPLease {
  */
 export async function listDHCPScopes(): Promise<DHCPScope[]> {
     const data = await technitiumFetch('/api/dhcp/scopes/list');
-    return data.scopes || [];
+    return (data.scopes || []).map(normalizeScope);
 }
 
 /**
@@ -332,7 +332,51 @@ export async function listDHCPScopes(): Promise<DHCPScope[]> {
  */
 export async function getDHCPScope(name: string): Promise<DHCPScope> {
     const data = await technitiumFetch('/api/dhcp/scopes/get', { name });
-    return data.scope;
+    // The API might return the scope object directly or inside a wrapper, checking typical response
+    // Based on docs for get: { response: { ...scope properties... }, status: "ok" }
+    // our technitiumFetch returns data.response.
+    return normalizeScope(data);
+}
+
+function normalizeScope(apiScope: any): DHCPScope {
+    // Calculate total lease seconds
+    const days = parseInt(apiScope.leaseTimeDays || '0') * 86400;
+    const hours = parseInt(apiScope.leaseTimeHours || '0') * 3600;
+    const minutes = parseInt(apiScope.leaseTimeMinutes || '0') * 60;
+    const totalLease = days + hours + minutes;
+
+    return {
+        name: apiScope.name,
+        description: apiScope.description,
+        enabled: apiScope.isEnabled !== undefined ? apiScope.isEnabled : apiScope.enabled, // Check both just in case
+        startAddress: apiScope.startingAddress || '',
+        endAddress: apiScope.endingAddress || '',
+        subnetMask: apiScope.subnetMask || '',
+        gateway: apiScope.routerAddress || '',
+        leaseTime: totalLease > 0 ? totalLease : 86400, // Default to 1 day if 0/missing
+        offerDelay: parseInt(apiScope.offerDelayTime || '0'),
+
+        pingCheckEnabled: apiScope.pingCheckEnabled === true || apiScope.pingCheckEnabled === 'true',
+        pingCheckTimeout: parseInt(apiScope.pingCheckTimeout || '1000'),
+        pingCheckRetries: parseInt(apiScope.pingCheckRetries || '2'),
+
+        domainName: apiScope.domainName,
+        dnsUpdatesEnabled: apiScope.dnsUpdates === true || apiScope.dnsUpdates === 'true',
+        dnsOverwriteDynamicLeaseEnabled: apiScope.dnsOverwriteForDynamicLease === true || apiScope.dnsOverwriteForDynamicLease === 'true',
+        dnsTtl: parseInt(apiScope.dnsTtl || '900'),
+        dnsServers: Array.isArray(apiScope.dnsServers) ? apiScope.dnsServers : (apiScope.dnsServers || '').split(',').filter(Boolean),
+        ntpServers: Array.isArray(apiScope.ntpServers) ? apiScope.ntpServers : (apiScope.ntpServers || '').split(',').filter(Boolean),
+
+        bootFileName: apiScope.bootFileName,
+        bootstrapServerAddress: apiScope.serverAddress,
+
+        allowOnlyReservedLeaseAllocations: apiScope.allowOnlyReservedLeases === true || apiScope.allowOnlyReservedLeases === 'true',
+        blockLocallyAdministeredMacAddresses: apiScope.blockLocallyAdministeredMacAddresses === true || apiScope.blockLocallyAdministeredMacAddresses === 'true',
+        ignoreClientIdentifier: apiScope.ignoreClientIdentifierOption === true || apiScope.ignoreClientIdentifierOption === 'true',
+
+        // Pass through original just in case we missed something needed elsewhere
+        ...apiScope
+    };
 }
 
 /**
