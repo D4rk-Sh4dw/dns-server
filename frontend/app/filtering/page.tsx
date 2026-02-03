@@ -5,7 +5,7 @@ import { PREDEFINED_BLOCKLISTS, PREDEFINED_WHITELISTS } from '@/constants/predef
 import {
     RefreshCw, Plus, Trash2, Check, X, Shield, ShieldCheck,
     Baby, Search, Edit2, Info, ExternalLink, ChevronDown, ChevronUp,
-    Globe, Server, Laptop, Smartphone, Tablet, Tv, Cpu, Filter, Network, Users, Upload,
+    Globe, Server, Laptop, Smartphone, Tablet, Tv, Cpu, Filter, Users, Upload,
     LayoutGrid, LayoutList
 } from 'lucide-react';
 import Link from 'next/link';
@@ -66,62 +66,10 @@ interface Lease {
     expires?: string;
 }
 
-interface Zone {
-    name: string;
-    type: string;
-    disabled?: boolean;
-    internal?: boolean;
-    forwardingEnabled: boolean;
-    source: 'technitium' | 'active-directory';
-    dcServers?: string;
-    forwarder?: string;
-}
 
-const PROVIDERS: Record<string, { name: string; protocols: Record<string, string> }> = {
-    'Cloudflare': {
-        name: 'Cloudflare',
-        protocols: {
-            'Udp': '1.1.1.1',
-            'Tcp': '1.1.1.1',
-            'Tls': '1.1.1.1:853',
-            'Https': 'https://cloudflare-dns.com/dns-query',
-            'Quic': 'quic://dns.cloudflare.com:853'
-        }
-    },
-    'Google': {
-        name: 'Google',
-        protocols: {
-            'Udp': '8.8.8.8',
-            'Tcp': '8.8.8.8',
-            'Tls': '8.8.8.8:853',
-            'Https': 'https://dns.google/dns-query',
-            'Quic': 'quic://dns.google:853'
-        }
-    },
-    'Quad9': {
-        name: 'Quad9',
-        protocols: {
-            'Udp': '9.9.9.9',
-            'Tcp': '9.9.9.9',
-            'Tls': '9.9.9.9:853',
-            'Https': 'https://dns.quad9.net/dns-query',
-            'Quic': 'quic://dns.quad9.net:853'
-        }
-    },
-    'OpenDNS': {
-        name: 'OpenDNS',
-        protocols: {
-            'Udp': '208.67.222.222',
-            'Tcp': '208.67.222.222',
-            'Tls': '208.67.222.222:853',
-            'Https': 'https://doh.opendns.com/dns-query',
-            'Quic': ''
-        }
-    }
-};
 
 export default function FilteringPage() {
-    const [activeTab, setActiveTab] = useState<'global' | 'clients' | 'forwarding'>('global');
+    const [activeTab, setActiveTab] = useState<'global' | 'clients'>('global');
     const [loading, setLoading] = useState(false);
 
     // Global State
@@ -133,31 +81,27 @@ export default function FilteringPage() {
     const [leases, setLeases] = useState<Lease[]>([]);
     const [selectedClient, setSelectedClient] = useState<string>(''); // Client name
 
-    // Forwarding State
-    const [zones, setZones] = useState<Zone[]>([]);
+
 
     const fetchData = async () => {
         setLoading(true);
         try {
             // Always fetch basics, optimize later
-            const [filterRes, protectionRes, clientsRes, zonesRes, dhcpRes] = await Promise.all([
+            const [filterRes, protectionRes, clientsRes, dhcpRes] = await Promise.all([
                 fetch('/api/adguard/filtering'),
                 fetch('/api/adguard/protection'),
                 fetch('/api/adguard/clients'),
-                fetch('/api/zones'),
                 fetch('/api/adguard/dhcp'),
             ]);
 
             const filterData = await filterRes.json();
             const protectionData = await protectionRes.json();
             const clientsData = await clientsRes.json();
-            const zonesData = await zonesRes.json();
             const dhcpData = await dhcpRes.json();
 
             setFiltering(filterData);
             setProtection(protectionData);
             setClients(clientsData.clients || []);
-            setZones(zonesData.zones || []);
 
             // Handle DHCP status possibly being disabled/empty
             const activeLeases = [];
@@ -202,12 +146,7 @@ export default function FilteringPage() {
                     icon={Users}
                     label="Client Rules"
                 />
-                <TabButton
-                    active={activeTab === 'forwarding'}
-                    onClick={() => setActiveTab('forwarding')}
-                    icon={Network}
-                    label="Forwarding / Zones"
-                />
+
             </div>
 
             {/* Tab Content */}
@@ -231,12 +170,7 @@ export default function FilteringPage() {
                         refresh={fetchData}
                     />
                 )}
-                {activeTab === 'forwarding' && (
-                    <ForwardingTab
-                        zones={zones}
-                        refresh={fetchData}
-                    />
-                )}
+
             </div>
         </div>
     );
@@ -913,132 +847,7 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
     );
 }
 
-function ForwardingTab({ zones, refresh }: any) {
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    // State for creating zone (simplified from zones/page.tsx)
-    const [newZone, setNewZone] = useState({
-        name: '', type: 'ConditionalForwarder', isActiveDirectory: false,
-        dcServers: '', forwarder: '', protocol: 'Udp'
-    });
-    const [selectedProvider, setSelectedProvider] = useState('');
-    const [creating, setCreating] = useState(false);
 
-    const handleCreateZone = async () => {
-        // ... Validation logic ...
-        setCreating(true);
-        try {
-            await fetch('/api/zones', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'create', zone: newZone.name, type: newZone.type, isActiveDirectory: newZone.isActiveDirectory, dcServers: newZone.dcServers, forwarder: newZone.forwarder, protocol: newZone.protocol }),
-            });
-            setShowCreateModal(false);
-            refresh();
-        } catch (e) { console.error(e); }
-        setCreating(false);
-    };
-
-    const handleDeleteZone = async (zone: Zone) => {
-        if (zone.source === 'technitium') {
-            if (!confirm(`Warning: This is a Technitium-managed zone.\nDeleting it may affect local DNS resolution or internal services.\n\nAre you sure you want to delete ${zone.name}?`)) return;
-        } else {
-            if (!confirm(`Delete zone ${zone.name}?`)) return;
-        }
-
-        try {
-            await fetch('/api/zones', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', zone: zone.name }),
-            });
-            refresh();
-        } catch (e) { console.error(e); }
-    };
-
-    return (
-        <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-end">
-                <button onClick={() => setShowCreateModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                    <Plus size={18} /> Add Forwarding Zone
-                </button>
-            </div>
-
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
-                        <tr>
-                            <th className="px-6 py-4">Domain / Zone</th>
-                            <th className="px-6 py-4">Type</th>
-                            <th className="px-6 py-4">Target Forwarder</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                        {zones.map((zone: Zone) => (
-                            <tr key={zone.name} className="group hover:bg-gray-800/50 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        {zone.source === 'active-directory' ? <Server size={16} className="text-purple-400" /> : <Globe size={16} className="text-blue-400" />}
-                                        <span className="text-white font-medium">{zone.name}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`text-xs px-2 py-1 rounded border ${zone.source === 'technitium'
-                                        ? 'bg-blue-900/20 text-blue-400 border-blue-800'
-                                        : (zone.source === 'active-directory' ? 'bg-purple-900/20 text-purple-400 border-purple-800' : 'bg-gray-800 text-gray-400 border-gray-700')
-                                        }`}>
-                                        {zone.source === 'active-directory' ? 'AD Domain' : (zone.source === 'technitium' ? 'Technitium Zone' : zone.type)}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-gray-400 font-mono text-sm">{zone.source === 'active-directory' ? zone.dcServers : (zone.forwarder || 'Local')}</td>
-                                <td className="px-6 py-4 text-green-400 text-xs flex items-center gap-1"><Check size={12} /> Active</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button onClick={() => handleDeleteZone(zone)} className="text-gray-500 hover:text-red-400"><Trash2 size={16} /></button>
-                                </td>
-                            </tr>
-                        ))}
-                        {zones.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No forwarding zones configured.</td></tr>}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Reuse Create Modal UI structure roughly */}
-            {showCreateModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-lg">
-                        <h3 className="text-lg font-medium text-white mb-4">Add Forwarding Zone</h3>
-                        <div className="space-y-4">
-                            <input type="text" placeholder="Domain (e.g. internal.corp)" value={newZone.name} onChange={e => setNewZone({ ...newZone, name: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" />
-
-                            <select value={newZone.type} onChange={e => setNewZone({ ...newZone, type: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white">
-                                <option value="ConditionalForwarder">Conditional Forwarder</option>
-                                <option value="Primary">Primary (Authoritative)</option>
-                            </select>
-
-                            {newZone.type === 'ConditionalForwarder' && (
-                                <>
-                                    <select onChange={(e) => {
-                                        const p = e.target.value; setSelectedProvider(p);
-                                        if (p && PROVIDERS[p]) setNewZone({ ...newZone, forwarder: PROVIDERS[p].protocols[newZone.protocol] });
-                                    }} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white">
-                                        <option value="">Select Provider...</option>
-                                        {Object.keys(PROVIDERS).map(k => <option key={k} value={k}>{k}</option>)}
-                                    </select>
-                                    <input type="text" placeholder="Forwarder IP (e.g. 1.1.1.1)" value={newZone.forwarder} onChange={e => setNewZone({ ...newZone, forwarder: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" />
-                                </>
-                            )}
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6">
-                            <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white">Cancel</button>
-                            <button onClick={handleCreateZone} disabled={creating} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg">{creating ? 'Creating...' : 'Create Zone'}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
 
 // --- Helper Components ---
 

@@ -3,7 +3,7 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi } from 'lucide-react'
+import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
@@ -70,6 +70,7 @@ export default function RootLayout({
                     AdGuard Controls
                   </div>
                   <NavItem href="/filtering" icon={Shield} label="Filtering & Blocklists" active={pathname === '/filtering'} />
+                  <NavItem href="/forwarding" icon={Network} label="Forwarding / Zones" active={pathname === '/forwarding'} />
                   <NavItem href="/services" icon={Menu} label="Service Blocking" active={pathname === '/services'} />
                   <NavItem href="/clients" icon={Users} label="Client Management" active={pathname === '/clients'} />
                   <NavItem href="/logs" icon={FileText} label="Query Log" active={pathname === '/logs'} />
