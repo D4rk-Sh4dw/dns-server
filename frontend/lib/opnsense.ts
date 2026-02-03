@@ -26,8 +26,10 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
     const url = `${config.url.replace(/\/$/, '')}${endpoint}`;
 
     // OPNsense often uses self-signed certificates. We allow skipping verification if configured.
-    if (typeof process !== 'undefined') {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = config.skip_ssl_verify ? '0' : '1';
+    if (typeof process !== 'undefined' && config.skip_ssl_verify) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    } else if (typeof process !== 'undefined') {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
     }
 
     const res = await fetch(url, {
@@ -41,7 +43,11 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
 
     if (!res.ok) {
         const text = await res.text();
-        throw new Error(`OPNsense API error: ${res.status} - ${text}`);
+        let errorHint = '';
+        if (text.includes('tp-link')) {
+            errorHint = ' (Warning: Request seems to be hitting a TP-Link device instead of OPNsense!)';
+        }
+        throw new Error(`OPNsense API error: ${res.status} at ${url}${errorHint} - ${text.substring(0, 200)}`);
     }
 
     return res.json();
