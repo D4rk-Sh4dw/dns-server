@@ -7,8 +7,6 @@ services:
     image: dns-dashboard:local
     container_name: dns-dashboard
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
       - ADGUARD_URL=http://dns-adguard:3000
       - ADGUARD_USER=admin
@@ -27,6 +25,23 @@ services:
     networks:
       dns-net:
         ipv4_address: 172.25.0.102
+
+  # --- Nginx Reverse Proxy ---
+  nginx:
+    image: nginx:alpine
+    container_name: dns-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - dashboard
+      - adguard
+      - technitium
+    networks:
+      dns-net:
+        ipv4_address: 172.25.0.105
 
   # --- AdGuard Home (Recursive DNS & AdBlocking) ---
   adguard:
