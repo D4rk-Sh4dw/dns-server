@@ -398,6 +398,13 @@ function secondsToDhcpTime(seconds: number) {
     };
 }
 
+// Helper to safely join array or return string
+function joinIfArray(value: any): string {
+    if (Array.isArray(value)) return value.join(',');
+    if (typeof value === 'string') return value;
+    return '';
+}
+
 // Docs: https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md#set-dhcp-scope
 // Endpoint is /api/dhcp/scopes/set (handles both create and update)
 // Parameters must be passed in Query String (or Form Data), NOT JSON Body.
@@ -423,9 +430,9 @@ export async function createDhcpScope(scope: Partial<DHCPScope>) {
         dnsOverwriteForDynamicLease: String(scope.dnsOverwriteDynamicLeaseEnabled ?? false),
         dnsTtl: (scope.dnsTtl || 900).toString(),
         useThisDnsServer: 'false', // We allow custom DNS servers
-        dnsServers: (scope.dnsServers || []).join(','), // Comma separated
+        dnsServers: joinIfArray(scope.dnsServers), // Comma separated
 
-        ntpServers: (scope.ntpServers || []).join(','),
+        ntpServers: joinIfArray(scope.ntpServers),
 
         bootFileName: scope.bootFileName || '',
         serverAddress: scope.bootstrapServerAddress || '', // Next Server IP
