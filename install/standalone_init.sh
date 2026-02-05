@@ -11,6 +11,16 @@ mkdir -p "$PROJECT_NAME/config/adguard"
 mkdir -p "$PROJECT_NAME/data"
 cd "$PROJECT_NAME"
 
+# --- Port 53 Fix (systemd-resolved) ---
+if systemctl is-active --quiet systemd-resolved; then
+    echo "Systemd-resolved detected. Disabling DNSStubListener to free Port 53..."
+    sudo mkdir -p /etc/systemd/resolved.conf.d
+    echo -e "[Resolve]\nDNSStubListener=no" | sudo tee /etc/systemd/resolved.conf.d/adguard.conf > /dev/null
+    sudo mv /etc/resolv.conf /etc/resolv.conf.bak || true
+    echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
+    sudo systemctl restart systemd-resolved
+fi
+
 echo "Downloading docker-compose.yml..."
 wget -qO docker-compose.yml "$BASE_URL/docker-compose.yml"
 

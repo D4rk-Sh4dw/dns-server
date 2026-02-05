@@ -26,7 +26,23 @@ fi
 # 1. Install dependencies
 echo -e "${BLUE}Installing base dependencies...${NC}"
 apt-get update
-apt-get install -y curl sudo git ca-certificates gnupg lsb-release
+apt-get install -y curl sudo git ca-certificates gnupg lsb-release procps
+
+# --- Port 53 Fix (systemd-resolved) ---
+echo -e "${BLUE}Checking for Port 53 conflicts (systemd-resolved)...${NC}"
+if systemctl is-active --quiet systemd-resolved; then
+    echo -e "${YELLOW}Systemd-resolved detected. Disabling DNSStubListener to free Port 53...${NC}"
+    mkdir -p /etc/systemd/resolved.conf.d
+    cat <<EOF > /etc/systemd/resolved.conf.d/adguard.conf
+[Resolve]
+DNSStubListener=no
+EOF
+    # Backup and replace resolv.conf to point to external DNS during setup
+    mv /etc/resolv.conf /etc/resolv.conf.bak || true
+    echo "nameserver 1.1.1.1" > /etc/resolv.conf
+    systemctl restart systemd-resolved
+    echo -e "${GREEN}Port 53 should now be free.${NC}"
+fi
 
 # 2. Install Docker
 echo -e "${BLUE}Installing Docker...${NC}"
