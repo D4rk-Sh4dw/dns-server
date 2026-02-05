@@ -18,7 +18,6 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Authorization "Basic YWRtaW46YWRtaW4xMjM=";
 
         # Rewrite redirect headers (Location: /login.html -> Location: /adguard/login.html)
         proxy_redirect / /adguard/;
@@ -29,6 +28,42 @@ server {
         sub_filter 'href="/' 'href="/adguard/';
         sub_filter 'src="/' 'src="/adguard/';
         sub_filter 'action="/' 'action="/adguard/';
+        
+        # Inject Autologin Script for AdGuard (Robust JS Injection)
+        sub_filter '</body>' '<script>
+        (function() {
+            var attempts = 0;
+            var maxAttempts = 20; 
+            var interval = setInterval(function() {
+                attempts++;
+                var u = document.querySelector("input[type=text], input[name=username], #username");
+                var p = document.querySelector("input[type=password], input[name=password], #password");
+                var b = document.querySelector("button[type=submit], button.btn-primary");
+                
+                if (u && p && b) {
+                     // Check empty
+                     if (u.value === "" || p.value === "") {
+                        var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                        if (nativeInputValueSetter) {
+                            nativeInputValueSetter.call(u, "${ADGUARD_USER}");
+                            nativeInputValueSetter.call(p, "${ADGUARD_PASS}");
+                        } else {
+                            u.value = "${ADGUARD_USER}";
+                            p.value = "${ADGUARD_PASS}";
+                        }
+                        ["input", "change", "blur"].forEach(function(evt) {
+                            u.dispatchEvent(new Event(evt, { bubbles: true }));
+                            p.dispatchEvent(new Event(evt, { bubbles: true }));
+                        });
+                        setTimeout(function() { b.click(); }, 300);
+                        clearInterval(interval);
+                     }
+                }
+                if (attempts >= maxAttempts) clearInterval(interval);
+            }, 500);
+        })();
+        </script></body>';
+        
         sub_filter_once off;
     }
 
@@ -49,61 +84,41 @@ server {
         sub_filter 'src="/' 'src="/technitium/';
         sub_filter 'action="/' 'action="/technitium/';
 
-        # Technitium specific API rewrites might be needed
+        # Technitium specific API rewrites
         sub_filter '/api/' '/technitium/api/';
-        # Inject Autologin Script (Robust)
+        
+        # Inject Autologin Script for Technitium (Robust JS Injection)
         sub_filter '</body>' '<script>
         (function() {
             var attempts = 0;
-            var maxAttempts = 20; // Try for 10 seconds
+            var maxAttempts = 20;
             var interval = setInterval(function() {
                 attempts++;
-                // Generic selectors usually work better than specific IDs for different versions
                 var u = document.querySelector("input[type=text], input[name=user], #user");
                 var p = document.querySelector("input[type=password], input[name=pass], #pass");
                 var b = document.querySelector("button[type=submit], #login-btn, .btn-primary");
                 
-                // Extra check: make sure we are actually on a login page (look for password field)
-                if (p && !u) {
-                     // Sometimes username is hidden or pre-filled? Just find previous input
-                     u = p.previousElementSibling || p.parentElement.previousElementSibling.querySelector("input");
-                }
+                if (p && !u) { u = p.previousElementSibling || p.parentElement.previousElementSibling.querySelector("input"); }
 
                 if (u && p && b) {
-                    // Check if already logged in (often redirection happens fast, but if we see form, we act)
                     if (u.value === "" || p.value === "") {
-                        console.log("Technitium Autologin: Form found, injecting...");
-                        
-                        // Set values
                         var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                        
-                        // Use native setter if possible to bypass React/Vue blockers
                         if (nativeInputValueSetter) {
-                            nativeInputValueSetter.call(u, "admin");
-                            nativeInputValueSetter.call(p, "admin123");
+                            nativeInputValueSetter.call(u, "${TECHNITIUM_USER}");
+                            nativeInputValueSetter.call(p, "${TECHNITIUM_PASSWORD}");
                         } else {
-                            u.value = "admin";
-                            p.value = "admin123";
+                            u.value = "${TECHNITIUM_USER}";
+                            p.value = "${TECHNITIUM_PASSWORD}";
                         }
-
-                        // Dispatch bubbling events
                         ["input", "change", "blur"].forEach(function(evt) {
                             u.dispatchEvent(new Event(evt, { bubbles: true }));
                             p.dispatchEvent(new Event(evt, { bubbles: true }));
                         });
-
-                        setTimeout(function() {
-                            console.log("Technitium Autologin: Clicking login...");
-                            b.click();
-                        }, 500);
-                        
+                        setTimeout(function() { b.click(); }, 300);
                         clearInterval(interval);
                     }
                 }
-                
-                if (attempts >= maxAttempts) {
-                    clearInterval(interval);
-                }
+                if (attempts >= maxAttempts) clearInterval(interval);
             }, 500);
         })();
         </script></body>';
