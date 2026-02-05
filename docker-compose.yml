@@ -3,8 +3,8 @@ version: '3.8'
 services:
   # --- Central Management Dashboard ---
   dashboard:
-    build: ./frontend
-    image: dns-dashboard:local
+    # build: ./frontend
+    image: ghcr.io/d4rk-sh4dw/dns-dashboard:latest
     container_name: dns-dashboard
     restart: unless-stopped
     environment:
@@ -28,14 +28,14 @@ services:
 
   # --- Nginx Reverse Proxy ---
   nginx:
-    image: nginx:alpine
+    image: ghcr.io/d4rk-sh4dw/dns-proxy:latest
     container_name: dns-proxy
     restart: unless-stopped
     ports:
       - "80:80"
-    volumes:
-      - ./nginx/templates:/etc/nginx/templates
-      - ./nginx/start.sh:/start.sh
+    # volumes:
+    #   - ./nginx/templates:/etc/nginx/templates
+    #   - ./nginx/start.sh:/start.sh
     environment:
       - ADGUARD_USER=admin
       - ADGUARD_PASS=admin123

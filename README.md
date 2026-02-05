@@ -16,12 +16,14 @@ The system supports a hybrid architecture:
 1.  **Standard Zones**: Managed natively in Technitium (e.g. `home.arpa`).
 2.  **Split DNS / Conditional Forwarding**: Technitium can forward specific domains (like Active Directory zones) to upstream servers (e.g. Domain Controllers), while resolving everything else locally.
 
-## Installation
+### Quick Start (Standalone Docker)
 
-1.  **Clone the repository:**
+If you don't want to clone the repository, you can just download the `docker-compose.yml` and start:
+
+1.  **Download the configuration:**
     ```bash
-    git clone https://github.com/D4rk-Sh4dw/dns-server.git
-    cd dns-server
+    mkdir dns-server && cd dns-server
+    wget https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/docker-compose.yml
     ```
 
 2.  **Start the infrastructure:**

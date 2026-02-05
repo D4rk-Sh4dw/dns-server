@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   REGISTRY: ghcr.io
@@ -14,10 +14,13 @@ jobs:
     permissions:
       contents: read
       packages: write
-    strategy:
       matrix:
-        service: [frontend]
-    
+        include:
+          - service: frontend
+            image_name: dns-dashboard
+          - service: nginx
+            image_name: dns-proxy
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -42,7 +45,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ steps.registry_case.outputs.IMAGE_PREFIX }}/dns-${{ matrix.service }}
+          images: ${{ env.REGISTRY }}/${{ steps.registry_case.outputs.IMAGE_PREFIX }}/${{ matrix.image_name }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,format=short
