@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle, Edit2 } from 'lucide-react';
+import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle, Edit2, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface DnsRecord {
@@ -51,6 +51,21 @@ export default function ZoneDetailPage() {
     }, [zone]);
     const [isEditing, setIsEditing] = useState(false);
     const [originalRecord, setOriginalRecord] = useState<DnsRecord | null>(null);
+
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredRecords = useMemo(() => {
+        if (!searchQuery.trim()) return records;
+        const lowerQuery = searchQuery.toLowerCase();
+        return records.filter(record => {
+            const val = getRecordValue(record);
+            return (
+                record.name.toLowerCase().includes(lowerQuery) ||
+                record.type.toLowerCase().includes(lowerQuery) ||
+                (val && String(val).toLowerCase().includes(lowerQuery))
+            );
+        });
+    }, [records, searchQuery]);
 
     const fetchRecords = async () => {
         setLoading(true);
@@ -211,7 +226,19 @@ export default function ZoneDetailPage() {
                     </div>
                 </div>
 
-                <div className="flex gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search size={16} className="text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search records, IPs..."
+                            className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 transition-all w-full sm:w-64"
+                        />
+                    </div>
                     <button
                         onClick={fetchRecords}
                         className="flex-1 sm:flex-none p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
@@ -240,7 +267,7 @@ export default function ZoneDetailPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
-                        {records.map((record, idx) => (
+                        {filteredRecords.map((record, idx) => (
                             <tr key={idx} className="group hover:bg-gray-800/50 transition-colors">
                                 <td className="px-6 py-4 text-white font-mono text-sm">{record.name}</td>
                                 <td className="px-6 py-4">
@@ -274,10 +301,10 @@ export default function ZoneDetailPage() {
                                 </td>
                             </tr>
                         ))}
-                        {!records.length && !loading && (
+                        {!filteredRecords.length && !loading && (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                    No records in this zone. Click "Add Record" to get started.
+                                    {searchQuery ? 'No records match your search.' : 'No records in this zone. Click "Add Record" to get started.'}
                                 </td>
                             </tr>
                         )}
