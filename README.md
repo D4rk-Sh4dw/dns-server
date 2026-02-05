@@ -21,7 +21,7 @@ The system supports a hybrid architecture:
 If you don't want to clone the repository, you can deploy the infrastructure with a single command:
 
 ```bash
-bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/standalone_init.sh)"
+bash -c "$(wget -qLO - https://gitea.vmhaus.de/Marcel/dns-server/raw/branch/main/install/standalone_init.sh)"
 ```
 
 This will download the `docker-compose.yml` and the necessary default configurations.
@@ -41,7 +41,7 @@ For Proxmox users, the easiest way is to run the Docker setup inside an LXC cont
 1.  Create your LXC container and enable the **Nesting** feature.
 2.  Run the following command inside the LXC:
     ```bash
-    bash -c "$(wget -qLO - https://gitea.vmhaus.de/Marcel/dns-server/raw/branch/main/install/standalone_init.sh)"
+    bash -c "$(wget -qLO - https://gitea.vmhaus.de/Marcel/dns-server/raw/branch/main/install/lxc_install.sh)"
     ```
 
 ## Updating
