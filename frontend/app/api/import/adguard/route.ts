@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import YAML from 'yaml';
+import * as technitium from '@/lib/technitium';
 
 interface AdGuardRewrite {
     domain: string;
@@ -136,24 +137,24 @@ export async function POST(request: NextRequest) {
             errors: [] as string[],
         };
 
-        // 1. Create Technitium zones and records
+        // 1. Create Technitium zones and records using the library
         const zoneMap = groupRewritesByZone(parsed.rewrites);
 
         for (const [zoneName, records] of zoneMap) {
             try {
-                // Create zone
-                const zoneRes = await fetch(`${process.env.TECHNITIUM_URL || 'http://technitium:5380'}/api/zones/create?token=${process.env.TECHNITIUM_TOKEN}&zone=${zoneName}&type=Primary`, {
-                    method: 'GET',
-                });
-                if (zoneRes.ok) results.zonesCreated++;
+                // Create zone using the technitium library
+                await technitium.createZone(zoneName, 'Primary');
+                results.zonesCreated++;
 
                 // Create records
                 for (const record of records) {
                     const domain = record.subdomain === '@' ? zoneName : `${record.subdomain}.${zoneName}`;
-                    const recordRes = await fetch(`${process.env.TECHNITIUM_URL || 'http://technitium:5380'}/api/zones/records/add?token=${process.env.TECHNITIUM_TOKEN}&domain=${domain}&zone=${zoneName}&type=${record.type}&${record.type === 'A' || record.type === 'AAAA' ? 'ipAddress' : 'cname'}=${record.value}`, {
-                        method: 'GET',
-                    });
-                    if (recordRes.ok) results.recordsCreated++;
+                    try {
+                        await technitium.addRecord(domain, record.type, record.value);
+                        results.recordsCreated++;
+                    } catch (recErr) {
+                        results.errors.push(`Failed to add record ${domain}: ${recErr}`);
+                    }
                 }
             } catch (err) {
                 results.errors.push(`Failed to create zone ${zoneName}: ${err}`);
