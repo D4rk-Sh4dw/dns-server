@@ -74,7 +74,7 @@ export default function RootLayout({
                   <NavItem href="/services" icon={Menu} label="Service Blocking" active={pathname === '/services'} />
                   <NavItem href="/clients" icon={Users} label="Client Management" active={pathname === '/clients'} />
                   <NavItem href="/logs" icon={FileText} label="Query Log" active={pathname === '/logs'} />
-                  <NavItem href="/logs" icon={FileText} label="Query Log" active={pathname === '/logs'} />
+
 
                   <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Technitium Controls

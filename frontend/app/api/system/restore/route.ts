@@ -45,8 +45,11 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true, message: 'Restore completed. Please restart containers.' });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Restore failed:', error);
-        return NextResponse.json({ error: 'Restore failed' }, { status: 500 });
+        return NextResponse.json({
+            error: `Restore failed: ${error.message || error}`,
+            details: error.stack
+        }, { status: 500 });
     }
 }
