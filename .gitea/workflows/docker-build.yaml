@@ -2,19 +2,25 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 env:
-  REGISTRY: ${{ vars.DOCKER_REGISTRY || 'docker.io' }}
-  IMAGE_PREFIX: ${{ vars.DOCKER_IMAGE_PREFIX || github.repository_owner }}
+  REGISTRY: gitea.example.com
+  IMAGE_PREFIX: ${{ gitea.repository_owner }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        service: [control-plane, data-plane, frontend]
-    
+        include:
+          - service: frontend
+            image_name: dns-dashboard
+          - service: nginx
+            image_name: dns-proxy
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -22,8 +28,7 @@ jobs:
       - name: Lowercase Registry Details
         id: registry_case
         run: |
-          # Use user provided variable OR fallback to repo owner, then lowercase it
-          RAW_PREFIX="${{ vars.DOCKER_IMAGE_PREFIX || github.repository_owner }}"
+          RAW_PREFIX="${{ gitea.repository_owner }}"
           echo "IMAGE_PREFIX=${RAW_PREFIX,,}" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
@@ -33,16 +38,17 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+          username: ${{ gitea.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ steps.registry_case.outputs.IMAGE_PREFIX }}/dns-${{ matrix.service }}
+          images: |
+            ${{ env.REGISTRY }}/${{ steps.registry_case.outputs.IMAGE_PREFIX }}/${{ matrix.image_name }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ gitea.ref == 'refs/heads/main' }}
             type=sha,format=short
 
       - name: Build and push Docker image
