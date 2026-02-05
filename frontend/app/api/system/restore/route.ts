@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import util from 'util';
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
+import os from 'os';
 
 const execAsync = util.promisify(exec);
 
@@ -16,15 +18,27 @@ export async function POST(request: Request) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const tempPath = '/tmp/restore.tar.gz';
+
+        // Use OS-specific temp directory
+        const tempPath = path.join(os.tmpdir(), 'restore.tar.gz');
         await fs.writeFile(tempPath, buffer);
 
-        // Extract the tarball to /app, overwriting config_mount and data_mount
-        // Note: This relies on the tarball structure matching the mount points.
-        // The backup created 'config_mount' and 'data_mount' folders at root of tar.
-        // So extracting to /app should place them correctly.
+        // Determine target directory
+        let targetDir = '/app';
+        if (!existsSync(targetDir)) {
+            // Fallback for local development (assuming running from frontend dir)
+            targetDir = path.resolve(process.cwd(), '..');
+        }
 
-        await execAsync(`tar -xzf ${tempPath} -C /app`);
+        console.log(`Restoring backup to: ${targetDir}`);
+
+        // Extract the tarball
+        // Note: The backup contains 'config_mount' and 'data_mount' (or 'config'/'data' locally) at the root level.
+        // We rely on the tarball structure matching what's expected in the targetDir.
+
+        // Use quotes to handle paths with spaces
+        const command = `tar -xzf "${tempPath}" -C "${targetDir}"`;
+        await execAsync(command);
 
         // Cleanup
         await fs.unlink(tempPath);

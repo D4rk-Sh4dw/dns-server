@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { Save, RefreshCw, CheckCircle, XCircle, Shield, Server, Database, Wifi } from 'lucide-react';
 
 export default function SettingsPage() {
-    const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<{
-        adguard: boolean;
-        technitium: boolean;
-    } | null>(null);
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            // Enforce Technitium as DHCP provider
+            localStorage.setItem('dhcp_provider', 'technitium');
+        }
+    }, []);
 
     const checkConnection = async () => {
         setLoading(true);
@@ -33,23 +34,6 @@ export default function SettingsPage() {
     useEffect(() => {
         checkConnection();
     }, []);
-
-    const [dhcpProvider, setDhcpProvider] = useState<'adguard' | 'technitium'>('adguard');
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setDhcpProvider((localStorage.getItem('dhcp_provider') as 'technitium') || 'adguard');
-        }
-    }, []);
-
-    const handleSetProvider = (provider: 'adguard' | 'technitium') => {
-        setDhcpProvider(provider);
-        localStorage.setItem('dhcp_provider', provider);
-        // Dispatch event for other components to potentially react
-        window.dispatchEvent(new Event('storage'));
-    };
-
-
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -117,55 +101,26 @@ export default function SettingsPage() {
                                 )}
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* DHCP Provider Selection */}
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                    <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                        <Database className="text-green-500" size={24} />
-                        DHCP Server Provider
-                    </h2>
-
-                    <div className="space-y-4">
-                        <p className="text-sm text-gray-400">
-                            Select which service should be used for DHCP management.
-                        </p>
-
-                        <div className="grid grid-cols-1 gap-3">
-                            <button
-                                onClick={() => handleSetProvider('adguard')}
-                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${dhcpProvider === 'adguard'
-                                    ? 'bg-blue-600/10 border-blue-600 text-white'
-                                    : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
-                                    }`}
-                            >
-                                <div className="text-left">
-                                    <div className="font-medium">AdGuard Home DHCP</div>
-                                    <div className="text-xs opacity-70">Standard filtering-focused DHCP</div>
+                        <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-800">
+                            <div className="flex items-center gap-3">
+                                <Wifi className="text-purple-500" size={20} />
+                                <div>
+                                    <div className="font-medium text-white">DHCP Server</div>
+                                    <div className="text-xs text-gray-500">Technitium DHCP</div>
                                 </div>
-                                {dhcpProvider === 'adguard' && <CheckCircle size={20} />}
-                            </button>
-
-                            <button
-                                onClick={() => handleSetProvider('technitium')}
-                                className={`flex items-center justify-between p-4 rounded-lg border transition-all ${dhcpProvider === 'technitium'
-                                    ? 'bg-blue-600/10 border-blue-600 text-white'
-                                    : 'bg-gray-800/50 border-gray-800 text-gray-400 hover:border-gray-700'
-                                    }`}
-                            >
-                                <div className="text-left">
-                                    <div className="font-medium">Technitium DHCP</div>
-                                    <div className="text-xs opacity-70">Full-featured DHCP with integrated DNS/Reverse DNS updates</div>
-                                </div>
-                                {dhcpProvider === 'technitium' && <CheckCircle size={20} />}
-                            </button>
-                        </div>
-
-                        <div className="p-3 bg-blue-900/20 border border-blue-800/50 rounded-lg">
-                            <p className="text-xs text-blue-300">
-                                <strong>Tip:</strong> Use Technitium DHCP if you want automatic <strong>Reverse DNS</strong> (PTR) updates for all your devices.
-                            </p>
+                            </div>
+                            <div>
+                                {status?.technitium ? (
+                                    <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium bg-green-400/10 px-2 py-1 rounded">
+                                        <CheckCircle size={14} /> Active
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 text-gray-400 text-sm font-medium bg-gray-400/10 px-2 py-1 rounded">
+                                        <RefreshCw size={14} /> Waiting...
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
