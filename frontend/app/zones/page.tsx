@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plus, RefreshCw, ChevronRight, Trash2, Check, AlertCircle, Server, Globe } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Plus, RefreshCw, ChevronRight, Trash2, Check, AlertCircle, Server, Globe, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface Zone {
@@ -73,6 +73,18 @@ export default function ZonesPage() {
     const [selectedProvider, setSelectedProvider] = useState('');
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredZones = useMemo(() => {
+        if (!searchQuery.trim()) return zones;
+        const lowerQuery = searchQuery.toLowerCase();
+        return zones.filter(zone =>
+            zone.name.toLowerCase().includes(lowerQuery) ||
+            zone.type.toLowerCase().includes(lowerQuery) ||
+            (zone.dcServers && zone.dcServers.toLowerCase().includes(lowerQuery)) ||
+            (zone.forwarder && zone.forwarder.toLowerCase().includes(lowerQuery))
+        );
+    }, [zones, searchQuery]);
 
     const fetchZones = async () => {
         setLoading(true);
@@ -165,7 +177,19 @@ export default function ZonesPage() {
                         Manage DNS zones and Active Directory domain forwarding.
                     </p>
                 </div>
-                <div className="flex gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search size={16} className="text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search zones, IPs..."
+                            className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 transition-all w-full sm:w-64"
+                        />
+                    </div>
                     <button
                         onClick={async () => {
                             if (!confirm('Are you sure you want to clear the AdGuard DNS cache? This can help resolve DNS issues but may temporarily slow down initial queries.')) return;
@@ -228,7 +252,7 @@ export default function ZonesPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
-                        {zones.map(zone => (
+                        {filteredZones.map(zone => (
                             <tr key={zone.name} className="group hover:bg-gray-800/50 transition-colors">
                                 <td className="px-6 py-4">
                                     {zone.source === 'active-directory' ? (
@@ -294,10 +318,10 @@ export default function ZonesPage() {
                                 </td>
                             </tr>
                         ))}
-                        {!zones.length && !loading && (
+                        {!filteredZones.length && !loading && (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                    No zones configured. Click "Add Zone" to get started.
+                                    {searchQuery ? 'No zones match your search.' : 'No zones configured. Click "Add Zone" to get started.'}
                                 </td>
                             </tr>
                         )}
