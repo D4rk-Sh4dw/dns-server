@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 
 # Unified DNS Dashboard - Proxmox LXC Creator
 # Copyright (c) 2024-2026 D4rk-Sh4dw
@@ -15,7 +15,7 @@ RD=$(echo "\033[01;31m")
 GN=$(echo "\033[1;32m")
 YW=$(echo "\033[33m")
 BL=$(echo "\033[36m")
-CM="${GN}✔️${CL}"
+CM="${GN}âœ”ï¸${CL}"
 BOLD=$(echo "\033[1m")
 
 # Default values
@@ -30,7 +30,7 @@ DEFAULT_VERSION="12"
 # Spinner
 spinner() {
     local pid=$1
-    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local spin='â ‹â ™â ¹â ¸â ¼â ´â ¦â §â ‡â '
     local i=0
     while kill -0 "$pid" 2>/dev/null; do
         printf "\r ${spin:i++%${#spin}:1} "
@@ -39,9 +39,9 @@ spinner() {
     printf "\r"
 }
 
-msg_info() { echo -e "${BL}ℹ️  ${1}${CL}"; }
-msg_ok() { echo -e "${GN}✔️  ${1}${CL}"; }
-msg_error() { echo -e "${RD}❌ ${1}${CL}"; }
+msg_info() { echo -e "${BL}â„¹ï¸  ${1}${CL}"; }
+msg_ok() { echo -e "${GN}âœ”ï¸  ${1}${CL}"; }
+msg_error() { echo -e "${RD}âŒ ${1}${CL}"; }
 
 header() {
     clear
@@ -150,9 +150,9 @@ configure_container() {
     
     # Summary
     echo ""
-    echo -e "${BL}═══════════════════════════════════════════${CL}"
+    echo -e "${BL}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${CL}"
     echo -e "${BOLD}           Configuration Summary${CL}"
-    echo -e "${BL}═══════════════════════════════════════════${CL}"
+    echo -e "${BL}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${CL}"
     echo -e "  Container ID:  ${GN}$CTID${CL}"
     echo -e "  Hostname:      ${GN}$HOSTNAME${CL}"
     echo -e "  CPU:           ${GN}$CPU cores${CL}"
@@ -160,7 +160,7 @@ configure_container() {
     echo -e "  Disk:          ${GN}$DISK GB${CL}"
     echo -e "  Storage:       ${GN}$STORAGE${CL}"
     echo -e "  Network:       ${GN}$NET_CONFIG${CL}"
-    echo -e "${BL}═══════════════════════════════════════════${CL}"
+    echo -e "${BL}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${CL}"
     echo ""
     
     read -p "Create container? [Y/n]: " CONFIRM
@@ -321,9 +321,9 @@ print_summary() {
     get_container_ip
     
     echo ""
-    echo -e "${GN}═══════════════════════════════════════════════════════════${CL}"
+    echo -e "${GN}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${CL}"
     echo -e "${GN}          Installation Complete!${CL}"
-    echo -e "${GN}═══════════════════════════════════════════════════════════${CL}"
+    echo -e "${GN}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${CL}"
     echo ""
     echo -e "  ${BL}Dashboard:${CL}  http://${IP}"
     echo -e "  ${BL}AdGuard:${CL}    http://${IP}/adguard/"

@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 #
 # Unified DNS Dashboard - LXC Installation Script
 # For Proxmox LXC containers (Debian 12 / Ubuntu 22.04+)
@@ -85,10 +85,10 @@ done
 
 print_banner() {
     echo -e "${BLUE}"
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║         Unified DNS Dashboard - LXC Installation            ║"
-    echo "║              AdGuard Home + Technitium DNS                  ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+    echo "â•‘         Unified DNS Dashboard - LXC Installation            â•‘"
+    echo "â•‘              AdGuard Home + Technitium DNS                  â•‘"
+    echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
     echo -e "${NC}"
 }
 
@@ -347,9 +347,9 @@ print_summary() {
     IP_ADDR=$(hostname -I | awk '{print $1}')
     
     echo ""
-    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║                 Installation Complete!                       ║${NC}"
-    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${GREEN}â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—${NC}"
+    echo -e "${GREEN}â•‘                 Installation Complete!                       â•‘${NC}"
+    echo -e "${GREEN}â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"
     echo ""
     echo -e "${BLUE}Access URLs:${NC}"
     echo -e "  Dashboard:    http://${IP_ADDR}"
@@ -409,9 +409,9 @@ main() {
 # Interactive configuration
 interactive_config() {
     echo ""
-    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"
     echo -e "${BLUE}                    Configuration Setup                        ${NC}"
-    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"
     echo ""
     echo -e "Press ${GREEN}Enter${NC} to accept defaults shown in ${YELLOW}[brackets]${NC}"
     echo ""
@@ -434,9 +434,9 @@ interactive_config() {
     
     # Show summary and confirm
     echo ""
-    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"
     echo -e "${BLUE}                  Configuration Summary                        ${NC}"
-    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"
     echo ""
     echo -e "  ${GREEN}Dashboard User:${NC}     $ADMIN_USER"
     echo -e "  ${GREEN}Dashboard Pass:${NC}     $ADMIN_PASSWORD"
@@ -449,12 +449,12 @@ interactive_config() {
     
     if [[ "$SKIP_CONFIRM" != true ]]; then
         echo -e "${YELLOW}The following will be installed:${NC}"
-        echo "  • AdGuard Home (DNS + Ad blocking)"
-        echo "  • Technitium DNS Server (Authoritative DNS + DHCP)"
-        echo "  • Unified DNS Dashboard (Next.js)"
-        echo "  • Nginx (Reverse Proxy)"
-        echo "  • Node.js 20 LTS"
-        echo "  • .NET 8 Runtime"
+        echo "  â€¢ AdGuard Home (DNS + Ad blocking)"
+        echo "  â€¢ Technitium DNS Server (Authoritative DNS + DHCP)"
+        echo "  â€¢ Unified DNS Dashboard (Next.js)"
+        echo "  â€¢ Nginx (Reverse Proxy)"
+        echo "  â€¢ Node.js 20 LTS"
+        echo "  â€¢ .NET 8 Runtime"
         echo ""
         read -p "Proceed with installation? [Y/n]: " confirm
         case "$confirm" in

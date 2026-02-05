@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 
 # Copyright (c) 2024-2026
 # Author: D4rk-Sh4dw
