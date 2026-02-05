@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import YAML from 'yaml';
 import * as technitium from '@/lib/technitium';
+import * as adguard from '@/lib/adguard';
+
 
 interface AdGuardRewrite {
     domain: string;
@@ -139,12 +141,14 @@ export async function POST(request: NextRequest) {
 
         // 1. Create Technitium zones and records using the library
         const zoneMap = groupRewritesByZone(parsed.rewrites);
+        const successfullyCreatedZones: string[] = [];
 
         for (const [zoneName, records] of zoneMap) {
             try {
                 // Create zone using the technitium library
                 await technitium.createZone(zoneName, 'Primary');
                 results.zonesCreated++;
+                successfullyCreatedZones.push(zoneName);
 
                 // Create records
                 for (const record of records) {
@@ -158,6 +162,33 @@ export async function POST(request: NextRequest) {
                 }
             } catch (err) {
                 results.errors.push(`Failed to create zone ${zoneName}: ${err}`);
+            }
+        }
+
+        // 1.5 Configure AdGuard to use Technitium for these zones
+        if (successfullyCreatedZones.length > 0) {
+            try {
+                const dnsConfig = await adguard.getDnsConfig();
+                const currentUpstreams: string[] = dnsConfig.upstream_dns || [];
+                const newUpstreams = [...currentUpstreams];
+                let modified = false;
+
+                for (const zoneName of successfullyCreatedZones) {
+                    // Check if rule already exists
+                    // We forward to 172.25.0.101 (Technitium) as per docker-compose config
+                    const rule = `[/${zoneName}/]172.25.0.101`;
+
+                    if (!newUpstreams.some(u => u.includes(`[/${zoneName}/]`))) {
+                        newUpstreams.unshift(rule); // Add to top to ensure priority
+                        modified = true;
+                    }
+                }
+
+                if (modified) {
+                    await adguard.updateDnsConfig({ upstream_dns: newUpstreams });
+                }
+            } catch (err) {
+                results.errors.push(`Failed to update AdGuard upstream config: ${err}`);
             }
         }
 
