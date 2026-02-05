@@ -38,7 +38,6 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
     try {
         const token = await getToken();
         // For GET requests, params go in URL. For POST, they might be query params OR body, depending on API.
-        // Usually Technitium takes 'token' in query even for POST.
         const queryParams = new URLSearchParams({ token, ...params });
         const url = `${TECHNITIUM_URL}${endpoint}?${queryParams}`;
 
@@ -48,7 +47,18 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
             body: options.body ? JSON.stringify(options.body) : undefined,
         };
 
-        const response = await fetch(url, fetchOptions);
+        let response = await fetch(url, fetchOptions);
+
+        // Handle HTTP 401/403 specifically
+        if (response.status === 401 || response.status === 403) {
+            console.warn(`[Technitium] HTTP ${response.status} encountered. Refreshing token and retrying...`);
+            cachedToken = null;
+            const newToken = await getToken(true);
+            const retryParams = new URLSearchParams({ token: newToken, ...params });
+            const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
+            response = await fetch(retryUrl, fetchOptions);
+        }
+
         const text = await response.text();
 
         let data;
@@ -59,7 +69,7 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
             throw new Error(`Invalid JSON response from Technitium: ${text.substring(0, 100)}...`);
         }
 
-        // Check for session expiry or invalid token
+        // Check for session expiry or invalid token in the JSON response
         if (data.status === 'error') {
             const errorMsg = data.errorMessage?.toLowerCase() || '';
             const isAuthError = errorMsg.includes('session expired') ||
