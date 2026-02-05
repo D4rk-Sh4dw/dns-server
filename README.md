@@ -34,6 +34,21 @@ The system supports a hybrid architecture:
     *   **AdGuard Direct:** http://localhost/adguard/
     *   **Technitium Direct:** http://localhost/technitium/
 
+### Alternative: LXC Installation (Proxmox)
+
+Run directly from the **Proxmox host shell** to create a fully configured LXC container:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/ct/unified-dns-dashboard.sh)"
+```
+
+This will interactively prompt for:
+- Container ID, Hostname, Disk size
+- CPU cores, RAM
+- Network configuration (DHCP or static IP)
+
+📖 See [LXC Installation Guide](docs/LXC-INSTALLATION.md) for manual installation steps.
+
 ## Updating
 
 To get the latest features (like the new search or CSV import):
