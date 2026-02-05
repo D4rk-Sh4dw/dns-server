@@ -112,3 +112,4 @@ The main login for the Unified Dashboard is managed solely via environment varia
 
 *   `dashboard/` (frontend): Next.js management application.
 *   `data/`: Persistent storage for AdGuard and Technitium.
+
