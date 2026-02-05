@@ -64,6 +64,7 @@ interface Lease {
     ip: string;
     hostname: string;
     expires?: string;
+    isStatic?: boolean;
 }
 
 
@@ -104,9 +105,15 @@ export default function FilteringPage() {
             setClients(clientsData.clients || []);
 
             // Handle DHCP status possibly being disabled/empty
-            const activeLeases = [];
-            if (dhcpData && dhcpData.leases) activeLeases.push(...dhcpData.leases);
-            if (dhcpData && dhcpData.static_leases) activeLeases.push(...dhcpData.static_leases);
+            const activeLeases: Lease[] = [];
+            if (dhcpData) {
+                if (dhcpData.leases) {
+                    activeLeases.push(...dhcpData.leases.map((l: any) => ({ ...l, isStatic: false })));
+                }
+                if (dhcpData.static_leases) {
+                    activeLeases.push(...dhcpData.static_leases.map((l: any) => ({ ...l, isStatic: true })));
+                }
+            }
             setLeases(activeLeases);
 
         } catch (err) {
@@ -553,7 +560,12 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
     const leaseObj = !clientObj ? availableLeases.find((l: any) => l.hostname === selectedClient || l.ip === selectedClient) : null;
 
     let selectedName = selectedClient || 'Choose a Client';
-    if (clientObj) selectedName = `${clientObj.name} (${clientObj.ids.join(', ')})`;
+    if (clientObj) {
+        // Attempt to find associated hostname from leases for display
+        const lease = leases.find((l: any) => clientObj.ids.includes(l.mac) || clientObj.ids.includes(l.ip));
+        const hostname = lease?.hostname ? ` (${lease.hostname})` : '';
+        selectedName = `${clientObj.name}${hostname}`;
+    }
     else if (leaseObj) selectedName = `[New] ${leaseObj.hostname || leaseObj.ip} (${leaseObj.ip})`;
 
     return (
@@ -586,16 +598,23 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
                     {filteredClients.length > 0 && (
                         <div className="border-b border-gray-700/50">
                             <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase bg-gray-900/50 sticky top-0">Configured Clients</div>
-                            {filteredClients.map((c: any) => (
-                                <button
-                                    key={c.name}
-                                    onClick={() => { onSelect(c.name); setIsOpen(false); setSearch(''); }}
-                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800/50 last:border-0 ${selectedClient === c.name ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
-                                >
-                                    <div className="font-medium">{c.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{c.ids.join(', ')}</div>
-                                </button>
-                            ))}
+                            {filteredClients.map((c: any) => {
+                                // Find lease for extra info
+                                const lease = leases.find((l: any) => c.ids.includes(l.mac) || c.ids.includes(l.ip));
+                                return (
+                                    <button
+                                        key={c.name}
+                                        onClick={() => { onSelect(c.name); setIsOpen(false); setSearch(''); }}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800/50 last:border-0 ${selectedClient === c.name ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
+                                    >
+                                        <div className="font-medium">
+                                            {c.name}
+                                            {lease?.hostname && <span className="ml-2 text-xs font-normal text-gray-500 italic">({lease.hostname})</span>}
+                                        </div>
+                                        <div className="text-xs text-gray-500 truncate">{c.ids.join(', ')}</div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
 
@@ -610,7 +629,7 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
                                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800/50 last:border-0 ${selectedClient === (l.hostname || l.ip) ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
                                 >
                                     <div className="font-medium truncate">{l.hostname || 'Unknown Device'}</div>
-                                    <div className="text-xs text-gray-500 truncate">{l.ip} • {l.mac}</div>
+                                    <div className="text-xs text-gray-500 truncate">{l.ip} • {l.mac} {l.isStatic && <span className="ml-1 text-green-500 font-bold text-[10px] uppercase border border-green-500/30 px-1 rounded">Static</span>}</div>
                                 </button>
                             ))}
                         </div>
@@ -648,6 +667,22 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
 
         setIsCreatingClient(true);
         try {
+            // Check if we should make it a static lease
+            if (!activeLease.isStatic) {
+                if (window.confirm(`Detected dynamic lease for ${activeLease.ip}.\n\nDo you want to assign a static IP to this device to ensure rules adhere permanently?`)) {
+                    await fetch('/api/adguard/dhcp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'add_static',
+                            mac: activeLease.mac,
+                            ip: activeLease.ip,
+                            hostname: newClientName
+                        })
+                    });
+                }
+            }
+
             const newClient = {
                 name: newClientName,
                 ids: [activeLease.mac, activeLease.ip], // Add both MAC and IP for robustness
