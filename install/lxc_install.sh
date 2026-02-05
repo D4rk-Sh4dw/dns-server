@@ -27,15 +27,22 @@ apt-get install -y curl sudo git nginx nodejs npm wget jq
 echo -e "${BLUE}Installing Technitium DNS Server...${NC}"
 curl -sSL https://download.technitium.com/dns/install.sh | sudo bash
 
-# --- DNS FIX ---
-# Technitium installer might have set /etc/resolv.conf to 127.0.0.1.
-# If it's not fully configured yet, we lose internet access.
-echo -e "${BLUE}Fixing DNS resolution for remaining steps...${NC}"
+# --- AGGRESSIVE DNS FIX ---
+# Break symlinks and force external DNS
+echo -e "${BLUE}Forcing DNS resolution for remaining steps...${NC}"
+rm -f /etc/resolv.conf
 echo "nameserver 1.1.1.1" > /etc/resolv.conf
+echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+sleep 2
 
 # 3. Install AdGuard Home
 echo -e "${BLUE}Installing AdGuard Home...${NC}"
 curl -s -S -L https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh -s -- -v
+
+# Force DNS Fix again before Dashboard (cloning)
+rm -f /etc/resolv.conf
+echo "nameserver 1.1.1.1" > /etc/resolv.conf
+echo "nameserver 8.8.8.8" >> /etc/resolv.conf
 
 # 4. Setup Dashboard
 echo -e "${BLUE}Setting up Dashboard...${NC}"
