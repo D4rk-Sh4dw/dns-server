@@ -319,21 +319,64 @@ function OpnsenseSettings() {
         url: '',
         key: '',
         secret: '',
-        backend: 'kea'
+        backend: 'kea',
+        skip_ssl_verify: false // Add default
     });
+    const [loading, setLoading] = useState(true); // Initial loading state
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
 
     useEffect(() => {
-        const saved = localStorage.getItem('opnsense_config');
-        if (saved) {
-            try { setConfig(JSON.parse(saved)); } catch (e) { }
-        }
+        // Fetch from backend on load
+        fetch('/api/opnsense/config')
+            .then(res => res.json())
+            .then(data => {
+                setConfig(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Failed to load OPNsense config', err);
+                // Fallback to localStorage if API fails (migration path?)
+                // Or just empty. Let's try migrating once if empty? 
+                // Actually, let's just stick to API. If API fails, we show empty or error.
+                // But for user convenience, check localStorage if API returned empty/defaults?
+                // The API returns defaults if file missing. 
+                const local = localStorage.getItem('opnsense_config');
+                if (local) {
+                    try {
+                        const parsed = JSON.parse(local);
+                        // If API returned empty URL, maybe use local?
+                        // Let's not overcomplicate, just load API. 
+                        // If the user sees empty fields, they can re-enter. 
+                        // Or we can pre-fill locally if API has empty URL.
+                        if (!data.url && parsed.url) {
+                            setConfig({ ...data, ...parsed });
+                        }
+                    } catch (e) { }
+                }
+                setLoading(false);
+            });
     }, []);
 
-    const handleSave = () => {
-        localStorage.setItem('opnsense_config', JSON.stringify(config));
-        alert('OPNsense configuration saved locally!');
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch('/api/opnsense/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            if (!res.ok) throw new Error('Failed to save');
+
+            // Also update localStorage for redundancy/legacy until cleared? 
+            // Better to remove it to avoid confusion later.
+            localStorage.removeItem('opnsense_config');
+
+            alert('OPNsense configuration saved to server!');
+        } catch (err) {
+            alert('Failed to save OPNsense config: ' + (err instanceof Error ? err.message : 'Unknown error'));
+        }
+        setSaving(false);
     };
 
     const handleTest = async () => {
@@ -355,6 +398,8 @@ function OpnsenseSettings() {
         }
         setTesting(false);
     };
+
+    if (loading) return <div className="text-white p-6">Loading OPNsense settings...</div>;
 
     return (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -433,14 +478,15 @@ function OpnsenseSettings() {
                 </button>
                 <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
                     <Save size={18} />
-                    Save OPNsense Config
+                    {saving ? 'Saving...' : 'Save OPNsense Config'}
                 </button>
             </div>
             <p className="text-xs text-gray-500 mt-4">
-                Note: Credentials are saved in your local browser storage for security. They are not stored on the persistent dashboard server.
+                Note: Credentials are now saved on the server ({'/app/config_mount/opnsense.json'}) to persist across sessions.
             </p>
         </div>
     );
