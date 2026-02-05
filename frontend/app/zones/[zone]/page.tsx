@@ -54,6 +54,17 @@ export default function ZoneDetailPage() {
 
     const [searchQuery, setSearchQuery] = useState('');
 
+    const getRecordValue = (record: DnsRecord): string => {
+        const rd = record.rData;
+        if (!rd) return '';
+        if (rd.ipAddress) return rd.ipAddress;
+        if (rd.cname) return rd.cname;
+        if (rd.text) return `"${rd.text}"`;
+        if (rd.exchange) return `${rd.preference} ${rd.exchange}`;
+        if (rd.target) return `${rd.priority} ${rd.weight} ${rd.port} ${rd.target}`;
+        return JSON.stringify(rd);
+    };
+
     const filteredRecords = useMemo(() => {
         if (!searchQuery.trim()) return records;
         const lowerQuery = searchQuery.toLowerCase();
@@ -203,16 +214,6 @@ export default function ZoneDetailPage() {
         if (!skipConfirm) await fetchRecords();
     };
 
-    const getRecordValue = (record: DnsRecord) => {
-        const rd = record.rData;
-        if (!rd) return '';
-        if (rd.ipAddress) return rd.ipAddress;
-        if (rd.cname) return rd.cname;
-        if (rd.text) return `"${rd.text}"`;
-        if (rd.exchange) return `${rd.preference} ${rd.exchange}`;
-        if (rd.target) return `${rd.priority} ${rd.weight} ${rd.port} ${rd.target}`;
-        return JSON.stringify(rd);
-    };
 
     return (
         <div className="p-4 md:p-8 space-y-6 md:space-y-8">
