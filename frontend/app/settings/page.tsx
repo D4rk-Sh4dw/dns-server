@@ -331,27 +331,30 @@ function OpnsenseSettings() {
         fetch('/api/opnsense/config', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
+                // If API returned empty URL but we have local storage, try to merge (migration)
+                if (!data.url) {
+                    const local = localStorage.getItem('opnsense_config');
+                    if (local) {
+                        try {
+                            const parsed = JSON.parse(local);
+                            if (parsed.url) {
+                                setConfig({ ...data, ...parsed });
+                                return;
+                            }
+                        } catch (e) { }
+                    }
+                }
                 setConfig(data);
                 setLoading(false);
             })
             .catch(err => {
                 console.error('Failed to load OPNsense config', err);
-                // Fallback to localStorage if API fails (migration path?)
-                // Or just empty. Let's try migrating once if empty? 
-                // Actually, let's just stick to API. If API fails, we show empty or error.
-                // But for user convenience, check localStorage if API returned empty/defaults?
-                // The API returns defaults if file missing. 
+                // Fallback to localStorage if API fails completely
                 const local = localStorage.getItem('opnsense_config');
                 if (local) {
                     try {
                         const parsed = JSON.parse(local);
-                        // If API returned empty URL, maybe use local?
-                        // Let's not overcomplicate, just load API. 
-                        // If the user sees empty fields, they can re-enter. 
-                        // Or we can pre-fill locally if API has empty URL.
-                        if (!data.url && parsed.url) {
-                            setConfig({ ...data, ...parsed });
-                        }
+                        setConfig(parsed);
                     } catch (e) { }
                 }
                 setLoading(false);
