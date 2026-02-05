@@ -60,8 +60,8 @@ export default function ZoneDetailPage() {
         return records.filter(record => {
             const val = getRecordValue(record);
             return (
-                record.name.toLowerCase().includes(lowerQuery) ||
-                record.type.toLowerCase().includes(lowerQuery) ||
+                (record.name && record.name.toLowerCase().includes(lowerQuery)) ||
+                (record.type && record.type.toLowerCase().includes(lowerQuery)) ||
                 (val && String(val).toLowerCase().includes(lowerQuery))
             );
         });
@@ -205,6 +205,7 @@ export default function ZoneDetailPage() {
 
     const getRecordValue = (record: DnsRecord) => {
         const rd = record.rData;
+        if (!rd) return '';
         if (rd.ipAddress) return rd.ipAddress;
         if (rd.cname) return rd.cname;
         if (rd.text) return `"${rd.text}"`;
