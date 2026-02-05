@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Save, RefreshCw, CheckCircle, XCircle, Shield, Server, Database, Wifi } from 'lucide-react';
 
+import { useTranslation } from '@/lib/i18n-context';
+
 export default function SettingsPage() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{
         adguard: boolean;
@@ -44,8 +47,8 @@ export default function SettingsPage() {
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight text-white">System Settings</h1>
-                <p className="text-gray-400">Manage global configurations and integrations.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-white">{t('settings.title')}</h1>
+                <p className="text-gray-400">{t('settings.subtitle')}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -54,12 +57,12 @@ export default function SettingsPage() {
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                             <Server className="text-blue-500" size={24} />
-                            System Status
+                            {t('settings.system_status')}
                         </h2>
                         <button
                             onClick={checkConnection}
                             className="p-2 text-gray-400 hover:text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-                            title="Refresh Status"
+                            title={t('settings.refresh')}
                         >
                             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
                         </button>
@@ -70,18 +73,18 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-3">
                                 <Shield className="text-green-500" size={20} />
                                 <div>
-                                    <div className="font-medium text-white">AdGuard Home</div>
-                                    <div className="text-xs text-gray-500">Recursive DNS & Filtering</div>
+                                    <div className="font-medium text-white">{t('settings.adguard')}</div>
+                                    <div className="text-xs text-gray-500">{t('settings.adguard_desc')}</div>
                                 </div>
                             </div>
                             <div>
                                 {status?.adguard ? (
                                     <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium bg-green-400/10 px-2 py-1 rounded">
-                                        <CheckCircle size={14} /> Connected
+                                        <CheckCircle size={14} /> {t('settings.connected')}
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-1.5 text-red-400 text-sm font-medium bg-red-400/10 px-2 py-1 rounded">
-                                        <XCircle size={14} /> Error
+                                        <XCircle size={14} /> {t('settings.error')}
                                     </span>
                                 )}
                             </div>
@@ -91,18 +94,18 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-3">
                                 <Database className="text-blue-500" size={20} />
                                 <div>
-                                    <div className="font-medium text-white">Technitium DNS</div>
-                                    <div className="text-xs text-gray-500">Authoritative DNS</div>
+                                    <div className="font-medium text-white">{t('settings.technitium')}</div>
+                                    <div className="text-xs text-gray-500">{t('settings.technitium_desc')}</div>
                                 </div>
                             </div>
                             <div>
                                 {status?.technitium ? (
                                     <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium bg-green-400/10 px-2 py-1 rounded">
-                                        <CheckCircle size={14} /> Connected
+                                        <CheckCircle size={14} /> {t('settings.connected')}
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-1.5 text-red-400 text-sm font-medium bg-red-400/10 px-2 py-1 rounded">
-                                        <XCircle size={14} /> Error
+                                        <XCircle size={14} /> {t('settings.error')}
                                     </span>
                                 )}
                             </div>
@@ -112,18 +115,18 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-3">
                                 <Wifi className="text-purple-500" size={20} />
                                 <div>
-                                    <div className="font-medium text-white">DHCP Server</div>
-                                    <div className="text-xs text-gray-500">Technitium DHCP</div>
+                                    <div className="font-medium text-white">{t('settings.dhcp')}</div>
+                                    <div className="text-xs text-gray-500">{t('settings.dhcp_desc')}</div>
                                 </div>
                             </div>
                             <div>
                                 {status?.technitium ? (
                                     <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium bg-green-400/10 px-2 py-1 rounded">
-                                        <CheckCircle size={14} /> Active
+                                        <CheckCircle size={14} /> {t('settings.active')}
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-1.5 text-gray-400 text-sm font-medium bg-gray-400/10 px-2 py-1 rounded">
-                                        <RefreshCw size={14} /> Waiting...
+                                        <RefreshCw size={14} /> {t('settings.waiting')}
                                     </span>
                                 )}
                             </div>
@@ -135,14 +138,14 @@ export default function SettingsPage() {
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                     <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
                         <Save className="text-purple-500" size={24} />
-                        Backup & Restore
+                        {t('settings.backup_restore')}
                     </h2>
 
                     <div className="space-y-6">
                         <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-800">
-                            <h3 className="text-white font-medium mb-2">Export Configuration</h3>
+                            <h3 className="text-white font-medium mb-2">{t('settings.export_config')}</h3>
                             <p className="text-sm text-gray-400 mb-4">
-                                Download a backup of AdGuard and Technitium configurations.
+                                {t('settings.export_desc')}
                             </p>
                             <a
                                 href="/api/system/backup"
@@ -150,20 +153,20 @@ export default function SettingsPage() {
                                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                             >
                                 <Save size={18} />
-                                Download Backup
+                                {t('settings.download_backup')}
                             </a>
                         </div>
 
                         <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-800">
-                            <h3 className="text-white font-medium mb-2">Import Configuration</h3>
+                            <h3 className="text-white font-medium mb-2">{t('settings.import_config')}</h3>
                             <p className="text-sm text-gray-400 mb-4">
-                                Restore configuration from a previous backup file.
+                                {t('settings.import_desc')}
                                 <br />
-                                <span className="text-red-400 text-xs">Warning: This will overwrite current settings and restart services.</span>
+                                <span className="text-red-400 text-xs">{t('settings.warning')}</span>
                             </p>
                             <label className="inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors">
                                 <Database size={18} />
-                                Select Backup File
+                                {t('settings.select_file')}
                                 <input
                                     type="file"
                                     accept=".tar.gz"

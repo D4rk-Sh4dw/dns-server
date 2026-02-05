@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { useTranslation } from '@/lib/i18n-context'
 
 import { Providers } from './providers'
 
@@ -63,40 +64,17 @@ export default function RootLayout({
                   <span className="font-bold text-white text-lg">UnifiedDNS</span>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                  <NavItem href="/" icon={LayoutDashboard} label="Overview" active={pathname === '/'} />
-
-                  <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    AdGuard Controls
-                  </div>
-                  <NavItem href="/filtering" icon={Shield} label="Filtering & Blocklists" active={pathname === '/filtering'} />
-                  <NavItem href="/forwarding" icon={Network} label="Forwarding / Zones" active={pathname === '/forwarding'} />
-                  <NavItem href="/services" icon={Menu} label="Service Blocking" active={pathname === '/services'} />
-                  <NavItem href="/clients" icon={Users} label="Client Management" active={pathname === '/clients'} />
-                  <NavItem href="/logs" icon={FileText} label="Query Log" active={pathname === '/logs'} />
-
-
-                  <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Technitium Controls
-                  </div>
-                  <NavItem href="/zones" icon={Globe} label="Zones & Records" active={pathname.startsWith('/zones')} />
-
-                  <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    System
-                  </div>
-                  <NavItem href="/dhcp" icon={Wifi} label="DHCP Server" active={pathname === '/dhcp'} />
-                  <NavItem href="/advanced" icon={Layers} label="Advanced Access" active={pathname === '/advanced'} />
-                  <NavItem href="/settings" icon={Settings} label="Settings" active={pathname === '/settings'} />
-                </nav>
+                <SidebarContent pathname={pathname} />
 
                 <div className="p-4 border-t border-gray-900">
-                  <div className="flex items-center justify-between gap-3">
+                  <LanguageSwitcher />
+                  <div className="flex items-center justify-between gap-3 mt-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
                         AD
                       </div>
                       <div className="text-sm">
-                        <p className="text-white font-medium">Admin User</p>
+                        <p className="text-white font-medium"><AdminUserLabel /></p>
                         <p className="text-gray-500 text-xs">admin@local</p>
                       </div>
                     </div>
@@ -141,5 +119,65 @@ function NavItem({ href, icon: Icon, label, active }: any) {
       <Icon size={18} />
       <span className="text-sm font-medium">{label}</span>
     </Link>
+  )
+}
+
+function SidebarContent({ pathname }: { pathname: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <NavItem href="/" icon={LayoutDashboard} label={t('nav.overview')} active={pathname === '/'} />
+
+      <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        {t('nav.adguard_controls')}
+      </div>
+      <NavItem href="/filtering" icon={Shield} label={t('nav.filtering')} active={pathname === '/filtering'} />
+      <NavItem href="/forwarding" icon={Network} label={t('nav.forwarding')} active={pathname === '/forwarding'} />
+      <NavItem href="/services" icon={Menu} label={t('nav.service_blocking')} active={pathname === '/services'} />
+      <NavItem href="/clients" icon={Users} label={t('nav.client_management')} active={pathname === '/clients'} />
+      <NavItem href="/logs" icon={FileText} label={t('nav.query_log')} active={pathname === '/logs'} />
+
+
+      <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        {t('nav.technitium_controls')}
+      </div>
+      <NavItem href="/zones" icon={Globe} label={t('nav.zones_records')} active={pathname.startsWith('/zones')} />
+
+      <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        {t('nav.system')}
+      </div>
+      <NavItem href="/dhcp" icon={Wifi} label={t('nav.dhcp')} active={pathname === '/dhcp'} />
+      <NavItem href="/advanced" icon={Layers} label={t('nav.advanced')} active={pathname === '/advanced'} />
+      <NavItem href="/settings" icon={Settings} label={t('nav.settings')} active={pathname === '/settings'} />
+    </nav>
+  )
+}
+
+function AdminUserLabel() {
+  const { t } = useTranslation();
+  return <>{t('user.admin')}</>
+}
+
+function LanguageSwitcher() {
+  const { language, setLanguage } = useTranslation();
+
+  return (
+    <div className="flex bg-gray-900 rounded-lg p-1 mb-2">
+      <button
+        onClick={() => setLanguage('en')}
+        className={`flex-1 flex items-center justify-center py-1 rounded text-xs font-medium transition-colors ${language === 'en' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
+          }`}
+      >
+        EN
+      </button>
+      <button
+        onClick={() => setLanguage('de')}
+        className={`flex-1 flex items-center justify-center py-1 rounded text-xs font-medium transition-colors ${language === 'de' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
+          }`}
+      >
+        DE
+      </button>
+    </div>
   )
 }
