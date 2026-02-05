@@ -158,3 +158,4 @@ false,https://raw.githubusercontent.com/safing/intel-data/master/lists/big-tech/
 false,https://raw.githubusercontent.com/safing/intel-data/master/lists/big-tech/amazon.txt,00.BIG-TECH-AMAZON (IMPORTANT),1756260117
 false,https://raw.githubusercontent.com/safing/intel-data/master/lists/big-tech/microsoft.txt,00.BIG-TECH-MICROSOFT (IMPORTANT),1756260119
 false,https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/adblock/doh-vpn-proxy-bypass.txt,00.VPN-DNS-PROXY-BYPASS-PREVENTION,1756260120
+true,https://raw.githubusercontent.com/Mafraysse/AdGuard_GameList-Filter/refs/heads/main/AdGuard_games_list.txt,Online-Spiele,3
