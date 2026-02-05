@@ -186,7 +186,7 @@ export default function SettingsPage() {
                                                 const data = await res.json();
                                                 throw new Error(data.error || 'Restore failed');
                                             }
-                                            alert('Restore started. System will restart shortly.');
+                                            alert('Restore successful! Please restart your Docker containers to apply the changes (docker compose down && docker compose up -d).');
                                         } catch (err) {
                                             alert('Failed to restore backup: ' + (err instanceof Error ? err.message : 'Unknown error'));
                                         }
