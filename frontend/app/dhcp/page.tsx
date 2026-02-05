@@ -51,24 +51,30 @@ export default function DhcpPage() {
         }
     }, []);
 
-    const fetchOpnsenseData = async () => { /* ... existing fetchOpnsenseData ... */
-        const config = localStorage.getItem('opnsense_config');
-        if (!config) return;
-
+    const fetchOpnsenseData = async () => {
         setOpnsenseLoading(true);
         try {
+            // Trigger API to use server-side config
             const res = await fetch('/api/opnsense/leases', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: config
+                body: JSON.stringify({}) // Empty body signals backend to use stored config
             });
             const data = await res.json();
-            setOpnsenseLeases(data.leases || []);
+
+            if (res.ok) {
+                setOpnsenseLeases(data.leases || []);
+            } else {
+                console.warn('OPNsense fetch failed:', data.error);
+                // Don't show error to user immediately unless they are on the tab, 
+                // just leave list empty or show specific error state in UI
+            }
         } catch (err) {
             console.error('Failed to fetch OPNsense leases:', err);
         }
         setOpnsenseLoading(false);
     };
+
 
     const fetchData = async () => {
         setLoading(true);
@@ -80,9 +86,9 @@ export default function DhcpPage() {
             const data = await res.json();
             setStatus(data);
 
-            // Auto-switch tab if DHCP is disabled but OPNsense is likely used
-            if (!data.enabled && localStorage.getItem('opnsense_config')) {
-                setActiveTab('opnsense');
+            // Auto-switch tab if DHCP is disabled
+            if (!data.enabled && activeTab === 'dhcp') {
+                // Optional: switch logic
             }
         } catch (err) {
             setError('Failed to fetch DHCP status');
