@@ -36,18 +36,17 @@ The system supports a hybrid architecture:
 
 ### Alternative: LXC Installation (Proxmox)
 
-Run directly from the **Proxmox host shell** to create a fully configured LXC container:
-
+**Step 1:** Create container (run on Proxmox host):
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/ct/unified-dns-dashboard.sh)"
+bash <(curl -fsSL https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/create-lxc.sh)
 ```
 
-This will interactively prompt for:
-- Container ID, Hostname, Disk size
-- CPU cores, RAM
-- Network configuration (DHCP or static IP)
+**Step 2:** Install dashboard (run inside container):
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/install.sh)
+```
 
-📖 See [LXC Installation Guide](docs/LXC-INSTALLATION.md) for manual installation steps.
+📖 See [LXC Installation Guide](docs/LXC-INSTALLATION.md) for manual steps.
 
 ## Updating
 
