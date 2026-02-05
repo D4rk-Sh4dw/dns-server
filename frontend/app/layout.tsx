@@ -3,7 +3,7 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers } from 'lucide-react'
+import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
@@ -92,14 +92,23 @@ export default function RootLayout({
                 </nav>
 
                 <div className="p-4 border-t border-gray-900">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
-                      AD
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
+                        AD
+                      </div>
+                      <div className="text-sm">
+                        <p className="text-white font-medium">Admin User</p>
+                        <p className="text-gray-500 text-xs">admin@local</p>
+                      </div>
                     </div>
-                    <div className="text-sm">
-                      <p className="text-white font-medium">Admin User</p>
-                      <p className="text-gray-500 text-xs">admin@local</p>
-                    </div>
+                    <button
+                      onClick={() => import('next-auth/react').then(({ signOut }) => signOut())}
+                      className="text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-lg transition-colors"
+                      title="Log Out"
+                    >
+                      <LogOut size={18} />
+                    </button>
                   </div>
                 </div>
               </aside>
