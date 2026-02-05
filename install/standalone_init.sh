@@ -20,8 +20,12 @@ wget -qO config/adguard/AdGuardHome.yaml "$BASE_URL/config/adguard/AdGuardHome.y
 echo "Starting infrastructure..."
 docker compose up -d
 
+# Get current IP
+IP_ADDR=$(hostname -I | awk '{print $1}')
+if [ -z "$IP_ADDR" ]; then IP_ADDR="localhost"; fi
+
 echo ""
 echo "===================================================="
 echo "Installation complete!"
-echo "Access the Dashboard at: http://localhost/"
+echo "Access the Dashboard at: http://$IP_ADDR/"
 echo "===================================================="

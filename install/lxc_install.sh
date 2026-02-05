@@ -60,10 +60,17 @@ if [ ! -f "$INSTALL_DIR/config/adguard/AdGuardHome.yaml" ]; then
 fi
 
 # 4. Run Docker Compose
-echo -e "${BLUE}Starting infrastructure with Docker Compose...${NC}"
+echo "Starting infrastructure..."
 cd "$INSTALL_DIR"
 docker compose up -d
 
-echo -e "${GREEN}Installation completed!${NC}"
-echo -e "Access the Dashboard at: http://<your-lxc-ip>/"
+# Get current IP
+IP_ADDR=$(hostname -I | awk '{print $1}')
+if [ -z "$IP_ADDR" ]; then IP_ADDR="localhost"; fi
+
+echo ""
+echo "===================================================="
+echo "Installation complete!"
+echo "Access the Dashboard at: http://$IP_ADDR/"
+echo "===================================================="
 echo -e "${BLUE}NOTE:${NC} Ensure that 'Nesting' is enabled in your LXC Options in Proxmox."
