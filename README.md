@@ -34,17 +34,20 @@ The system supports a hybrid architecture:
     *   **AdGuard Direct:** http://localhost/adguard/
     *   **Technitium Direct:** http://localhost/technitium/
 
-### Proxmox / LXC (Native Installation)
+### Proxmox / LXC (Docker-in-LXC)
 
-If you prefer a native installation inside an LXC container (Debian/Ubuntu):
+For Proxmox users, the easiest way is to run the Docker setup inside an LXC container.
 
-1.  Create a Debian or Ubuntu LXC.
+**Requirements:**
+- **Nesting: Enabled** (LXC -> Options -> Features -> Nesting)
+- **Linux: Debian or Ubuntu** based LXC.
+
+**Installation:**
+1.  Create your LXC container and enable the **Nesting** feature.
 2.  Run the following command inside the LXC:
     ```bash
     bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/lxc_install.sh)"
     ```
-
-*Note: Ensure that the ports 80, 53 (UDP/TCP) are not blocked by other services (like `systemd-resolved`).*
 
 ## Updating
 
