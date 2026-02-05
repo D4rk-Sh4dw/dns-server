@@ -34,19 +34,6 @@ The system supports a hybrid architecture:
     *   **AdGuard Direct:** http://localhost/adguard/
     *   **Technitium Direct:** http://localhost/technitium/
 
-### Alternative: LXC Installation (Proxmox)
-
-**Step 1:** Create container (run on Proxmox host):
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/create-lxc.sh)
-```
-
-**Step 2:** Install dashboard (run inside container):
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/install.sh)
-```
-
-📖 See [LXC Installation Guide](docs/LXC-INSTALLATION.md) for manual steps.
 
 ## Updating
 
