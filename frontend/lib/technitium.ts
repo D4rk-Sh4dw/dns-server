@@ -9,16 +9,29 @@ let cachedToken: string | null = null;
 async function getToken(forceRefresh = false): Promise<string> {
     if (cachedToken && !forceRefresh) return cachedToken;
 
-    console.log('Fetching new Technitium token...');
-    const response = await fetch(`${TECHNITIUM_URL}/api/user/login?user=admin&pass=${TECHNITIUM_PASSWORD}`);
-    const data = await response.json();
+    console.log(`[Technitium] Fetching new token (forceRefresh=${forceRefresh})...`);
+    try {
+        const response = await fetch(`${TECHNITIUM_URL}/api/user/login?user=admin&pass=${TECHNITIUM_PASSWORD}`);
+        const text = await response.text();
 
-    if (data.status === 'ok') {
-        cachedToken = data.token;
-        return cachedToken!;
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`Technitium login response is not JSON: ${text.substring(0, 100)}`);
+        }
+
+        if (data.status === 'ok') {
+            cachedToken = data.token;
+            console.log('[Technitium] Login successful, token received.');
+            return cachedToken!;
+        }
+
+        throw new Error(`Technitium login failed: ${data.errorMessage}`);
+    } catch (error) {
+        console.error('[Technitium] Login error:', error);
+        throw error;
     }
-
-    throw new Error(`Technitium login failed: ${data.errorMessage}`);
 }
 
 async function technitiumFetch(endpoint: string, params: Record<string, string> = {}, options: { method?: string; body?: any } = {}) {
@@ -51,10 +64,13 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
             const errorMsg = data.errorMessage?.toLowerCase() || '';
             const isAuthError = errorMsg.includes('session expired') ||
                 errorMsg.includes('invalid token') ||
-                errorMsg.includes('token expired');
+                errorMsg.includes('token expired') ||
+                errorMsg.includes('invalid session') ||
+                errorMsg.includes('authorization required') ||
+                errorMsg.includes('user not logged in');
 
             if (isAuthError) {
-                console.log(`Technitium session issue detected: "${data.errorMessage}". Retrying with fresh token...`);
+                console.log(`[Technitium] Session issue detected: "${data.errorMessage}". Retrying with fresh token...`);
 
                 // Clear cache and get new token
                 cachedToken = null;
