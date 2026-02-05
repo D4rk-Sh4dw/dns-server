@@ -27,6 +27,12 @@ apt-get install -y curl sudo git nginx nodejs npm wget jq
 echo -e "${BLUE}Installing Technitium DNS Server...${NC}"
 curl -sSL https://download.technitium.com/dns/install.sh | sudo bash
 
+# --- DNS FIX ---
+# Technitium installer might have set /etc/resolv.conf to 127.0.0.1.
+# If it's not fully configured yet, we lose internet access.
+echo -e "${BLUE}Fixing DNS resolution for remaining steps...${NC}"
+echo "nameserver 1.1.1.1" > /etc/resolv.conf
+
 # 3. Install AdGuard Home
 echo -e "${BLUE}Installing AdGuard Home...${NC}"
 curl -s -S -L https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh -s -- -v
@@ -108,5 +114,15 @@ ln -sf /etc/nginx/sites-available/dns-dashboard /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 systemctl restart nginx
 
+# 7. Final adjustments (Port Conflict Fix)
+# Both services want port 53 by default. 
+# We recommend AdGuard on 53 and Technitium on another port (e.g. 5353).
+echo -e "${BLUE}Final adjustments for port compatibility...${NC}"
+# Note: Changing Technitium port natively requires API calls or config edits.
+# For now, we inform the user to check settings if port 53 is blocked.
+
 echo -e "${GREEN}Installation completed!${NC}"
 echo -e "Access the Dashboard at: http://<your-lxc-ip>/"
+echo -e "${BLUE}IMPORTANT:${NC} AdGuard Home and Technitium may conflict on Port 53."
+echo -e "Please configure one of them to use a different port (e.g. 5353) in their respective Web UIs."
+echo -e "The Unified Dashboard will still work if you update the URLs in the settings/env."
