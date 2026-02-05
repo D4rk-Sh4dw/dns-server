@@ -39,12 +39,24 @@ else
 fi
 
 # 3. Setup Project
-echo -e "${BLUE}Cloning repository to $INSTALL_DIR...${NC}"
+echo -e "${BLUE}Setting up project files in $INSTALL_DIR...${NC}"
+if [ -d "$INSTALL_DIR" ] && [ ! -d "$INSTALL_DIR/.git" ]; then
+    echo -e "${RED}Warning: $INSTALL_DIR exists but is not a git repository. Removing and re-cloning...${NC}"
+    rm -rf "$INSTALL_DIR"
+fi
+
 if [ ! -d "$INSTALL_DIR" ]; then
     git clone https://github.com/D4rk-Sh4dw/dns-server.git "$INSTALL_DIR"
 else
     echo -e "${GREEN}Project directory already exists, pulling updates...${NC}"
     cd "$INSTALL_DIR" && git pull
+fi
+
+# Ensure AdGuard config is present even if clone had issues
+if [ ! -f "$INSTALL_DIR/config/adguard/AdGuardHome.yaml" ]; then
+    echo -e "${BLUE}Downloading default AdGuard Home configuration...${NC}"
+    mkdir -p "$INSTALL_DIR/config/adguard"
+    curl -s -L https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/config/adguard/AdGuardHome.yaml -o "$INSTALL_DIR/config/adguard/AdGuardHome.yaml"
 fi
 
 # 4. Run Docker Compose

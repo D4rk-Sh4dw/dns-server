@@ -18,20 +18,13 @@ The system supports a hybrid architecture:
 
 ### Quick Start (Standalone Docker)
 
-If you don't want to clone the repository, you can just download the `docker-compose.yml` and start:
+If you don't want to clone the repository, you can deploy the infrastructure with a single command:
 
-1.  **Download the configuration:**
-    ```bash
-    mkdir dns-server && cd dns-server
-    wget https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/docker-compose.yml
-    ```
+```bash
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/standalone_init.sh)"
+```
 
-2.  **Start the infrastructure:**
-    ```bash
-    docker compose up -d
-    ```
-
-3.  Access the **Unified Dashboard**: http://localhost (Port 80)
+This will download the `docker-compose.yml` and the necessary default configurations.
     *   **Default Login:** `admin` / `admin123`
     *   **AdGuard Direct:** http://localhost/adguard/
     *   **Technitium Direct:** http://localhost/technitium/
