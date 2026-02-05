@@ -24,7 +24,7 @@ server {
         proxy_cookie_path / /adguard/;
 
         # Rewrite content to support subpath
-        sub_filter_types text/html text/css text/javascript application/javascript;
+        sub_filter_types text/css text/javascript application/javascript;
         sub_filter 'href="/' 'href="/adguard/';
         sub_filter 'src="/' 'src="/adguard/';
         sub_filter 'action="/' 'action="/adguard/';
@@ -79,7 +79,7 @@ server {
         proxy_cookie_path / /technitium/;
 
         # Rewrite content to support subpath
-        sub_filter_types text/html text/css text/javascript application/javascript;
+        sub_filter_types text/css text/javascript application/javascript;
         sub_filter 'href="/' 'href="/technitium/';
         sub_filter 'src="/' 'src="/technitium/';
         sub_filter 'action="/' 'action="/technitium/';
