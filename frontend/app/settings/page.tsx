@@ -182,10 +182,13 @@ export default function SettingsPage() {
                                                 method: 'POST',
                                                 body: formData
                                             });
-                                            if (!res.ok) throw new Error('Restore failed');
+                                            if (!res.ok) {
+                                                const data = await res.json();
+                                                throw new Error(data.error || 'Restore failed');
+                                            }
                                             alert('Restore started. System will restart shortly.');
                                         } catch (err) {
-                                            alert('Failed to restore backup');
+                                            alert('Failed to restore backup: ' + (err instanceof Error ? err.message : 'Unknown error'));
                                         }
                                         setLoading(false);
                                     }}
