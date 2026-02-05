@@ -34,7 +34,7 @@ export default function RootLayout({
               {/* Mobile Header */}
               <header className="lg:hidden h-16 flex items-center justify-between px-4 bg-gray-950 border-b border-gray-900 sticky top-0 z-50">
                 <div className="flex items-center">
-                  <Shield className="w-6 h-6 text-blue-500 mr-2" />
+                  <img src="/logo.png" alt="Logo" className="w-8 h-8 mr-2" />
                   <span className="font-bold text-white text-lg">UnifiedDNS</span>
                 </div>
                 <button
@@ -60,7 +60,7 @@ export default function RootLayout({
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
                 <div className="h-16 hidden lg:flex items-center px-6 border-b border-gray-900">
-                  <Shield className="w-6 h-6 text-blue-500 mr-3" />
+                  <img src="/logo.png" alt="Logo" className="w-8 h-8 mr-3" />
                   <span className="font-bold text-white text-lg">UnifiedDNS</span>
                 </div>
 

@@ -44,8 +44,8 @@ export default function LoginPage() {
             <div className="max-w-md w-full bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
                 <div className="p-8">
                     <div className="flex justify-center mb-6">
-                        <div className="bg-gray-800 p-3 rounded-full">
-                            <Shield className="w-8 h-8 text-blue-500" />
+                        <div className="bg-gray-800 p-1 rounded-full overflow-hidden border border-gray-700">
+                            <img src="/logo.png" alt="Logo" className="w-12 h-12" />
                         </div>
                     </div>
 
