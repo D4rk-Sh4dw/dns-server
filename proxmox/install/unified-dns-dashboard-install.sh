@@ -5,63 +5,50 @@
 # License: MIT
 # Source: https://github.com/D4rk-Sh4dw/dns-server
 
-source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
-color
-verb_ip6
-catch_errors
-setting_up_container
-network_check
-update_os
+# This script runs INSIDE the LXC container
+
+set -euo pipefail
+
+# Colors
+YW=$(echo "\033[33m")
+GN=$(echo "\033[1;32m")
+RD=$(echo "\033[01;31m")
+CL=$(echo "\033[m")
+
+msg_info() { echo -e "${YW}⏳ ${1}...${CL}"; }
+msg_ok() { echo -e "${GN}✔️  ${1}${CL}"; }
+msg_error() { echo -e "${RD}❌ ${1}${CL}"; exit 1; }
+
+export DEBIAN_FRONTEND=noninteractive
+
+msg_info "Updating System"
+apt-get update &>/dev/null
+apt-get upgrade -y &>/dev/null
+msg_ok "System Updated"
 
 msg_info "Installing Dependencies"
-$STD apt-get install -y \
-    curl \
-    wget \
-    git \
-    nginx \
-    openssl \
-    ca-certificates \
-    gnupg
+apt-get install -y curl wget git nginx openssl ca-certificates gnupg &>/dev/null
 msg_ok "Installed Dependencies"
 
 msg_info "Installing Node.js 20"
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-$STD apt-get install -y nodejs
+curl -fsSL https://deb.nodesource.com/setup_20.x 2>/dev/null | bash - &>/dev/null
+apt-get install -y nodejs &>/dev/null
 msg_ok "Installed Node.js $(node -v)"
 
 msg_info "Installing .NET 8 Runtime"
 wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O /tmp/packages-microsoft-prod.deb
-$STD dpkg -i /tmp/packages-microsoft-prod.deb
+dpkg -i /tmp/packages-microsoft-prod.deb &>/dev/null
 rm /tmp/packages-microsoft-prod.deb
-$STD apt-get update
-$STD apt-get install -y aspnetcore-runtime-8.0
+apt-get update &>/dev/null
+apt-get install -y aspnetcore-runtime-8.0 &>/dev/null
 msg_ok "Installed .NET Runtime"
 
 msg_info "Installing AdGuard Home"
-fetch_and_deploy_gh_release "AdGuardHome" "AdguardTeam/AdGuardHome" "prebuild" "latest" "/opt/AdGuardHome" "AdGuardHome_linux_amd64.tar.gz"
-
-cat <<EOF >/etc/systemd/system/AdGuardHome.service
-[Unit]
-Description=AdGuard Home: Network-level blocker
-ConditionFileIsExecutable=/opt/AdGuardHome/AdGuardHome
-After=syslog.target network-online.target
-
-[Service]
-StartLimitInterval=5
-StartLimitBurst=10
-ExecStart=/opt/AdGuardHome/AdGuardHome "-s" "run"
-WorkingDirectory=/opt/AdGuardHome
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl enable -q --now AdGuardHome
+curl -s -S -L https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh 2>/dev/null | sh -s -- -v &>/dev/null
 msg_ok "Installed AdGuard Home"
 
 msg_info "Installing Technitium DNS Server"
-curl -sSL https://download.technitium.com/dns/install.sh | bash
+curl -sSL https://download.technitium.com/dns/install.sh 2>/dev/null | bash &>/dev/null
 msg_ok "Installed Technitium DNS"
 
 msg_info "Installing Unified DNS Dashboard"
@@ -82,8 +69,8 @@ ADMIN_USER=admin
 ADMIN_PASSWORD=admin123
 EOF
 
-$STD npm ci
-$STD npm run build
+npm ci &>/dev/null
+npm run build &>/dev/null
 msg_ok "Installed Dashboard"
 
 msg_info "Creating Dashboard Service"
@@ -105,7 +92,8 @@ Environment=PORT=3001
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl enable -q --now dns-dashboard
+systemctl daemon-reload
+systemctl enable --now dns-dashboard &>/dev/null
 msg_ok "Created Dashboard Service"
 
 msg_info "Configuring Nginx"
@@ -146,6 +134,4 @@ rm -f /etc/nginx/sites-enabled/default
 systemctl reload nginx
 msg_ok "Configured Nginx"
 
-motd_ssh
-customize
-cleanup_lxc
+msg_ok "Installation Complete!"
