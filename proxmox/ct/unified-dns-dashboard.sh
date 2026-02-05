@@ -5,12 +5,8 @@
 # License: MIT
 # Source: https://github.com/D4rk-Sh4dw/dns-server
 
-# Override the install script path BEFORE sourcing build.func
-# The build.func looks for install scripts at a specific URL pattern,
-# we need to tell it to use our URL instead
-
-# First, set the URL for our install script
-CUSTOM_INSTALL_URL="https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/install/unified-dns-dashboard-install.sh"
+# Our install script URL
+INSTALL_URL="https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/proxmox/install/unified-dns-dashboard-install.sh"
 
 # Source community-scripts build functions
 source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
@@ -50,45 +46,13 @@ function update_script() {
   exit
 }
 
-# Custom build function that uses our install script
-custom_build() {
-  # Create the container using the standard function
-  if [[ "$CT_TYPE" == "0" ]]; then
-    msg_info "Creating Privileged Container"
-  else
-    msg_info "Creating Unprivileged Container"
-  fi
-  
-  # Use pct to create container
-  pct create "$CTID" "${TEMPLATE}" \
-    -arch "${ARCH}" \
-    -features "${PCT_OPTIONS}" \
-    -hostname "$HN" \
-    -net0 "name=eth0,bridge=$BRG,ip=$NET,gw=$GATE${MAC}${VLAN}" \
-    -onboot 1 \
-    -cores "$CORE_COUNT" \
-    -memory "$RAM_SIZE" \
-    -unprivileged "$CT_TYPE" \
-    -rootfs "$DISK_REF" \
-    ${PW:-} ${SSH:-}
-    
-  msg_ok "Container Created"
-  
-  msg_info "Starting Container"
-  pct start "$CTID"
-  sleep 5
-  msg_ok "Started Container"
-  
-  # Push and run our install script
-  msg_info "Running Installation Script"
-  pct exec "$CTID" -- bash -c "curl -fsSL ${CUSTOM_INSTALL_URL} | bash"
-  msg_ok "Installation Complete"
-}
-
 start
+build_container
 
-# Use custom build instead of build_container
-custom_build
+# Now run our install script inside the container
+msg_info "Running Custom Installation"
+pct exec "$CTID" -- bash -c "curl -fsSL ${INSTALL_URL} | bash"
+msg_ok "Custom Installation Complete"
 
 description
 
