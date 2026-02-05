@@ -61,10 +61,15 @@ function parseConfig(yamlContent: string): ParsedConfig {
     const config = YAML.parse(yamlContent);
 
     return {
-        rewrites: config?.dns?.rewrites || [],
-        blocklists: config?.filtering?.filters || [],
-        whitelists: config?.filtering?.whitelist_filters || [],
-        userRules: config?.filtering?.user_rules || [],
+        // Rewrites are under filtering.rewrites, not dns.rewrites
+        rewrites: config?.filtering?.rewrites || [],
+        // Filters (blocklists) are at root level
+        blocklists: config?.filters || [],
+        // Whitelist filters are at root level
+        whitelists: config?.whitelist_filters || [],
+        // User rules are at root level
+        userRules: config?.user_rules || [],
+        // Clients are under clients.persistent
         clients: config?.clients?.persistent || [],
     };
 }
