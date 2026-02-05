@@ -9,13 +9,13 @@
 
 set -euo pipefail
 
-# Colors
+# Colors - CL must be first as it's used in CM
+CL=$(echo "\033[m")
 RD=$(echo "\033[01;31m")
 GN=$(echo "\033[1;32m")
 YW=$(echo "\033[33m")
 BL=$(echo "\033[36m")
 CM="${GN}✔️${CL}"
-CL=$(echo "\033[m")
 BOLD=$(echo "\033[1m")
 
 # Default values
