@@ -103,7 +103,13 @@ export default function RootLayout({
                       </div>
                     </div>
                     <button
-                      onClick={() => import('next-auth/react').then(({ signOut }) => signOut({ callbackUrl: '/login' }))}
+                      onClick={() => {
+                        import('next-auth/react').then(({ signOut }) => {
+                          signOut({ redirect: false }).then(() => {
+                            window.location.href = '/login';
+                          });
+                        });
+                      }}
                       className="text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-lg transition-colors"
                       title="Log Out"
                     >
