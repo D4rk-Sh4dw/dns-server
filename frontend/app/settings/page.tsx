@@ -328,7 +328,7 @@ function OpnsenseSettings() {
 
     useEffect(() => {
         // Fetch from backend on load
-        fetch('/api/opnsense/config')
+        fetch('/api/opnsense/config', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
                 setConfig(data);

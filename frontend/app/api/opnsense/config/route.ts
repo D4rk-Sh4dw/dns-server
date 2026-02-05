@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
+// Force dynamic to prevent caching
+export const dynamic = 'force-dynamic';
+
 // Define the path to the config file
 // We use the volume mount text path or a fallback
 const CONFIG_DIR = '/app/config_mount';
@@ -14,9 +17,10 @@ async function ensureConfigDir() {
     } catch {
         // If we can't access it, try to create it (though in Docker it should be mounted)
         try {
+            console.log(`[API] Creating config directory at ${CONFIG_DIR}`);
             await fs.mkdir(CONFIG_DIR, { recursive: true });
         } catch (e) {
-            console.error('Failed to create config directory:', e);
+            console.error('[API] Failed to create config directory:', e);
         }
     }
 }
@@ -31,6 +35,7 @@ export async function GET() {
         } catch (error: any) {
             // Return default/empty config if file doesn't exist
             if (error.code === 'ENOENT') {
+                console.log('[API] Config file not found, returning defaults');
                 return NextResponse.json({
                     url: '',
                     key: '',
@@ -42,7 +47,7 @@ export async function GET() {
             throw error;
         }
     } catch (error) {
-        console.error('Failed to read OPNsense config:', error);
+        console.error('[API] Failed to read OPNsense config:', error);
         return NextResponse.json({ error: 'Failed to fetch config' }, { status: 500 });
     }
 }
@@ -51,6 +56,8 @@ export async function POST(request: Request) {
     try {
         await ensureConfigDir();
         const body = await request.json();
+
+        console.log('[API] Saving OPNsense config...');
 
         // Validate minimal structure if needed, or just save
         // We might want to filter allowed keys to avoid garbage
@@ -63,9 +70,10 @@ export async function POST(request: Request) {
         };
 
         await fs.writeFile(CONFIG_FILE, JSON.stringify(configToSave, null, 2));
+        console.log('[API] Config saved successfully to', CONFIG_FILE);
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Failed to save OPNsense config:', error);
+        console.error('[API] Failed to save OPNsense config:', error);
         return NextResponse.json({ error: 'Failed to save config' }, { status: 500 });
     }
 }
