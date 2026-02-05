@@ -88,10 +88,25 @@ To automatically load lists from a repository:
 
 ## Security & Passwords
 
-Passwords for services are managed via `docker-compose.yml`.
+The system uses centralized credentials to enable the "Single Pane of Glass" experience and autologin features. If you change a password, you must update it in the `docker-compose.yml` (or your `.env`) to keep the services connected.
 
-*   **Technitium & Dashboard**: Update `docker-compose.yml` and rebuild (`docker compose up -d --build`).
-*   **AdGuard Home**: Change in AdGuard Web UI **AND** update `docker-compose.yml` to match (required for autologin).
+### 1. Changing Technitium DNS Password
+1.  Open the **Technitium UI** (directly or via Dashboard).
+2.  Go to **Settings -> User Accounts** and change the password for `admin`.
+3.  Update `TECHNITIUM_PASSWORD` and `DNS_SERVER_ADMIN_PASSWORD` in your `docker-compose.yml`.
+4.  Restart with `docker compose up -d`.
+
+### 2. Changing AdGuard Home Password
+1.  Open the **AdGuard UI** (directly or via Dashboard).
+2.  Go to **Settings -> General Settings** and change the password for your user.
+3.  Update `ADGUARD_PASS` in your `docker-compose.yml`.
+4.  Restart with `docker compose up -d`.
+    *Note: The Dashboard and Autologin require the clear-text password to communicate with the AdGuard API.*
+
+### 3. Changing Dashboard Login
+The main login for the Unified Dashboard is managed solely via environment variables:
+1.  Update `ADMIN_USER` and `ADMIN_PASSWORD` in your `docker-compose.yml`.
+2.  Restart with `docker compose up -d`.
 
 ## Project Structure
 
