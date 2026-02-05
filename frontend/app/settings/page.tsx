@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { Save, RefreshCw, CheckCircle, XCircle, Shield, Server, Database, Wifi } from 'lucide-react';
 
 export default function SettingsPage() {
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState<{
+        adguard: boolean;
+        technitium: boolean;
+    } | null>(null);
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
             // Enforce Technitium as DHCP provider
