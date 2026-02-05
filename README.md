@@ -41,7 +41,7 @@ For Proxmox users, the easiest way is to run the Docker setup inside an LXC cont
 1.  Create your LXC container and enable the **Nesting** feature.
 2.  Run the following command inside the LXC:
     ```bash
-    bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/lxc_install.sh)"
+    bash -c "$(wget -qLO - https://gitea.vmhaus.de/Marcel/dns-server/raw/branch/main/install/standalone_init.sh)"
     ```
 
 ## Updating
