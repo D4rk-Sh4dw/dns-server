@@ -167,8 +167,32 @@ export default function ZonesPage() {
                 </div>
                 <div className="flex gap-3 w-full sm:w-auto">
                     <button
+                        onClick={async () => {
+                            if (!confirm('Are you sure you want to clear the AdGuard DNS cache? This can help resolve DNS issues but may temporarily slow down initial queries.')) return;
+
+                            setLoading(true);
+                            try {
+                                const res = await fetch('/api/adguard/cache/clear', { method: 'POST' });
+                                if (!res.ok) throw new Error('Failed to clear cache');
+                                alert('DNS Cache cleared successfully!');
+                            } catch (e) {
+                                alert('Error clearing cache');
+                            }
+                            setLoading(false);
+                            // Refresh zones data as well
+                            fetchZones();
+                        }}
+                        className="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 hover:text-yellow-400 border border-yellow-500/20 transition-colors flex justify-center items-center gap-2 px-3"
+                        title="Reset AdGuard DNS Cache - Helps with DNS resolution issues"
+                    >
+                        <RefreshCw size={18} />
+                        <span className="hidden sm:inline text-sm font-medium">Reset Cache</span>
+                    </button>
+
+                    <button
                         onClick={fetchZones}
                         className="flex-1 sm:flex-none p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
+                        title="Refresh Zones"
                     >
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
@@ -225,10 +249,10 @@ export default function ZonesPage() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`text-xs font-medium px-2 py-1 rounded ${zone.source === 'active-directory'
-                                            ? 'text-purple-400 bg-purple-400/10'
-                                            : zone.name.endsWith('.in-addr.arpa')
-                                                ? 'text-yellow-400 bg-yellow-400/10'
-                                                : 'text-blue-400 bg-blue-400/10'
+                                        ? 'text-purple-400 bg-purple-400/10'
+                                        : zone.name.endsWith('.in-addr.arpa')
+                                            ? 'text-yellow-400 bg-yellow-400/10'
+                                            : 'text-blue-400 bg-blue-400/10'
                                         }`}>
                                         {zone.source === 'active-directory' ? 'Active Directory' : zone.name.endsWith('.in-addr.arpa') ? 'Reverse DNS' : zone.type || 'Primary'}
                                     </span>

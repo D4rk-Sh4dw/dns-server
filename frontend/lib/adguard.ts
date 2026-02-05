@@ -507,3 +507,10 @@ export async function removeStaticLease(lease: { mac: string; ip: string; hostna
         body: JSON.stringify(lease),
     });
 }
+
+// ==================== Cache Management ====================
+export async function clearCache() {
+    return adguardFetch('/control/cache_clear', {
+        method: 'POST'
+    });
+}
