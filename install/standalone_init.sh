@@ -13,12 +13,17 @@ cd "$PROJECT_NAME"
 
 # --- Port 53 Fix (systemd-resolved) ---
 if systemctl is-active --quiet systemd-resolved; then
-    echo "Systemd-resolved detected. Disabling DNSStubListener to free Port 53..."
-    sudo mkdir -p /etc/systemd/resolved.conf.d
-    echo -e "[Resolve]\nDNSStubListener=no" | sudo tee /etc/systemd/resolved.conf.d/adguard.conf > /dev/null
-    sudo mv /etc/resolv.conf /etc/resolv.conf.bak || true
-    echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
-    sudo systemctl restart systemd-resolved
+    echo "Systemd-resolved detected. Stopping and disabling it to free Port 53..."
+    sudo systemctl stop systemd-resolved
+    sudo systemctl disable systemd-resolved
+    sudo rm -f /etc/resolv.conf
+    echo -e "nameserver 1.1.1.1\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+fi
+
+# Diagnostic check
+if sudo lsof -Pi :53 -sTCP:LISTEN -t >/dev/null ; then
+    echo "WARNING: Port 53 is still in use by:"
+    sudo lsof -i :53
 fi
 
 echo "Downloading docker-compose.yml..."

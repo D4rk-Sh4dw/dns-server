@@ -26,22 +26,27 @@ fi
 # 1. Install dependencies
 echo -e "${BLUE}Installing base dependencies...${NC}"
 apt-get update
-apt-get install -y curl sudo git ca-certificates gnupg lsb-release procps
+apt-get install -y curl sudo git ca-certificates gnupg lsb-release procps lsof
 
 # --- Port 53 Fix (systemd-resolved) ---
 echo -e "${BLUE}Checking for Port 53 conflicts (systemd-resolved)...${NC}"
 if systemctl is-active --quiet systemd-resolved; then
-    echo -e "${YELLOW}Systemd-resolved detected. Disabling DNSStubListener to free Port 53...${NC}"
-    mkdir -p /etc/systemd/resolved.conf.d
-    cat <<EOF > /etc/systemd/resolved.conf.d/adguard.conf
-[Resolve]
-DNSStubListener=no
-EOF
-    # Backup and replace resolv.conf to point to external DNS during setup
-    mv /etc/resolv.conf /etc/resolv.conf.bak || true
+    echo -e "${YELLOW}Systemd-resolved detected. Stopping and disabling it to free Port 53...${NC}"
+    systemctl stop systemd-resolved
+    systemctl disable systemd-resolved
+    
+    # Ensure /etc/resolv.conf is a real file and points to an external DNS
+    rm -f /etc/resolv.conf
     echo "nameserver 1.1.1.1" > /etc/resolv.conf
-    systemctl restart systemd-resolved
+    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
     echo -e "${GREEN}Port 53 should now be free.${NC}"
+fi
+
+# Check if port 53 is still in use by something else
+if lsof -Pi :53 -sTCP:LISTEN -t >/dev/null ; then
+    echo -e "${RED}WARNING: Port 53 is still in use!${NC}"
+    lsof -i :53
+    echo -e "${RED}Please check the above processes and stop them manually.${NC}"
 fi
 
 # 2. Install Docker
