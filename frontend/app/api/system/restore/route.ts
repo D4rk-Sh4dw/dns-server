@@ -8,6 +8,15 @@ import os from 'os';
 
 const execAsync = util.promisify(exec);
 
+// Increase body size limit for large backup files
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '500mb',
+        },
+    },
+};
+
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
