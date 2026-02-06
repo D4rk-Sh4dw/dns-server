@@ -41,8 +41,11 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
         // Dynamic import to avoid issues in edge runtime
         const https = await import('https');
         // TypeScript doesn't recognize 'agent' in RequestInit, but Node.js fetch supports it
+        // We need to bypass ALL certificate checks including expired certs
         (fetchOptions as any).agent = new https.Agent({
-            rejectUnauthorized: false
+            rejectUnauthorized: false,
+            // Also bypass hostname verification for self-signed/expired certs
+            checkServerIdentity: () => undefined
         });
     }
 
