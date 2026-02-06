@@ -4,9 +4,21 @@
 const TECHNITIUM_URL = process.env.TECHNITIUM_URL || 'http://dns-technitium:5380';
 const TECHNITIUM_PASSWORD = process.env.TECHNITIUM_PASSWORD || 'admin123';
 
+// Token cache with timestamp for proactive refresh
 let cachedToken: string | null = null;
+let tokenFetchedAt: number = 0;
+const TOKEN_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour - refresh proactively before expiry
 
 async function getToken(forceRefresh = false): Promise<string> {
+    const tokenAge = Date.now() - tokenFetchedAt;
+    const isTokenExpired = tokenAge > TOKEN_MAX_AGE_MS;
+
+    // Proactive refresh if token is too old
+    if (cachedToken && isTokenExpired && !forceRefresh) {
+        console.log(`[Technitium] Token is ${Math.round(tokenAge / 60000)} minutes old, refreshing proactively...`);
+        forceRefresh = true;
+    }
+
     if (cachedToken && !forceRefresh) return cachedToken;
 
     console.log(`[Technitium] Fetching new token (forceRefresh=${forceRefresh})...`);
@@ -23,6 +35,7 @@ async function getToken(forceRefresh = false): Promise<string> {
 
         if (data.status === 'ok') {
             cachedToken = data.token;
+            tokenFetchedAt = Date.now();
             console.log('[Technitium] Login successful, token received.');
             return cachedToken!;
         }
