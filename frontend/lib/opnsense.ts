@@ -25,6 +25,8 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
     const auth = Buffer.from(`${config.key}:${config.secret}`).toString('base64');
     const url = `${config.url.replace(/\/$/, '')}${endpoint}`;
 
+    console.log('[OPNsense] skip_ssl_verify:', config.skip_ssl_verify, 'URL:', url);
+
     // OPNsense often uses self-signed certificates. 
     // Instead of globally disabling SSL verification, we use a custom agent per-request.
     let fetchOptions: RequestInit = {
@@ -38,6 +40,7 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
 
     // For HTTPS URLs with skip_ssl_verify enabled, use a custom agent
     if (config.skip_ssl_verify && url.startsWith('https://')) {
+        console.log('[OPNsense] Creating HTTPS agent with checkServerIdentity bypass');
         // Dynamic import to avoid issues in edge runtime
         const https = await import('https');
         // TypeScript doesn't recognize 'agent' in RequestInit, but Node.js fetch supports it
