@@ -2,6 +2,8 @@
  * OPNsense API Client for DHCP Leases
  */
 
+import { Agent as UndiciAgent, fetch as undiciFetch } from 'undici';
+
 export interface DHCPLease {
     address: string;
     mac: string;
@@ -21,14 +23,15 @@ export interface OPNsenseConfig {
     skip_ssl_verify?: boolean;
 }
 
+/**
+ * Helper to make authenticated requests to OPNsense API
+ */
 async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: RequestInit = {}) {
     const auth = Buffer.from(`${config.key}:${config.secret}`).toString('base64');
     const url = `${config.url.replace(/\/$/, '')}${endpoint}`;
 
     console.log('[OPNsense] skip_ssl_verify:', config.skip_ssl_verify, 'URL:', url);
 
-    // OPNsense often uses self-signed certificates. 
-    // Instead of globally disabling SSL verification, we use a custom agent per-request.
     let fetchOptions: RequestInit = {
         ...options,
         headers: {
@@ -38,20 +41,30 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
         },
     };
 
-    // For HTTPS URLs with skip_ssl_verify enabled, use a custom agent
+    // For HTTPS URLs with skip_ssl_verify enabled, use undici with custom dispatcher
     if (config.skip_ssl_verify && url.startsWith('https://')) {
-        console.log('[OPNsense] Creating HTTPS agent with checkServerIdentity bypass');
-        // Dynamic import to avoid issues in edge runtime
-        const https = await import('https');
-        // TypeScript doesn't recognize 'agent' in RequestInit, but Node.js fetch supports it
-        // We need to bypass ALL certificate checks including expired certs
-        (fetchOptions as any).agent = new https.Agent({
-            rejectUnauthorized: false,
-            // Also bypass hostname verification for self-signed/expired certs
-            checkServerIdentity: () => undefined
+        console.log('[OPNsense] Using undici with SSL verification disabled');
+
+        // Create undici agent that bypasses SSL verification
+        const agent = new UndiciAgent({
+            connect: {
+                rejectUnauthorized: false,
+            },
         });
+
+        // Use undici fetch with custom dispatcher
+        const res = await undiciFetch(url, {
+            ...fetchOptions,
+            dispatcher: agent,
+        } as any);
+
+        if (!res.ok) {
+            throw new Error(`OPNsense API error: ${res.status} ${res.statusText}`);
+        }
+        return res.json();
     }
 
+    // Standard fetch for non-HTTPS or when SSL verification is enabled
     const res = await fetch(url, fetchOptions);
 
     if (!res.ok) {
