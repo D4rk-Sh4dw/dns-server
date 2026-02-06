@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '500mb', // Increase to support large backup files
     },
+    middlewareClientMaxBodySize: '500mb', // Allow large uploads through middleware
   },
 };
 
