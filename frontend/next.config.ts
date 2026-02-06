@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb', // Increase from default 1MB to support backup files
+      bodySizeLimit: '500mb', // Increase to support large backup files
     },
   },
 };
