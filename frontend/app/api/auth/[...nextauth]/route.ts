@@ -1,15 +1,6 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 
-// Validate required environment variables
-if (!process.env.ADMIN_USER || !process.env.ADMIN_PASSWORD) {
-    throw new Error('ADMIN_USER and ADMIN_PASSWORD environment variables are required');
-}
-
-if (!process.env.AUTH_SECRET) {
-    throw new Error('AUTH_SECRET environment variable is required');
-}
-
 const handler = NextAuth({
     providers: [
         CredentialsProvider({
