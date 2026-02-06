@@ -2,8 +2,6 @@
  * OPNsense API Client for DHCP Leases
  */
 
-import { Agent as UndiciAgent, fetch as undiciFetch } from 'undici';
-
 export interface DHCPLease {
     address: string;
     mac: string;
@@ -41,42 +39,38 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
         },
     };
 
-    // For HTTPS URLs with skip_ssl_verify enabled, use undici with custom dispatcher
+    // For HTTPS URLs with skip_ssl_verify enabled, temporarily disable SSL verification
+    // This is necessary for expired or self-signed certificates
+    let originalTlsReject: string | undefined;
     if (config.skip_ssl_verify && url.startsWith('https://')) {
-        console.log('[OPNsense] Using undici with SSL verification disabled');
+        console.log('[OPNsense] Temporarily disabling SSL verification for this request');
+        originalTlsReject = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
 
-        // Create undici agent that bypasses SSL verification
-        const agent = new UndiciAgent({
-            connect: {
-                rejectUnauthorized: false,
-            },
-        });
-
-        // Use undici fetch with custom dispatcher
-        const res = await undiciFetch(url, {
-            ...fetchOptions,
-            dispatcher: agent,
-        } as any);
+    try {
+        const res = await fetch(url, fetchOptions);
 
         if (!res.ok) {
-            throw new Error(`OPNsense API error: ${res.status} ${res.statusText}`);
+            const text = await res.text();
+            let errorHint = '';
+            if (text.includes('tp-link')) {
+                errorHint = ' (Warning: Request seems to be hitting a TP-Link device instead of OPNsense!)';
+            }
+            throw new Error(`OPNsense API error: ${res.status} at ${url}${errorHint} - ${text.substring(0, 200)}`);
         }
+
         return res.json();
-    }
-
-    // Standard fetch for non-HTTPS or when SSL verification is enabled
-    const res = await fetch(url, fetchOptions);
-
-    if (!res.ok) {
-        const text = await res.text();
-        let errorHint = '';
-        if (text.includes('tp-link')) {
-            errorHint = ' (Warning: Request seems to be hitting a TP-Link device instead of OPNsense!)';
+    } finally {
+        // Restore original SSL setting
+        if (config.skip_ssl_verify && url.startsWith('https://')) {
+            if (originalTlsReject !== undefined) {
+                process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalTlsReject;
+            } else {
+                delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+            }
         }
-        throw new Error(`OPNsense API error: ${res.status} at ${url}${errorHint} - ${text.substring(0, 200)}`);
     }
-
-    return res.json();
 }
 
 /**
