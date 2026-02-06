@@ -25,21 +25,27 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
     const auth = Buffer.from(`${config.key}:${config.secret}`).toString('base64');
     const url = `${config.url.replace(/\/$/, '')}${endpoint}`;
 
-    // OPNsense often uses self-signed certificates. We allow skipping verification if configured.
-    if (typeof process !== 'undefined' && config.skip_ssl_verify) {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    } else if (typeof process !== 'undefined') {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
-    }
-
-    const res = await fetch(url, {
+    // OPNsense often uses self-signed certificates. 
+    // Instead of globally disabling SSL verification, we use a custom agent per-request.
+    let fetchOptions: RequestInit = {
         ...options,
         headers: {
             'Authorization': `Basic ${auth}`,
             'Accept': 'application/json',
             ...(options.headers || {}),
         },
-    });
+    };
+
+    // For HTTPS URLs with skip_ssl_verify enabled, use a custom agent
+    if (config.skip_ssl_verify && url.startsWith('https://')) {
+        // Dynamic import to avoid issues in edge runtime
+        const https = await import('https');
+        fetchOptions.agent = new https.Agent({
+            rejectUnauthorized: false
+        });
+    }
+
+    const res = await fetch(url, fetchOptions);
 
     if (!res.ok) {
         const text = await res.text();
@@ -61,8 +67,6 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
     const searchBody = { rowCount: 1000, current: 1, searchPhrase: "" };
     const leases: DHCPLease[] = [];
 
-    console.log(`Starting OPNsense discovery for backend: ${config.backend}`);
-
     if (config.backend === 'kea') {
         const [dynamicRes, staticRes, legacyRes] = await Promise.allSettled([
             opnsenseFetch(config, '/api/kea/leases4/search', {
@@ -83,7 +87,6 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
         ]);
 
         if (dynamicRes.status === 'fulfilled' && Array.isArray(dynamicRes.value.rows)) {
-            console.log(`Found ${dynamicRes.value.rows.length} dynamic Kea leases`);
             leases.push(...dynamicRes.value.rows.map((row: any) => ({
                 address: row.address,
                 mac: row.hwaddr,
@@ -96,7 +99,6 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
         }
 
         if (staticRes.status === 'fulfilled' && Array.isArray(staticRes.value.rows)) {
-            console.log(`Found ${staticRes.value.rows.length} static Kea reservations`);
             leases.push(...staticRes.value.rows.map((row: any) => ({
                 address: row.ip_address || row.address,
                 mac: row.hwaddr || row.mac,
@@ -107,7 +109,6 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
         }
 
         if (legacyRes.status === 'fulfilled' && Array.isArray(legacyRes.value.rows)) {
-            console.log(`Found ${legacyRes.value.rows.length} legacy DHCPv4 mappings`);
             leases.push(...legacyRes.value.rows.map((row: any) => ({
                 address: row.ipaddr || row.address,
                 mac: row.mac,
@@ -138,7 +139,6 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
         ]);
 
         if (dynamicRes.status === 'fulfilled' && Array.isArray(dynamicRes.value.rows)) {
-            console.log(`Found ${dynamicRes.value.rows.length} dynamic Dnsmasq leases`);
             leases.push(...dynamicRes.value.rows.map((row: any) => ({
                 address: row.address,
                 mac: row.hwaddr,
@@ -149,7 +149,6 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
         }
 
         if (staticRes.status === 'fulfilled' && Array.isArray(staticRes.value.rows)) {
-            console.log(`Found ${staticRes.value.rows.length} static Dnsmasq entries`);
             leases.push(...staticRes.value.rows.map((row: any) => ({
                 address: row.address || row.ip,
                 mac: row.hwaddr || row.mac,
@@ -160,7 +159,6 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
         }
 
         if (legacyRes.status === 'fulfilled' && Array.isArray(legacyRes.value.rows)) {
-            console.log(`Found ${legacyRes.value.rows.length} legacy DHCPv4 mappings`);
             leases.push(...legacyRes.value.rows.map((row: any) => ({
                 address: row.ipaddr || row.address,
                 mac: row.mac,

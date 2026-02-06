@@ -2,7 +2,11 @@
 // Docs: https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md
 
 const TECHNITIUM_URL = process.env.TECHNITIUM_URL || 'http://dns-technitium:5380';
-const TECHNITIUM_PASSWORD = process.env.TECHNITIUM_PASSWORD || 'admin123';
+const TECHNITIUM_PASSWORD = process.env.TECHNITIUM_PASSWORD;
+
+if (!TECHNITIUM_PASSWORD) {
+    throw new Error('TECHNITIUM_PASSWORD environment variable is required');
+}
 
 // Token cache with timestamp for proactive refresh
 let cachedToken: string | null = null;

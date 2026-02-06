@@ -7,7 +7,11 @@ import path from 'path';
 const PAUSE_FILE = '/tmp/pause_state.json';
 const ADGUARD_URL = process.env.ADGUARD_URL || 'http://10.10.10.2:3000';
 const ADGUARD_USER = process.env.ADGUARD_USER || 'admin';
-const ADGUARD_PASS = process.env.ADGUARD_PASS || 'admin123';
+const ADGUARD_PASS = process.env.ADGUARD_PASS;
+
+if (!ADGUARD_PASS) {
+    throw new Error('ADGUARD_PASS environment variable is required');
+}
 
 function getAuthHeader() {
     const credentials = Buffer.from(`${ADGUARD_USER}:${ADGUARD_PASS}`).toString('base64');
@@ -295,7 +299,6 @@ export async function addZoneForwarding(
 
     // Check if rule already exists
     if (currentUpstreams.some(u => u.includes(`[/${domain}/]`))) {
-        console.log(`Forwarding rule for ${domain} already exists`);
         return;
     }
 
@@ -313,8 +316,6 @@ export async function addZoneForwarding(
     await updateDnsConfig({
         upstream_dns: newUpstreams,
     });
-
-    console.log(`Added forwarding rule for ${domain} -> ${servers.join(', ')}`);
 }
 
 
@@ -327,15 +328,12 @@ export async function removeZoneForwarding(domain: string) {
     const newUpstreams = currentUpstreams.filter(u => !u.includes(`[/${domain}/]`));
 
     if (newUpstreams.length === currentUpstreams.length) {
-        console.log(`No forwarding rule found for ${domain}`);
         return;
     }
 
     await updateDnsConfig({
         upstream_dns: newUpstreams,
     });
-
-    console.log(`Removed forwarding rule for ${domain}`);
 }
 
 // Get list of domains currently forwarded to Technitium

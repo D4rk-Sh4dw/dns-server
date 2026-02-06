@@ -26,8 +26,6 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { setting, enabled } = body;
 
-        console.log(`Protection toggle: ${setting} = ${enabled}`);
-
         switch (setting) {
             case 'parental':
                 await adguard.setParentalEnabled(enabled);

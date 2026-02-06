@@ -98,7 +98,7 @@ export async function POST(request: Request) {
                     // Frontend now sends full string provided by user. Technitium API is flexible.
 
                     if (type === 'ConditionalForwarder') {
-                        console.log(`Created Forwarder zone ${zone} with target ${forwarder}`);
+                        // Zone created successfully
                     }
 
 
@@ -118,8 +118,7 @@ export async function POST(request: Request) {
                 try {
                     await technitium.deleteZone(zone);
                 } catch (err) {
-                    // Ignore if zone doesn't exist in Technitium
-                    console.log(`Zone ${zone} not found in Technitium (probably AD-only)`);
+                    // Ignore if zone doesn't exist in Technitium (AD-only zones)
                 }
 
                 return NextResponse.json({

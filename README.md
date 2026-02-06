@@ -86,6 +86,30 @@ To automatically load lists from a repository:
 2.  Click **"Import CSV"**.
 3.  Upload your file and select which lists to apply.
 
+## Security Best Practices
+
+> [!WARNING]
+> **Change Default Credentials Immediately!**
+> The default credentials (`admin` / `admin123`) are publicly known and must be changed before exposing your system to any network.
+
+### Required Environment Variables
+
+The following environment variables **must** be set in your `docker-compose.yml`:
+
+- `ADMIN_USER` - Dashboard login username
+- `ADMIN_PASSWORD` - Dashboard login password
+- `AUTH_SECRET` - Secret key for session encryption (use a strong random string)
+- `ADGUARD_USER` - AdGuard Home username
+- `ADGUARD_PASS` - AdGuard Home password
+- `TECHNITIUM_PASSWORD` - Technitium DNS admin password
+
+### OPNsense Integration (Optional)
+
+If you're integrating with OPNsense that uses a self-signed certificate:
+- The system supports SSL verification bypass per-request (not globally)
+- Configure `skip_ssl_verify: true` in your OPNsense configuration
+- This is safe as it only affects OPNsense API calls
+
 ## Security & Passwords
 
 The system uses centralized credentials to enable the "Single Pane of Glass" experience and autologin features. If you change a password, you must update it in the `docker-compose.yml` (or your `.env`) to keep the services connected.
