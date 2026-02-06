@@ -4,8 +4,11 @@
 const TECHNITIUM_URL = process.env.TECHNITIUM_URL || 'http://dns-technitium:5380';
 const TECHNITIUM_PASSWORD = process.env.TECHNITIUM_PASSWORD;
 
-if (!TECHNITIUM_PASSWORD) {
-    throw new Error('TECHNITIUM_PASSWORD environment variable is required');
+// Validate credentials at runtime, not at module load time (to allow builds without env vars)
+function validateCredentials() {
+    if (!TECHNITIUM_PASSWORD) {
+        throw new Error('TECHNITIUM_PASSWORD environment variable is required');
+    }
 }
 
 // Token cache with timestamp for proactive refresh
@@ -14,6 +17,8 @@ let tokenFetchedAt: number = 0;
 const TOKEN_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour - refresh proactively before expiry
 
 async function getToken(forceRefresh = false): Promise<string> {
+    validateCredentials();
+
     const tokenAge = Date.now() - tokenFetchedAt;
     const isTokenExpired = tokenAge > TOKEN_MAX_AGE_MS;
 

@@ -9,11 +9,15 @@ const ADGUARD_URL = process.env.ADGUARD_URL || 'http://10.10.10.2:3000';
 const ADGUARD_USER = process.env.ADGUARD_USER || 'admin';
 const ADGUARD_PASS = process.env.ADGUARD_PASS;
 
-if (!ADGUARD_PASS) {
-    throw new Error('ADGUARD_PASS environment variable is required');
+// Validate credentials at runtime, not at module load time (to allow builds without env vars)
+function validateCredentials() {
+    if (!ADGUARD_PASS) {
+        throw new Error('ADGUARD_PASS environment variable is required');
+    }
 }
 
 function getAuthHeader() {
+    validateCredentials();
     const credentials = Buffer.from(`${ADGUARD_USER}:${ADGUARD_PASS}`).toString('base64');
     return `Basic ${credentials}`;
 }
