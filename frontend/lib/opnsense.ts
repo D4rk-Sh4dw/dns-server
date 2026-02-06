@@ -89,6 +89,22 @@ export async function getDHCPLeases(config: OPNsenseConfig): Promise<DHCPLease[]
             })
         ]);
 
+        console.log('[OPNsense] Kea API results:', {
+            dynamic: dynamicRes.status,
+            static: staticRes.status,
+            legacy: legacyRes.status
+        });
+
+        if (dynamicRes.status === 'rejected') {
+            console.error('[OPNsense] Dynamic leases API failed:', dynamicRes.reason);
+        }
+        if (staticRes.status === 'rejected') {
+            console.error('[OPNsense] Static reservations API failed:', staticRes.reason);
+        }
+        if (legacyRes.status === 'rejected') {
+            console.error('[OPNsense] Legacy static API failed:', legacyRes.reason);
+        }
+
         if (dynamicRes.status === 'fulfilled' && Array.isArray(dynamicRes.value.rows)) {
             console.log(`Found ${dynamicRes.value.rows.length} dynamic Kea leases`);
             leases.push(...dynamicRes.value.rows.map((row: any) => ({
