@@ -40,7 +40,8 @@ async function opnsenseFetch(config: OPNsenseConfig, endpoint: string, options: 
     if (config.skip_ssl_verify && url.startsWith('https://')) {
         // Dynamic import to avoid issues in edge runtime
         const https = await import('https');
-        fetchOptions.agent = new https.Agent({
+        // TypeScript doesn't recognize 'agent' in RequestInit, but Node.js fetch supports it
+        (fetchOptions as any).agent = new https.Agent({
             rejectUnauthorized: false
         });
     }
