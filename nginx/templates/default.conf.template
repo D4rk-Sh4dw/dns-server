@@ -12,8 +12,12 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # AdGuard Home
+    # AdGuard Home (Protected - requires Dashboard login)
     location /adguard/ {
+        # Validate authentication via Dashboard session
+        auth_request /auth-validate;
+        error_page 401 = @auth_error;
+
         proxy_pass http://dns-adguard:3000/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -68,8 +72,12 @@ server {
         sub_filter_once off;
     }
 
-    # Technitium DNS
+    # Technitium DNS (Protected - requires Dashboard login)
     location /technitium/ {
+        # Validate authentication via Dashboard session
+        auth_request /auth-validate;
+        error_page 401 = @auth_error;
+
         proxy_pass http://dns-technitium:5380/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -125,5 +133,20 @@ server {
         </script></body>';
         
         sub_filter_once off;
+    }
+
+    # Internal location for authentication validation
+    location = /auth-validate {
+        internal;
+        proxy_pass http://dns-dashboard:3000/api/auth/validate;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header Cookie $http_cookie;
+    }
+
+    # Redirect unauthenticated users to login
+    location @auth_error {
+        return 302 /login?callbackUrl=$request_uri;
     }
 }

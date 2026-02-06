@@ -110,6 +110,22 @@ If you're integrating with OPNsense that uses a self-signed certificate:
 - Configure `skip_ssl_verify: true` in your OPNsense configuration
 - This is safe as it only affects OPNsense API calls
 
+### Direct Access to AdGuard/Technitium
+
+> [!IMPORTANT]
+> **Authentication Required**
+> 
+> Direct access to `/adguard/` and `/technitium/` routes requires Dashboard authentication. You must login to the Dashboard first before accessing these routes directly.
+
+**How it works:**
+1. Login to the Dashboard at `http://localhost/`
+2. After authentication, you can access:
+   - AdGuard UI: `http://localhost/adguard/`
+   - Technitium UI: `http://localhost/technitium/`
+3. Autologin will work automatically for authenticated users
+
+**Security Note:** Unauthenticated users are redirected to the login page.
+
 ## Security & Passwords
 
 The system uses centralized credentials to enable the "Single Pane of Glass" experience and autologin features. If you change a password, you must update it in the `docker-compose.yml` (or your `.env`) to keep the services connected.
