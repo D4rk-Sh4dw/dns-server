@@ -32,7 +32,7 @@ services:
     container_name: dns-proxy
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"
     # volumes:
     #   - ./nginx/templates:/etc/nginx/templates
     #   - ./nginx/start.sh:/start.sh
