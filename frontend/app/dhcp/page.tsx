@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Network, RefreshCw, Cpu, Activity, Plus, Trash2, Search, Info, ShieldAlert } from 'lucide-react';
 import TechnitiumScopeModal from '@/app/components/TechnitiumScopeModal';
 import { Settings, Play, Pause } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n-context';
 
 interface Lease {
     mac: string;
@@ -28,6 +29,7 @@ interface DhcpStatus {
 }
 
 export default function DhcpPage() {
+    const { t } = useTranslation();
     const [status, setStatus] = useState<DhcpStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export default function DhcpPage() {
             });
             fetchData();
         } catch (err) {
-            alert('Failed to toggle DHCP');
+            alert(t('common.error'));
         }
     };
 
@@ -148,7 +150,7 @@ export default function DhcpPage() {
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error || 'Failed to save scope');
+                throw new Error(err.error || t('common.error'));
             }
 
             setShowScopeModal(false);
@@ -160,7 +162,7 @@ export default function DhcpPage() {
     };
 
     const handleDeleteScope = async (scopeName: string) => {
-        if (!confirm(`Are you sure you want to delete scope "${scopeName}"?`)) return;
+        if (!confirm(t('dhcp.delete_scope_confirm', [scopeName]))) return;
         try {
             const res = await fetch('/api/technitium/dhcp/scope', {
                 method: 'POST',
@@ -168,10 +170,10 @@ export default function DhcpPage() {
                 body: JSON.stringify({ action: 'delete', name: scopeName })
             });
 
-            if (!res.ok) throw new Error('Failed to delete scope');
+            if (!res.ok) throw new Error(t('common.error'));
             fetchData();
         } catch (err) {
-            alert('Failed to delete scope');
+            alert(t('common.error'));
         }
     };
 
@@ -183,10 +185,10 @@ export default function DhcpPage() {
                 body: JSON.stringify({ action: 'toggle', name: scope.name, enabled: !scope.enabled })
             });
 
-            if (!res.ok) throw new Error('Failed to toggle scope');
+            if (!res.ok) throw new Error(t('common.error'));
             fetchData();
         } catch (err) {
-            alert('Failed to toggle scope');
+            alert(t('common.error'));
         }
     };
 
@@ -197,17 +199,17 @@ export default function DhcpPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'add_static', ...newLease })
             });
-            if (!res.ok) throw new Error('Failed to add static lease');
+            if (!res.ok) throw new Error(t('common.error'));
             setShowAddModal(false);
             setNewLease({ mac: '', ip: '', hostname: '' });
             fetchData();
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Operation failed');
+            alert(err instanceof Error ? err.message : t('common.error'));
         }
     };
 
     const handleRemoveStatic = async (lease: Lease) => {
-        if (!confirm(`Remove static lease for ${lease.hostname}?`)) return;
+        if (!confirm(t('dhcp.delete_lease_confirm', [lease.hostname]))) return;
         try {
             await fetch('/api/adguard/dhcp', {
                 method: 'POST',
@@ -216,7 +218,7 @@ export default function DhcpPage() {
             });
             fetchData();
         } catch (err) {
-            alert('Failed to remove static lease');
+            alert(t('common.error'));
         }
     };
 
@@ -243,8 +245,8 @@ export default function DhcpPage() {
         <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">DHCP Server</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Manage network address assignments and leases.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('dhcp.title')}</h1>
+                    <p className="text-gray-400 text-sm md:text-base">{t('dhcp.subtitle')}</p>
                 </div>
                 <div className="flex gap-2 self-end sm:self-auto">
                     <button
@@ -259,7 +261,7 @@ export default function DhcpPage() {
                             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                         >
                             <Plus size={18} />
-                            Create Scope
+                            {t('dhcp.create_scope')}
                         </button>
                     )}
                 </div>
@@ -280,7 +282,7 @@ export default function DhcpPage() {
                                             <span className="w-2 h-2 rounded-full bg-red-500"></span>
                                         )}
                                     </h3>
-                                    <p className="text-xs text-gray-500 mt-1">{scope.description || 'No description'}</p>
+                                    <p className="text-xs text-gray-500 mt-1">{scope.description || t('dhcp.no_description')}</p>
                                 </div>
                                 <div className="flex gap-1">
                                     <button
@@ -309,19 +311,19 @@ export default function DhcpPage() {
 
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between py-1 border-b border-gray-800/50">
-                                    <span className="text-gray-500">Range</span>
+                                    <span className="text-gray-500">{t('dhcp.ip_range')}</span>
                                     <span className="text-gray-300 font-mono text-xs">{scope.startAddress} - {scope.endAddress}</span>
                                 </div>
                                 <div className="flex justify-between py-1 border-b border-gray-800/50">
-                                    <span className="text-gray-500">Gateway</span>
+                                    <span className="text-gray-500">{t('dhcp.gateway')}</span>
                                     <span className="text-gray-300 font-mono text-xs">{scope.gateway}</span>
                                 </div>
                                 <div className="flex justify-between py-1 border-b border-gray-800/50">
-                                    <span className="text-gray-500">Mask</span>
+                                    <span className="text-gray-500">{t('dhcp.mask')}</span>
                                     <span className="text-gray-300 font-mono text-xs">{scope.subnetMask}</span>
                                 </div>
                                 <div className="flex justify-between py-1">
-                                    <span className="text-gray-500">DNS</span>
+                                    <span className="text-gray-500">{t('dhcp.dns_servers')}</span>
                                     <span className="text-gray-300 font-mono text-xs truncate max-w-[120px]" title={scope.dnsServers?.join(', ') || 'Local System'}>
                                         {scope.dnsServers && scope.dnsServers.length > 0 ? scope.dnsServers.join(', ') : 'Local System'}
                                     </span>
@@ -339,8 +341,8 @@ export default function DhcpPage() {
                             <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-gray-700 transition-colors">
                                 <Plus size={24} />
                             </div>
-                            <h3 className="font-medium">Create First Scope</h3>
-                            <p className="text-sm text-gray-600 mt-2 text-center max-w-[200px]">Define a subnet range to start serving IP addresses.</p>
+                            <h3 className="font-medium">{t('dhcp.create_first_scope')}</h3>
+                            <p className="text-sm text-gray-600 mt-2 text-center max-w-[200px]">{t('dhcp.create_first_scope_desc')}</p>
                         </button>
                     )}
                 </div>
@@ -355,8 +357,8 @@ export default function DhcpPage() {
                                 <Network size={24} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-medium text-white">AdGuard DHCP Status</h3>
-                                <p className="text-sm text-gray-500">{status?.enabled ? `Running on ${status.interface_name}` : 'Server is disabled'}</p>
+                                <h3 className="text-lg font-medium text-white">{t('dhcp.adguard_status')}</h3>
+                                <p className="text-sm text-gray-500">{status?.enabled ? `${t('settings.running_on')} ${status.interface_name}` : t('dhcp.server_disabled')}</p>
                             </div>
                         </div>
                         {provider === 'adguard' && (
@@ -372,22 +374,22 @@ export default function DhcpPage() {
                     {status?.enabled ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
-                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">IP Range</span>
+                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('dhcp.ip_range')}</span>
                                 <div className="text-white font-mono mt-1">{status.conf.range_start} — {status.conf.range_end}</div>
                             </div>
                             <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
-                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Gateway</span>
+                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('dhcp.gateway')}</span>
                                 <div className="text-white font-mono mt-1">{status.conf.gateway_ip}</div>
                             </div>
                             <div className="p-4 bg-gray-950/50 rounded-lg border border-gray-800">
-                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Active Leases</span>
+                                <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('dhcp.active_leases')}</span>
                                 <div className="text-white font-mono mt-1">{status.leases.length} Dynamic / {status.static_leases.length} Static</div>
                             </div>
                         </div>
                     ) : (
                         <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-lg text-yellow-500/80 text-sm flex items-center gap-3">
                             <Info size={16} />
-                            The DHCP server must be enabled for AdGuard to manage your network addresses.
+                            {t('dhcp.enable_dhcp_desc')}
                         </div>
                     )}
                 </div>
@@ -400,13 +402,13 @@ export default function DhcpPage() {
                         onClick={() => setActiveTab('dhcp')}
                         className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'dhcp' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                        {provider === 'technitium' ? 'Technitium Leases' : 'AdGuard DHCP'}
+                        {provider === 'technitium' ? t('dhcp.technitium_leases') : t('dhcp.adguard_dhcp')}
                     </button>
                     <button
                         onClick={() => setActiveTab('opnsense')}
                         className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'opnsense' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                        OPNsense Discovery
+                        {t('dhcp.opnsense_discovery')}
                     </button>
                 </div>
 
@@ -415,7 +417,7 @@ export default function DhcpPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                         <input
                             type="text"
-                            placeholder="Search leases..."
+                            placeholder={t('zones.search_placeholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
@@ -427,14 +429,14 @@ export default function DhcpPage() {
             {activeTab === 'dhcp' ? (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-medium text-white">{provider === 'technitium' ? 'Technitium Leases' : 'AdGuard Leases'}</h3>
+                        <h3 className="text-lg font-medium text-white">{provider === 'technitium' ? t('dhcp.technitium_leases') : t('dhcp.active_leases')}</h3>
                         {provider === 'adguard' && (
                             <button
                                 onClick={() => setShowAddModal(true)}
                                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                             >
                                 <Plus size={18} />
-                                Static Lease
+                                {t('dhcp.static_lease')}
                             </button>
                         )}
                     </div>
@@ -454,8 +456,8 @@ export default function DhcpPage() {
                                 {filteredLeases.map((lease, idx) => (
                                     <tr key={idx} className="hover:bg-gray-800/30 group transition-colors">
                                         <td className="px-6 py-4">
-                                            <div className="text-white font-medium">{lease.hostname || 'Unknown'}</div>
-                                            {lease.expires && <div className="text-[10px] text-gray-500 mt-0.5">Expires: {new Date(lease.expires).toLocaleString()}</div>}
+                                            <div className="text-white font-medium">{lease.hostname || t('dhcp.unknown')}</div>
+                                            {lease.expires && <div className="text-[10px] text-gray-500 mt-0.5">{t('dhcp.expires')}: {new Date(lease.expires).toLocaleString()}</div>}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="text-blue-400 font-mono">{lease.ip}</span>
@@ -483,7 +485,7 @@ export default function DhcpPage() {
                                 {!filteredLeases.length && (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                            No leases found matching your search.
+                                            {t('dhcp.no_leases')}
                                         </td>
                                     </tr>
                                 )}
@@ -495,7 +497,7 @@ export default function DhcpPage() {
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                            OPNsense Leases
+                            {t('dhcp.opnsense_discovery')}
                             {opnsenseLoading && <RefreshCw size={16} className="animate-spin text-gray-500" />}
                         </h3>
                     </div>
@@ -521,9 +523,9 @@ export default function DhcpPage() {
                                     .map((lease, idx) => (
                                         <tr key={idx} className="hover:bg-gray-800/30 group transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="text-white font-medium">{lease.hostname || 'Unknown'}</div>
+                                                <div className="text-white font-medium">{lease.hostname || t('dhcp.unknown')}</div>
                                                 {lease.descr && <div className="text-[10px] text-gray-500 mt-0.5">{lease.descr}</div>}
-                                                {lease.end && <div className="text-[10px] text-gray-500 mt-0.5 text-xs">Ends: {lease.end}</div>}
+                                                {lease.end && <div className="text-[10px] text-gray-500 mt-0.5 text-xs">{t('dhcp.expires')}: {lease.end}</div>}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-red-400 font-mono">{lease.address}</span>
@@ -537,7 +539,7 @@ export default function DhcpPage() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <button
-                                                    title="Sync to Technitium DNS"
+                                                    title={t('dhcp.sync_dns')}
                                                     onClick={() => {
                                                         const parts = lease.address.split('.');
                                                         const subnet = `${parts[0]}.${parts[1]}.${parts[2]}.0`;
@@ -556,8 +558,8 @@ export default function DhcpPage() {
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                                             {localStorage.getItem('opnsense_config')
-                                                ? 'No leases found in OPNsense.'
-                                                : 'OPNsense is not configured in Settings.'}
+                                                ? t('dhcp.opnsense_no_leases')
+                                                : t('dhcp.opnsense_not_configured')}
                                         </td>
                                     </tr>
                                 )}
@@ -580,14 +582,14 @@ export default function DhcpPage() {
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
-                            <h3 className="text-xl font-semibold text-white">Add Static Lease</h3>
+                            <h3 className="text-xl font-semibold text-white">{t('dhcp.add_static')}</h3>
                             <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-white transition-colors">
                                 <Plus size={24} className="rotate-45" />
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">MAC Address</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">{t('dhcp.mac')}</label>
                                 <input
                                     type="text"
                                     value={newLease.mac}
@@ -597,7 +599,7 @@ export default function DhcpPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">IP Address</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">{t('dhcp.ip')}</label>
                                 <input
                                     type="text"
                                     value={newLease.ip}
@@ -607,7 +609,7 @@ export default function DhcpPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Hostname (Optional)</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">{t('dhcp.hostname')} ({t('filtering.optional')})</label>
                                 <input
                                     type="text"
                                     value={newLease.hostname}
@@ -617,13 +619,13 @@ export default function DhcpPage() {
                                 />
                             </div>
                             <div className="flex justify-end gap-3 mt-8">
-                                <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                                <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">{t('common.cancel')}</button>
                                 <button
                                     onClick={handleAddStatic}
                                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                                 >
                                     <Plus size={18} />
-                                    Add Lease
+                                    {t('common.add')}
                                 </button>
                             </div>
                         </div>

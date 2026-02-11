@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, AlertCircle, Info, Check } from 'lucide-react';
 import { DHCPScope } from '@/lib/technitium';
+import { useTranslation } from '@/lib/i18n-context';
 
 interface TechnitiumScopeModalProps {
     isOpen: boolean;
@@ -42,6 +43,7 @@ const Checkbox = ({ label, name, help = '', checked, onChange }: any) => (
 );
 
 export default function TechnitiumScopeModal({ isOpen, onClose, onSave, existingScope }: TechnitiumScopeModalProps) {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('general');
     const [formData, setFormData] = useState<Partial<DHCPScope>>({
         name: '',
@@ -108,10 +110,10 @@ export default function TechnitiumScopeModal({ isOpen, onClose, onSave, existing
     };
 
     const tabs = [
-        { id: 'general', label: 'General' },
-        { id: 'dns', label: 'DNS & Domain' },
-        { id: 'network', label: 'Network & Boot' },
-        { id: 'advanced', label: 'Advanced' }
+        { id: 'general', label: t('dhcp.tab_general') },
+        { id: 'dns', label: t('dhcp.tab_dns') },
+        { id: 'network', label: t('dhcp.tab_network') },
+        { id: 'advanced', label: t('dhcp.tab_advanced') }
     ];
 
     return (
@@ -119,7 +121,7 @@ export default function TechnitiumScopeModal({ isOpen, onClose, onSave, existing
             <div className="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
                 <div className="flex justify-between items-center p-6 border-b border-gray-800">
                     <h2 className="text-xl font-bold text-white max-w-[500px] truncate">
-                        {existingScope ? `Edit Scope: ${existingScope.name}` : 'Create New DHCP Scope'}
+                        {existingScope ? t('dhcp.scope_modal_title_edit', [existingScope.name]) : t('dhcp.scope_modal_title_create')}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <X size={24} />
@@ -144,21 +146,21 @@ export default function TechnitiumScopeModal({ isOpen, onClose, onSave, existing
                         {activeTab === 'general' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="md:col-span-2">
-                                    <InputField label="Scope Name" name="name" placeholder="Currently 'Default' is standard" help="Unique name for this scope." value={formData.name} onChange={handleChange} />
+                                    <InputField label={t('dhcp.scope_name')} name="name" placeholder={t('dhcp.scope_name_placeholder')} help={t('dhcp.scope_name_help')} value={formData.name} onChange={handleChange} />
                                 </div>
-                                <InputField label="Starting Address" name="startAddress" placeholder="192.168.1.100" value={formData.startAddress} onChange={handleChange} />
-                                <InputField label="Ending Address" name="endAddress" placeholder="192.168.1.200" value={formData.endAddress} onChange={handleChange} />
-                                <InputField label="Subnet Mask" name="subnetMask" placeholder="255.255.255.0" value={formData.subnetMask} onChange={handleChange} />
-                                <InputField label="Default Gateway" name="gateway" placeholder="192.168.1.1" value={formData.gateway} onChange={handleChange} />
-                                <InputField label="Lease Time (seconds)" name="leaseTime" type="number" placeholder="86400" help="86400 = 1 day" value={formData.leaseTime} onChange={handleChange} />
-                                <InputField label="Offer Delay (ms)" name="offerDelay" type="number" placeholder="0" help="Delay before sending DHCPOFFER." value={formData.offerDelay} onChange={handleChange} />
+                                <InputField label={t('dhcp.start_ip')} name="startAddress" placeholder="192.168.1.100" value={formData.startAddress} onChange={handleChange} />
+                                <InputField label={t('dhcp.end_ip')} name="endAddress" placeholder="192.168.1.200" value={formData.endAddress} onChange={handleChange} />
+                                <InputField label={t('dhcp.mask')} name="subnetMask" placeholder="255.255.255.0" value={formData.subnetMask} onChange={handleChange} />
+                                <InputField label={t('dhcp.gateway')} name="gateway" placeholder="192.168.1.1" value={formData.gateway} onChange={handleChange} />
+                                <InputField label={t('dhcp.lease_time')} name="leaseTime" type="number" placeholder="86400" help={t('dhcp.lease_time_help')} value={formData.leaseTime} onChange={handleChange} />
+                                <InputField label={t('dhcp.offer_delay')} name="offerDelay" type="number" placeholder="0" help={t('dhcp.offer_delay_help')} value={formData.offerDelay} onChange={handleChange} />
 
                                 <div className="md:col-span-2 pt-4 border-t border-gray-800">
-                                    <h4 className="text-sm font-semibold text-blue-400 mb-4">Ping Check</h4>
-                                    <Checkbox label="Enable Ping Check" name="pingCheckEnabled" help="Check if IP is in use before assigning." checked={formData.pingCheckEnabled} onChange={handleChange} />
+                                    <h4 className="text-sm font-semibold text-blue-400 mb-4">{t('dhcp.ping_check')}</h4>
+                                    <Checkbox label={t('dhcp.enable_ping_check')} name="pingCheckEnabled" help={t('dhcp.ping_check_help')} checked={formData.pingCheckEnabled} onChange={handleChange} />
                                     <div className="grid grid-cols-2 gap-6">
-                                        <InputField label="Timeout (ms)" name="pingCheckTimeout" type="number" value={formData.pingCheckTimeout} onChange={handleChange} />
-                                        <InputField label="Retries" name="pingCheckRetries" type="number" value={formData.pingCheckRetries} onChange={handleChange} />
+                                        <InputField label={t('dhcp.timeout')} name="pingCheckTimeout" type="number" value={formData.pingCheckTimeout} onChange={handleChange} />
+                                        <InputField label={t('dhcp.retries')} name="pingCheckRetries" type="number" value={formData.pingCheckRetries} onChange={handleChange} />
                                     </div>
                                 </div>
                             </div>
@@ -166,36 +168,36 @@ export default function TechnitiumScopeModal({ isOpen, onClose, onSave, existing
 
                         {activeTab === 'dns' && (
                             <div className="space-y-6">
-                                <InputField label="Domain Name" name="domainName" placeholder="home.arpa" help="Domain name assigned to clients (Option 15)." value={formData.domainName} onChange={handleChange} />
+                                <InputField label={t('dhcp.domain_name')} name="domainName" placeholder="home.arpa" help={t('dhcp.domain_name_help')} value={formData.domainName} onChange={handleChange} />
 
                                 <div className="pt-4 border-t border-gray-800">
-                                    <h4 className="text-sm font-semibold text-blue-400 mb-4">DNS Updates</h4>
-                                    <Checkbox label="Enable DNS Updates" name="dnsUpdatesEnabled" help="Automatically update Forward/Reverse DNS entries." checked={formData.dnsUpdatesEnabled} onChange={handleChange} />
-                                    <Checkbox label="Overwrite Existing A Records" name="dnsOverwriteDynamicLeaseEnabled" help="Allow overwriting existing DNS A records." checked={formData.dnsOverwriteDynamicLeaseEnabled} onChange={handleChange} />
+                                    <h4 className="text-sm font-semibold text-blue-400 mb-4">{t('dhcp.dns_updates')}</h4>
+                                    <Checkbox label={t('dhcp.enable_dns_updates')} name="dnsUpdatesEnabled" help={t('dhcp.dns_updates_help')} checked={formData.dnsUpdatesEnabled} onChange={handleChange} />
+                                    <Checkbox label={t('dhcp.overwrite_records')} name="dnsOverwriteDynamicLeaseEnabled" help={t('dhcp.overwrite_records_help')} checked={formData.dnsOverwriteDynamicLeaseEnabled} onChange={handleChange} />
                                     <InputField label="DNS TTL (seconds)" name="dnsTtl" type="number" value={formData.dnsTtl} onChange={handleChange} />
                                 </div>
 
                                 <div className="pt-4 border-t border-gray-800">
-                                    <h4 className="text-sm font-semibold text-blue-400 mb-4">DNS Servers</h4>
-                                    <p className="text-xs text-gray-500 mb-4">Leave empty to use this server's own IP address.</p>
-                                    <InputField label="Custom DNS Server IPs" name="dnsServers" placeholder="e.g. 1.1.1.1 (comma separated)" help="Option 6" value={formData.dnsServers} onChange={handleChange} />
+                                    <h4 className="text-sm font-semibold text-blue-400 mb-4">{t('dhcp.dns_servers')}</h4>
+                                    <p className="text-xs text-gray-500 mb-4">{t('dhcp.dns_servers_help')}</p>
+                                    <InputField label={t('dhcp.custom_dns')} name="dnsServers" placeholder={t('dhcp.dns_servers_placeholder')} help={t('dhcp.dns_servers_input_help')} value={formData.dnsServers} onChange={handleChange} />
                                 </div>
                             </div>
                         )}
 
                         {activeTab === 'network' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField label="NTP Servers" name="ntpServers" placeholder="e.g., 192.168.1.1" help="Option 42" value={formData.ntpServers} onChange={handleChange} />
-                                <InputField label="Boot File Name" name="bootFileName" placeholder="pxelinux.0" help="Option 67" value={formData.bootFileName} onChange={handleChange} />
-                                <InputField label="Next Server (TFTP)" name="bootstrapServerAddress" placeholder="192.168.1.50" help="Option 66 / siaddr" value={formData.bootstrapServerAddress} onChange={handleChange} />
+                                <InputField label={t('dhcp.ntp_servers')} name="ntpServers" placeholder="e.g., 192.168.1.1" help={t('dhcp.ntp_servers_help')} value={formData.ntpServers} onChange={handleChange} />
+                                <InputField label={t('dhcp.boot_file')} name="bootFileName" placeholder="pxelinux.0" help={t('dhcp.boot_file_help')} value={formData.bootFileName} onChange={handleChange} />
+                                <InputField label={t('dhcp.next_server')} name="bootstrapServerAddress" placeholder="192.168.1.50" help={t('dhcp.next_server_help')} value={formData.bootstrapServerAddress} onChange={handleChange} />
                             </div>
                         )}
 
                         {activeTab === 'advanced' && (
                             <div className="space-y-4">
-                                <Checkbox label="Allow Only Reserved Leases" name="allowOnlyReservedLeaseAllocations" help="Block dynamic allocation for unknown clients." checked={formData.allowOnlyReservedLeaseAllocations} onChange={handleChange} />
-                                <Checkbox label="Block Locally Administered MACs" name="blockLocallyAdministeredMacAddresses" help="Reject randomized MAC addresses." checked={formData.blockLocallyAdministeredMacAddresses} onChange={handleChange} />
-                                <Checkbox label="Ignore Client Identifier" name="ignoreClientIdentifier" help="Use MAC address as identifier instead of Option 61." checked={formData.ignoreClientIdentifier} onChange={handleChange} />
+                                <Checkbox label={t('dhcp.reserved_only')} name="allowOnlyReservedLeaseAllocations" help={t('dhcp.reserved_only_help')} checked={formData.allowOnlyReservedLeaseAllocations} onChange={handleChange} />
+                                <Checkbox label={t('dhcp.block_macs')} name="blockLocallyAdministeredMacAddresses" help={t('dhcp.block_macs_help')} checked={formData.blockLocallyAdministeredMacAddresses} onChange={handleChange} />
+                                <Checkbox label={t('dhcp.ignore_client_id')} name="ignoreClientIdentifier" help={t('dhcp.ignore_client_id_help')} checked={formData.ignoreClientIdentifier} onChange={handleChange} />
                             </div>
                         )}
                     </form>
@@ -203,11 +205,11 @@ export default function TechnitiumScopeModal({ isOpen, onClose, onSave, existing
 
                 <div className="p-6 border-t border-gray-800 flex justify-end gap-3 bg-gray-900/50 rounded-b-xl">
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button onClick={handleSubmit} className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium flex items-center gap-2 transition-colors shadow-lg shadow-blue-900/20">
                         <Save size={18} />
-                        {existingScope ? 'Save Changes' : 'Create Scope'}
+                        {existingScope ? t('common.save_changes') : t('dhcp.create_scope')}
                     </button>
                 </div>
             </div>

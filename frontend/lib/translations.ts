@@ -333,6 +333,88 @@ export type TranslationKeys =
     | 'zones.failed_create'
     | 'zones.failed_delete'
     | 'zones.technitium_docker'
+    | 'zones.technitium_docker'
+    // DHCP
+    | 'dhcp.title'
+    | 'dhcp.subtitle'
+    | 'dhcp.technitium_leases'
+    | 'dhcp.adguard_dhcp'
+    | 'dhcp.opnsense_discovery'
+    | 'dhcp.create_scope'
+    | 'dhcp.static_lease'
+    | 'dhcp.ip_range'
+    | 'dhcp.gateway'
+    | 'dhcp.mask'
+    | 'dhcp.dns_servers'
+    | 'dhcp.lease_time'
+    | 'dhcp.active_leases'
+    | 'dhcp.available'
+    | 'dhcp.hostname'
+    | 'dhcp.ip'
+    | 'dhcp.mac'
+    | 'dhcp.type'
+    | 'dhcp.expires'
+    | 'dhcp.actions'
+    | 'dhcp.unknown'
+    | 'dhcp.no_leases'
+    | 'dhcp.opnsense_no_leases'
+    | 'dhcp.opnsense_not_configured'
+    | 'dhcp.add_static'
+    | 'dhcp.scope_name'
+    | 'dhcp.start_ip'
+    | 'dhcp.end_ip'
+    | 'dhcp.description'
+    | 'dhcp.enable_scope'
+    | 'dhcp.disable_scope'
+    | 'dhcp.delete_scope'
+    | 'dhcp.scope_modal_title_create'
+    | 'dhcp.scope_modal_title_edit'
+    | 'dhcp.tab_general'
+    | 'dhcp.tab_dns'
+    | 'dhcp.tab_network'
+    | 'dhcp.tab_advanced'
+    | 'dhcp.ping_check'
+    | 'dhcp.enable_ping_check'
+    | 'dhcp.timeout'
+    | 'dhcp.retries'
+    | 'dhcp.domain_name'
+    | 'dhcp.dns_updates'
+    | 'dhcp.enable_dns_updates'
+    | 'dhcp.overwrite_records'
+    | 'dhcp.ntp_servers'
+    | 'dhcp.boot_file'
+    | 'dhcp.next_server'
+    | 'dhcp.reserved_only'
+    | 'dhcp.block_macs'
+    | 'dhcp.ignore_client_id'
+    | 'dhcp.delete_scope_confirm'
+    | 'dhcp.delete_lease_confirm'
+    | 'dhcp.offer_delay'
+    | 'dhcp.custom_dns'
+    | 'dhcp.create_first_scope'
+    | 'dhcp.create_first_scope_desc'
+    | 'dhcp.adguard_status'
+    | 'dhcp.server_disabled'
+    | 'dhcp.enable_dhcp_desc'
+    | 'dhcp.sync_dns'
+    | 'dhcp.no_description'
+    | 'dhcp.scope_name_placeholder'
+    | 'dhcp.scope_name_help'
+    | 'dhcp.lease_time_help'
+    | 'dhcp.offer_delay_help'
+    | 'dhcp.ping_check_help'
+    | 'dhcp.domain_name_help'
+    | 'dhcp.dns_updates_help'
+    | 'dhcp.overwrite_records_help'
+    | 'dhcp.dns_servers_help'
+    | 'dhcp.dns_servers_placeholder'
+    | 'dhcp.dns_servers_input_help'
+    | 'dhcp.ntp_servers_help'
+    | 'dhcp.boot_file_help'
+    | 'dhcp.next_server_help'
+    | 'dhcp.reserved_only_help'
+    | 'dhcp.block_macs_help'
+    | 'dhcp.ignore_client_id_help'
     // Common
     | 'common.save_changes'
     | 'common.error'
@@ -341,7 +423,8 @@ export type TranslationKeys =
     | 'common.save'
     | 'common.delete'
     | 'common.retry'
-    | 'common.loading';
+    | 'common.loading'
+    | 'common.optional';
 
 export const translations: Record<Language, Record<string, string>> = {
     en: {
@@ -540,6 +623,88 @@ export const translations: Record<Language, Record<string, string>> = {
         'services.filter_services': 'Filter services...',
         'services.no_services_found': 'No services found for',
 
+        // DHCP
+        'dhcp.title': 'DHCP Server',
+        'dhcp.subtitle': 'Manage network address assignments and leases.',
+        'dhcp.technitium_leases': 'Technitium Leases',
+        'dhcp.adguard_dhcp': 'AdGuard DHCP',
+        'dhcp.opnsense_discovery': 'OPNsense Discovery',
+        'dhcp.create_scope': 'Create Scope',
+        'dhcp.static_lease': 'Static Lease',
+        'dhcp.ip_range': 'IP Range',
+        'dhcp.gateway': 'Gateway',
+        'dhcp.mask': 'Subnet Mask',
+        'dhcp.dns_servers': 'DNS Servers',
+        'dhcp.lease_time': 'Lease Time',
+        'dhcp.active_leases': 'Active Leases',
+        'dhcp.available': 'Available',
+        'dhcp.hostname': 'Hostname',
+        'dhcp.ip': 'IP Address',
+        'dhcp.mac': 'MAC Address',
+        'dhcp.type': 'Type',
+        'dhcp.expires': 'Expires',
+        'dhcp.actions': 'Actions',
+        'dhcp.unknown': 'Unknown',
+        'dhcp.no_leases': 'No leases found matching your search.',
+        'dhcp.opnsense_no_leases': 'No leases found in OPNsense.',
+        'dhcp.opnsense_not_configured': 'OPNsense is not configured in Settings.',
+        'dhcp.add_static': 'Add Static Lease',
+        'dhcp.scope_name': 'Scope Name',
+        'dhcp.start_ip': 'Starting Address',
+        'dhcp.end_ip': 'Ending Address',
+        'dhcp.description': 'Description',
+        'dhcp.enable_scope': 'Enable Scope',
+        'dhcp.disable_scope': 'Disable Scope',
+        'dhcp.delete_scope': 'Delete Scope',
+        'dhcp.scope_modal_title_create': 'Create New DHCP Scope',
+        'dhcp.scope_modal_title_edit': 'Edit Scope: {0}',
+        'dhcp.tab_general': 'General',
+        'dhcp.tab_dns': 'DNS & Domain',
+        'dhcp.tab_network': 'Network & Boot',
+        'dhcp.tab_advanced': 'Advanced',
+        'dhcp.ping_check': 'Ping Check',
+        'dhcp.enable_ping_check': 'Enable Ping Check',
+        'dhcp.timeout': 'Timeout (ms)',
+        'dhcp.retries': 'Retries',
+        'dhcp.domain_name': 'Domain Name',
+        'dhcp.dns_updates': 'DNS Updates',
+        'dhcp.enable_dns_updates': 'Enable DNS Updates',
+        'dhcp.overwrite_records': 'Overwrite Existing A Records',
+        'dhcp.ntp_servers': 'NTP Servers',
+        'dhcp.boot_file': 'Boot File Name',
+        'dhcp.next_server': 'Next Server (TFTP)',
+        'dhcp.reserved_only': 'Allow Only Reserved Leases',
+        'dhcp.block_macs': 'Block Locally Administered MACs',
+        'dhcp.ignore_client_id': 'Ignore Client Identifier',
+        'dhcp.delete_scope_confirm': 'Are you sure you want to delete scope "{0}"?',
+        'dhcp.delete_lease_confirm': 'Remove static lease for {0}?',
+        'dhcp.offer_delay': 'Offer Delay (ms)',
+        'dhcp.custom_dns': 'Custom DNS Server IPs',
+        'dhcp.create_first_scope': 'Create First Scope',
+        'dhcp.create_first_scope_desc': 'Define a subnet range to start serving IP addresses.',
+        'dhcp.adguard_status': 'AdGuard DHCP Status',
+        'dhcp.server_disabled': 'Server is disabled',
+        'dhcp.enable_dhcp_desc': 'The DHCP server must be enabled for AdGuard to manage your network addresses.',
+        'dhcp.sync_dns': 'Sync to Technitium DNS',
+        'dhcp.no_description': 'No description',
+        'dhcp.scope_name_placeholder': "Currently 'Default' is standard",
+        'dhcp.scope_name_help': 'Unique name for this scope.',
+        'dhcp.lease_time_help': '86400 = 1 day',
+        'dhcp.offer_delay_help': 'Delay before sending DHCPOFFER.',
+        'dhcp.ping_check_help': 'Check if IP is in use before assigning.',
+        'dhcp.domain_name_help': 'Domain name assigned to clients (Option 15).',
+        'dhcp.dns_updates_help': 'Automatically update Forward/Reverse DNS entries.',
+        'dhcp.overwrite_records_help': 'Allow overwriting existing DNS A records.',
+        'dhcp.dns_servers_help': "Leave empty to use this servers own IP address.",
+        'dhcp.dns_servers_placeholder': 'e.g. 1.1.1.1 (comma separated)',
+        'dhcp.dns_servers_input_help': 'Option 6',
+        'dhcp.ntp_servers_help': 'Option 42',
+        'dhcp.boot_file_help': 'Option 67',
+        'dhcp.next_server_help': 'Option 66 / siaddr',
+        'dhcp.reserved_only_help': 'Block dynamic allocation for unknown clients.',
+        'dhcp.block_macs_help': 'Reject randomized MAC addresses.',
+        'dhcp.ignore_client_id_help': 'Use MAC address as identifier instead of Option 61.',
+
         // Clients
         'clients.title': 'Client Management',
         'clients.subtitle': 'Configure DNS policies and protection settings per device.',
@@ -686,13 +851,14 @@ export const translations: Record<Language, Record<string, string>> = {
 
         // Common
         'common.save_changes': 'Save Changes',
-        'common.error': 'Error',
+        'common.error': 'An error occurred. Please try again.',
         'common.cancel': 'Cancel',
         'common.add': 'Add',
         'common.save': 'Save',
         'common.delete': 'Delete',
         'common.retry': 'Retry',
         'common.loading': 'Loading...',
+        'common.optional': 'Optional',
     },
     de: {
         'app.title': 'UnifiedDNS',
@@ -890,6 +1056,88 @@ export const translations: Record<Language, Record<string, string>> = {
         'services.filter_services': 'Dienste filtern...',
         'services.no_services_found': 'Keine Dienste gefunden für',
 
+        // DHCP
+        'dhcp.title': 'DHCP-Server',
+        'dhcp.subtitle': 'Verwalten Sie Netzwerkadresszuweisungen und Leases.',
+        'dhcp.technitium_leases': 'Technitium Leases',
+        'dhcp.adguard_dhcp': 'AdGuard DHCP',
+        'dhcp.opnsense_discovery': 'OPNsense Erkennung',
+        'dhcp.create_scope': 'Bereich erstellen',
+        'dhcp.static_lease': 'Statische Lease',
+        'dhcp.ip_range': 'IP-Bereich',
+        'dhcp.gateway': 'Gateway',
+        'dhcp.mask': 'Subnetzmaske',
+        'dhcp.dns_servers': 'DNS-Server',
+        'dhcp.lease_time': 'Lease-Zeit',
+        'dhcp.active_leases': 'Aktive Leases',
+        'dhcp.available': 'Verfügbar',
+        'dhcp.hostname': 'Hostname',
+        'dhcp.ip': 'IP-Adresse',
+        'dhcp.mac': 'MAC-Adresse',
+        'dhcp.type': 'Typ',
+        'dhcp.expires': 'Läuft ab',
+        'dhcp.actions': 'Aktionen',
+        'dhcp.unknown': 'Unbekannt',
+        'dhcp.no_leases': 'Keine Leases gefunden.',
+        'dhcp.opnsense_no_leases': 'Keine Leases in OPNsense gefunden.',
+        'dhcp.opnsense_not_configured': 'OPNsense ist in den Einstellungen nicht konfiguriert.',
+        'dhcp.add_static': 'Statische Lease hinzufügen',
+        'dhcp.scope_name': 'Bereichsname',
+        'dhcp.start_ip': 'Start-Adresse',
+        'dhcp.end_ip': 'End-Adresse',
+        'dhcp.description': 'Beschreibung',
+        'dhcp.enable_scope': 'Bereich aktivieren',
+        'dhcp.disable_scope': 'Bereich deaktivieren',
+        'dhcp.delete_scope': 'Bereich löschen',
+        'dhcp.scope_modal_title_create': 'Neuen DHCP-Bereich erstellen',
+        'dhcp.scope_modal_title_edit': 'Bereich bearbeiten: {0}',
+        'dhcp.tab_general': 'Allgemein',
+        'dhcp.tab_dns': 'DNS & Domain',
+        'dhcp.tab_network': 'Netzwerk & Boot',
+        'dhcp.tab_advanced': 'Erweitert',
+        'dhcp.ping_check': 'Ping-Check',
+        'dhcp.enable_ping_check': 'Ping-Check aktivieren',
+        'dhcp.timeout': 'Timeout (ms)',
+        'dhcp.retries': 'Wiederholungen',
+        'dhcp.domain_name': 'Domain-Name',
+        'dhcp.dns_updates': 'DNS-Updates',
+        'dhcp.enable_dns_updates': 'DNS-Updates aktivieren',
+        'dhcp.overwrite_records': 'Vorhandene A-Records überschreiben',
+        'dhcp.ntp_servers': 'NTP-Server',
+        'dhcp.boot_file': 'Boot-Dateiname',
+        'dhcp.next_server': 'Nächster Server (TFTP)',
+        'dhcp.reserved_only': 'Nur reservierte Leases zulassen',
+        'dhcp.block_macs': 'Lokal verwaltete MACs blockieren',
+        'dhcp.ignore_client_id': 'Client-Identifier ignorieren',
+        'dhcp.delete_scope_confirm': 'Möchten Sie den Bereich "{0}" wirklich löschen?',
+        'dhcp.delete_lease_confirm': 'Statische Lease für {0} entfernen?',
+        'dhcp.offer_delay': 'Angebotsverzögerung (ms)',
+        'dhcp.custom_dns': 'Benutzerdefinierte DNS-Server-IPs',
+        'dhcp.create_first_scope': 'Ersten Bereich erstellen',
+        'dhcp.create_first_scope_desc': 'Definieren Sie einen Subnetzbereich, um IP-Adressen bereitzustellen.',
+        'dhcp.adguard_status': 'AdGuard DHCP Status',
+        'dhcp.server_disabled': 'Server ist deaktiviert',
+        'dhcp.enable_dhcp_desc': 'Der DHCP-Server muss aktiviert sein, damit AdGuard Ihre Netzwerkadressen verwalten kann.',
+        'dhcp.sync_dns': 'Sync zu Technitium DNS',
+        'dhcp.no_description': 'Keine Beschreibung',
+        'dhcp.scope_name_placeholder': "Aktuell ist 'Default' Standard",
+        'dhcp.scope_name_help': 'Eindeutiger Name für diesen Bereich.',
+        'dhcp.lease_time_help': '86400 = 1 Tag',
+        'dhcp.offer_delay_help': 'Verzögerung vor dem Senden von DHCPOFFER.',
+        'dhcp.ping_check_help': 'Prüfen, ob IP verwendet wird, bevor zugewiesen wird.',
+        'dhcp.domain_name_help': 'Domain-Name, der Clients zugewiesen wird (Option 15).',
+        'dhcp.dns_updates_help': 'Forward/Reverse DNS-Einträge automatisch aktualisieren.',
+        'dhcp.overwrite_records_help': 'Überschreiben vorhandener DNS A-Einträge zulassen.',
+        'dhcp.dns_servers_help': "Leer lassen, um die eigene IP-Adresse dieses Servers zu verwenden.",
+        'dhcp.dns_servers_placeholder': 'z.B. 1.1.1.1 (kommagetrennt)',
+        'dhcp.dns_servers_input_help': 'Option 6',
+        'dhcp.ntp_servers_help': 'Option 42',
+        'dhcp.boot_file_help': 'Option 67',
+        'dhcp.next_server_help': 'Option 66 / siaddr',
+        'dhcp.reserved_only_help': 'Dynamische Zuweisung für unbekannte Clients blockieren.',
+        'dhcp.block_macs_help': 'Zufällige MAC-Adressen ablehnen.',
+        'dhcp.ignore_client_id_help': 'MAC-Adresse als Identifikator anstelle von Option 61 verwenden.',
+
         // Clients
         'clients.title': 'Client-Verwaltung',
         'clients.subtitle': 'Konfigurieren Sie DNS-Richtlinien und Schutzeinstellungen pro Gerät.',
@@ -1042,6 +1290,7 @@ export const translations: Record<Language, Record<string, string>> = {
         'common.save': 'Save',
         'common.delete': 'Delete',
         'common.retry': 'Retry',
-        'common.loading': 'Loading...',
+        'common.loading': 'Laden...',
+        'common.optional': 'Optional',
     },
 };
