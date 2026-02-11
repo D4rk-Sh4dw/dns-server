@@ -39,7 +39,33 @@ export type TranslationKeys =
     | 'settings.import_config'
     | 'settings.import_desc'
     | 'settings.warning'
-    | 'settings.select_file';
+    | 'settings.select_file'
+    | 'dashboard.title'
+    | 'dashboard.subtitle'
+    | 'dashboard.total_queries'
+    | 'dashboard.threats_blocked'
+    | 'dashboard.protection'
+    | 'dashboard.performance'
+    | 'dashboard.last_24h'
+    | 'dashboard.blocked'
+    | 'dashboard.active'
+    | 'dashboard.disabled'
+    | 'dashboard.status_ok'
+    | 'dashboard.status_error'
+    | 'dashboard.avg_time'
+    | 'dashboard.dns_traffic'
+    | 'dashboard.queries_per_hour'
+    | 'dashboard.top_queried'
+    | 'dashboard.top_blocked'
+    | 'dashboard.top_clients'
+    | 'dashboard.infra_status'
+    | 'dashboard.operational'
+    | 'dashboard.disconnected'
+    | 'dashboard.primary_dns'
+    | 'dashboard.recursive_resolver'
+    | 'dashboard.dashboard_api'
+    | 'dashboard.no_records'
+    | 'dashboard.unknown';
 
 export const translations: Record<Language, Record<string, string>> = {
     en: {
@@ -82,6 +108,33 @@ export const translations: Record<Language, Record<string, string>> = {
         'settings.import_desc': 'Restore configuration from a previous backup file.',
         'settings.warning': 'Warning: This will overwrite current settings and restart services.',
         'settings.select_file': 'Select Backup File',
+        // Dashboard
+        'dashboard.title': 'Network Overview',
+        'dashboard.subtitle': 'Real-time status of your unified DNS infrastructure.',
+        'dashboard.total_queries': 'Total Queries',
+        'dashboard.threats_blocked': 'Threats Blocked',
+        'dashboard.protection': 'Protection',
+        'dashboard.performance': 'Performance',
+        'dashboard.last_24h': 'Last 24h',
+        'dashboard.blocked': 'blocked',
+        'dashboard.active': 'Active',
+        'dashboard.disabled': 'Disabled',
+        'dashboard.status_ok': 'All systems go',
+        'dashboard.status_error': 'Action required',
+        'dashboard.avg_time': 'Avg processing time',
+        'dashboard.dns_traffic': 'DNS Traffic (24h)',
+        'dashboard.queries_per_hour': 'Queries per hour',
+        'dashboard.top_queried': 'Top Queried Domains',
+        'dashboard.top_blocked': 'Top Blocked Domains',
+        'dashboard.top_clients': 'Top Clients',
+        'dashboard.infra_status': 'Infrastructure Status',
+        'dashboard.operational': 'Operational',
+        'dashboard.disconnected': 'Disconnected',
+        'dashboard.primary_dns': 'Primary DNS / Filter',
+        'dashboard.recursive_resolver': 'Recursive Resolver',
+        'dashboard.dashboard_api': 'Dashboard API',
+        'dashboard.no_records': 'No records found',
+        'dashboard.unknown': 'Unknown',
     },
     de: {
         'app.title': 'UnifiedDNS',
@@ -123,5 +176,32 @@ export const translations: Record<Language, Record<string, string>> = {
         'settings.import_desc': 'Stellen Sie die Konfiguration aus einer vorherigen Backup-Datei wieder her.',
         'settings.warning': 'Warnung: Dies überschreibt die aktuellen Einstellungen und startet die Dienste neu.',
         'settings.select_file': 'Backup-Datei auswählen',
+        // Dashboard
+        'dashboard.title': 'Netzwerk-Übersicht',
+        'dashboard.subtitle': 'Echtzeit-Status Ihrer DNS-Infrastruktur.',
+        'dashboard.total_queries': 'Gesamtanfragen',
+        'dashboard.threats_blocked': 'Bedrohungen blockiert',
+        'dashboard.protection': 'Schutz',
+        'dashboard.performance': 'Leistung',
+        'dashboard.last_24h': 'Letzte 24h',
+        'dashboard.blocked': 'blockiert',
+        'dashboard.active': 'Aktiv',
+        'dashboard.disabled': 'Deaktiviert',
+        'dashboard.status_ok': 'Alles in Ordnung',
+        'dashboard.status_error': 'Handlung erforderlich',
+        'dashboard.avg_time': 'Durchschn. Verarbeitungszeit',
+        'dashboard.dns_traffic': 'DNS-Traffic (24h)',
+        'dashboard.queries_per_hour': 'Anfragen pro Stunde',
+        'dashboard.top_queried': 'Meistgefragte Domains',
+        'dashboard.top_blocked': 'Blockierte Domains',
+        'dashboard.top_clients': 'Top Clients',
+        'dashboard.infra_status': 'Infrastruktur-Status',
+        'dashboard.operational': 'Betriebsbereit',
+        'dashboard.disconnected': 'Getrennt',
+        'dashboard.primary_dns': 'Primärer DNS / Filter',
+        'dashboard.recursive_resolver': 'Rekursiver Resolver',
+        'dashboard.dashboard_api': 'Dashboard API',
+        'dashboard.no_records': 'Keine Einträge gefunden',
+        'dashboard.unknown': 'Unbekannt',
     },
 };

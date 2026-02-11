@@ -10,6 +10,7 @@ import {
   ArrowDownRight,
   RefreshCw
 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n-context';
 
 interface AdGuardStats {
   num_dns_queries: number;
@@ -44,6 +45,8 @@ export default function Home() {
     loading: true,
     error: null,
   });
+
+  const { t } = useTranslation();
 
   const fetchData = async () => {
     setData(prev => ({ ...prev, loading: true }));
@@ -86,8 +89,8 @@ export default function Home() {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Network Overview</h1>
-          <p className="text-gray-400">Real-time status of your unified DNS infrastructure.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">{t('dashboard.title')}</h1>
+          <p className="text-gray-400">{t('dashboard.subtitle')}</p>
         </div>
         <button
           onClick={fetchData}
@@ -106,33 +109,33 @@ export default function Home() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Total Queries"
+          title={t('dashboard.total_queries')}
           value={stats?.num_dns_queries?.toLocaleString() || '—'}
-          trend="Last 24h"
+          trend={t('dashboard.last_24h')}
           icon={Activity}
           loading={data.loading}
         />
         <StatCard
-          title="Threats Blocked"
+          title={t('dashboard.threats_blocked')}
           value={stats?.num_blocked_filtering?.toLocaleString() || '—'}
-          trend={stats && stats.num_dns_queries > 0 ? `${((stats.num_blocked_filtering / stats.num_dns_queries) * 100).toFixed(1)}% blocked` : '—'}
+          trend={stats && stats.num_dns_queries > 0 ? `${((stats.num_blocked_filtering / stats.num_dns_queries) * 100).toFixed(1)}% ${t('dashboard.blocked')}` : '—'}
           icon={Shield}
           trendUp={true}
           color="text-red-400"
           loading={data.loading}
         />
         <StatCard
-          title="Protection"
-          value={data.adguard?.status?.protection_enabled ? 'Active' : 'Disabled'}
-          trend={data.adguard?.status?.protection_enabled ? 'All systems go' : 'Action required'}
+          title={t('dashboard.protection')}
+          value={data.adguard?.status?.protection_enabled ? t('dashboard.active') : t('dashboard.disabled')}
+          trend={data.adguard?.status?.protection_enabled ? t('dashboard.status_ok') : t('dashboard.status_error')}
           icon={Globe}
           color={data.adguard?.status?.protection_enabled ? 'text-green-400' : 'text-red-400'}
           loading={data.loading}
         />
         <StatCard
-          title="Performance"
+          title={t('dashboard.performance')}
           value={stats ? `${(stats.avg_processing_time * 1000).toFixed(1)} ms` : '—'}
-          trend="Avg processing time"
+          trend={t('dashboard.avg_time')}
           icon={Wifi}
           color="text-blue-400"
           loading={data.loading}
@@ -145,8 +148,8 @@ export default function Home() {
         <div className="xl:col-span-2 space-y-6">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-medium text-white">DNS Traffic (24h)</h3>
-              <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">Queries per hour</span>
+              <h3 className="text-lg font-medium text-white">{t('dashboard.dns_traffic')}</h3>
+              <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">{t('dashboard.queries_per_hour')}</span>
             </div>
             <div className="h-72">
               <QueryChart data={stats?.dns_queries} />
@@ -156,13 +159,13 @@ export default function Home() {
           {/* Top Domains Split */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TopTable
-              title="Top Queried Domains"
+              title={t('dashboard.top_queried')}
               data={stats?.top_queried_domains}
               icon={Globe}
               color="text-blue-400"
             />
             <TopTable
-              title="Top Blocked Domains"
+              title={t('dashboard.top_blocked')}
               data={stats?.top_blocked_domains}
               icon={Shield}
               color="text-red-400"
@@ -173,30 +176,35 @@ export default function Home() {
         {/* Sidebar Info */}
         <div className="space-y-6">
           <TopTable
-            title="Top Clients"
+            title={t('dashboard.top_clients')}
             data={stats?.top_clients}
             icon={Activity}
             color="text-purple-400"
           />
 
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h3 className="text-lg font-medium text-white mb-4">Infrastructure Status</h3>
+            <h3 className="text-lg font-medium text-white mb-4">{t('dashboard.infra_status')}</h3>
             <div className="space-y-4">
-              <ServiceStatus
-                name="AdGuard Home"
-                status={data.adguard?.status ? 'Operational' : 'Disconnected'}
-                version={data.adguard?.status?.version || 'Primary DNS / Filter'}
-              />
-              <ServiceStatus
-                name="Technitium DNS"
-                status={data.technitium?.summary ? 'Operational' : 'Disconnected'}
-                version={data.technitium?.summary?.version || 'Recursive Resolver'}
-              />
-              <ServiceStatus
-                name="Dashboard API"
-                status={data.apiStatus}
-                version="v1.1.0 (Next.js)"
-              />
+              <div className="space-y-4">
+                <ServiceStatus
+                  name="AdGuard Home"
+                  status={data.adguard?.status ? t('dashboard.operational') : t('dashboard.disconnected')}
+                  isOperational={!!data.adguard?.status}
+                  version={data.adguard?.status?.version || t('dashboard.primary_dns')}
+                />
+                <ServiceStatus
+                  name="Technitium DNS"
+                  status={data.technitium?.summary ? t('dashboard.operational') : t('dashboard.disconnected')}
+                  isOperational={!!data.technitium?.summary}
+                  version={data.technitium?.summary?.version || t('dashboard.recursive_resolver')}
+                />
+                <ServiceStatus
+                  name="Dashboard API"
+                  status={data.apiStatus === 'Operational' ? t('dashboard.operational') : data.apiStatus}
+                  isOperational={data.apiStatus === 'Operational'}
+                  version={`v1.1.0 (Next.js)`}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -206,11 +214,13 @@ export default function Home() {
 }
 
 function TopTable({ title, data, icon: Icon, color }: { title: string, data?: any[], icon: any, color: string }) {
+  const { t } = useTranslation();
+
   if (!data || data.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
         <h3 className="text-lg font-medium text-white mb-4">{title}</h3>
-        <div className="flex-1 flex items-center justify-center text-gray-500 text-sm italic">No records found</div>
+        <div className="flex-1 flex items-center justify-center text-gray-500 text-sm italic">{t('dashboard.no_records')}</div>
       </div>
     );
   }
@@ -220,7 +230,7 @@ function TopTable({ title, data, icon: Icon, color }: { title: string, data?: an
   // 2. [{ "domain": "domain.com", "count": 100 }]
   // 3. [{ "host": "1.2.3.4", "count": 100 }] (for clients)
   const normalizedData = data.slice(0, 10).map(item => {
-    if (typeof item !== 'object' || item === null) return { key: 'Unknown', value: 0 };
+    if (typeof item !== 'object' || item === null) return { key: t('dashboard.unknown'), value: 0 };
 
     // Check for nested properties (Format 2 and 3)
     if ('domain' in item && 'count' in item) {
@@ -271,10 +281,12 @@ function TopTable({ title, data, icon: Icon, color }: { title: string, data?: an
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function QueryChart({ data }: { data?: any[] }) {
+  const { t } = useTranslation();
+
   if (!data || data.length === 0) {
     return (
       <div className="h-full flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-800 rounded-lg">
-        No data available
+        {t('dashboard.no_records')}
       </div>
     );
   }
@@ -350,8 +362,7 @@ function StatCard({ title, value, trend, icon: Icon, trendUp, color = "text-whit
   );
 }
 
-function ServiceStatus({ name, status, version }: any) {
-  const isOperational = status === 'Operational';
+function ServiceStatus({ name, status, version, isOperational }: any) {
   return (
     <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
       <div className="flex items-center gap-3">
