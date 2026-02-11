@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Plus, RefreshCw, ChevronRight, Trash2, Check, AlertCircle, Server, Globe, Search } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from '@/lib/i18n-context';
 
 interface Zone {
     name: string;
@@ -59,6 +60,7 @@ const PROVIDERS: Record<string, { name: string; protocols: Record<string, string
 };
 
 export default function ZonesPage() {
+    const { t } = useTranslation();
     const [zones, setZones] = useState<Zone[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -105,11 +107,11 @@ export default function ZonesPage() {
     const handleCreateZone = async () => {
         if (!newZone.name) return;
         if (newZone.isActiveDirectory && !newZone.dcServers) {
-            setError('Please enter at least one Domain Controller IP');
+            setError(t('zones.enter_dc_ip'));
             return;
         }
         if (newZone.type === 'ConditionalForwarder' && !newZone.forwarder) {
-            setError('Please enter a Forwarder IP for Conditional Forwarder zone');
+            setError(t('zones.enter_forwarder_ip'));
             return;
         }
 
@@ -138,7 +140,7 @@ export default function ZonesPage() {
             setShowCreateModal(false);
             await fetchZones();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create zone');
+            setError(err instanceof Error ? err.message : t('zones.failed_create'));
         }
         setCreating(false);
     };
@@ -146,8 +148,8 @@ export default function ZonesPage() {
     const handleDeleteZone = async (zone: Zone) => {
         const isAD = zone.source === 'active-directory';
         const message = isAD
-            ? `Delete AD forwarding for "${zone.name}"?\n\nThis will remove the forwarding rule from AdGuard.`
-            : `Delete zone "${zone.name}"?\n\nThis will:\n• Delete the zone from Technitium\n• Remove the forwarding rule from AdGuard`;
+            ? t('zones.delete_ad_confirm', [zone.name])
+            : t('zones.delete_zone_confirm', [zone.name]);
 
         if (!confirm(message)) return;
 
@@ -164,7 +166,7 @@ export default function ZonesPage() {
 
             await fetchZones();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to delete zone');
+            setError(err instanceof Error ? err.message : t('zones.failed_delete'));
         }
     };
 
@@ -172,9 +174,9 @@ export default function ZonesPage() {
         <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">DNS Zones</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('zones.title')}</h1>
                     <p className="text-gray-400 text-sm md:text-base">
-                        Manage DNS zones and Active Directory domain forwarding.
+                        {t('zones.subtitle')}
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -186,37 +188,37 @@ export default function ZonesPage() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search zones, IPs..."
+                            placeholder={t('zones.search_placeholder')}
                             className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 transition-all w-full sm:w-64"
                         />
                     </div>
                     <button
                         onClick={async () => {
-                            if (!confirm('Are you sure you want to clear the AdGuard DNS cache? This can help resolve DNS issues but may temporarily slow down initial queries.')) return;
+                            if (!confirm(t('zones.cache_clear_confirm'))) return;
 
                             setLoading(true);
                             try {
                                 const res = await fetch('/api/adguard/cache/clear', { method: 'POST' });
                                 if (!res.ok) throw new Error('Failed to clear cache');
-                                alert('DNS Cache cleared successfully!');
+                                alert(t('zones.cache_cleared'));
                             } catch (e) {
-                                alert('Error clearing cache');
+                                alert(t('zones.cache_clear_error'));
                             }
                             setLoading(false);
                             // Refresh zones data as well
                             fetchZones();
                         }}
                         className="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 hover:text-yellow-400 border border-yellow-500/20 transition-colors flex justify-center items-center gap-2 px-3"
-                        title="Reset AdGuard DNS Cache - Helps with DNS resolution issues"
+                        title={t('zones.reset_cache')}
                     >
                         <RefreshCw size={18} />
-                        <span className="hidden sm:inline text-sm font-medium">Reset Cache</span>
+                        <span className="hidden sm:inline text-sm font-medium">{t('zones.reset_cache')}</span>
                     </button>
 
                     <button
                         onClick={fetchZones}
                         className="flex-1 sm:flex-none p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
-                        title="Refresh Zones"
+                        title={t('zones.refresh')}
                     >
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
@@ -225,7 +227,7 @@ export default function ZonesPage() {
                         className="flex-[3] sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
                     >
                         <Plus size={18} />
-                        Add Zone
+                        {t('zones.add_zone')}
                     </button>
                 </div>
             </div>
@@ -234,7 +236,7 @@ export default function ZonesPage() {
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3">
                     <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
                     <div>
-                        <p className="text-red-400 font-medium">Error</p>
+                        <p className="text-red-400 font-medium">{t('zones.error')}</p>
                         <p className="text-red-400/80 text-sm">{error}</p>
                     </div>
                 </div>
@@ -244,11 +246,11 @@ export default function ZonesPage() {
                 <table className="w-full text-left">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-950/50">
                         <tr>
-                            <th className="px-6 py-4">Zone / Domain</th>
-                            <th className="px-6 py-4">Type</th>
-                            <th className="px-6 py-4">Target</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
+                            <th className="px-6 py-4">{t('zones.zone_domain')}</th>
+                            <th className="px-6 py-4">{t('zones.type')}</th>
+                            <th className="px-6 py-4">{t('zones.target')}</th>
+                            <th className="px-6 py-4">{t('zones.status')}</th>
+                            <th className="px-6 py-4 text-right">{t('zones.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
@@ -278,13 +280,13 @@ export default function ZonesPage() {
                                             ? 'text-yellow-400 bg-yellow-400/10'
                                             : 'text-blue-400 bg-blue-400/10'
                                         }`}>
-                                        {zone.source === 'active-directory' ? 'Active Directory' : zone.name.endsWith('.in-addr.arpa') ? 'Reverse DNS' : zone.type || 'Primary'}
+                                        {zone.source === 'active-directory' ? t('zones.active_directory') : zone.name.endsWith('.in-addr.arpa') ? t('zones.reverse_dns') : zone.type || t('zones.primary')}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-gray-400 text-sm font-mono">
                                     {zone.source === 'active-directory'
                                         ? zone.dcServers
-                                        : 'Technitium (docker)'}
+                                        : t('zones.technitium_docker')}
                                 </td>
                                 <td className="px-6 py-4">
                                     {/* Determine status based on zone type */}
@@ -292,19 +294,19 @@ export default function ZonesPage() {
                                         // Internal Technitium zones (localhost, reverse zones, etc.)
                                         <span className="flex items-center gap-2 text-xs font-medium text-gray-400">
                                             <div className="w-2 h-2 rounded-full bg-gray-500" />
-                                            Internal
+                                            {t('zones.internal')}
                                         </span>
                                     ) : zone.forwardingEnabled ? (
                                         // Custom zones with forwarding active
                                         <span className="flex items-center gap-2 text-xs font-medium text-green-400">
                                             <Check size={14} />
-                                            Active
+                                            {t('zones.active')}
                                         </span>
                                     ) : (
                                         // Custom zones without forwarding
                                         <span className="flex items-center gap-2 text-xs font-medium text-yellow-400">
                                             <AlertCircle size={14} />
-                                            Pending
+                                            {t('zones.pending')}
                                         </span>
                                     )}
                                 </td>
@@ -321,14 +323,14 @@ export default function ZonesPage() {
                         {!filteredZones.length && !loading && (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                    {searchQuery ? 'No zones match your search.' : 'No zones configured. Click "Add Zone" to get started.'}
+                                    {searchQuery ? t('zones.no_zones_match') : t('zones.no_zones_configured')}
                                 </td>
                             </tr>
                         )}
                         {loading && (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                    Loading zones...
+                                    {t('zones.loading')}
                                 </td>
                             </tr>
                         )}
@@ -340,7 +342,7 @@ export default function ZonesPage() {
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-lg">
-                        <h3 className="text-lg font-medium text-white mb-4">Add DNS Zone</h3>
+                        <h3 className="text-lg font-medium text-white mb-4">{t('zones.add_dns_zone')}</h3>
 
                         {/* Zone Type Toggle */}
                         <div className="flex gap-2 mb-6">
@@ -354,10 +356,10 @@ export default function ZonesPage() {
                                 <Globe size={24} className={!newZone.isActiveDirectory ? 'text-blue-400' : 'text-gray-500'} />
                                 <div className="mt-2 text-left">
                                     <div className={`font-medium ${!newZone.isActiveDirectory ? 'text-white' : 'text-gray-400'}`}>
-                                        Custom Zone
+                                        {t('zones.custom_zone')}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                        Create zone in Technitium (Primary or Conditional)
+                                        {t('zones.custom_zone_desc')}
                                     </div>
                                 </div>
                             </button>
@@ -371,10 +373,10 @@ export default function ZonesPage() {
                                 <Server size={24} className={newZone.isActiveDirectory ? 'text-purple-400' : 'text-gray-500'} />
                                 <div className="mt-2 text-left">
                                     <div className={`font-medium ${newZone.isActiveDirectory ? 'text-white' : 'text-gray-400'}`}>
-                                        Active Directory
+                                        {t('zones.active_directory')}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                        Forward to existing DC DNS servers
+                                        {t('zones.ad_domain_desc')}
                                     </div>
                                 </div>
                             </button>
@@ -395,10 +397,10 @@ export default function ZonesPage() {
                                 <RefreshCw size={24} className={!newZone.isActiveDirectory && (newZone as any).isReverse ? 'text-yellow-400' : 'text-gray-500'} />
                                 <div className="mt-2 text-left">
                                     <div className={`font-medium ${!newZone.isActiveDirectory && (newZone as any).isReverse ? 'text-white' : 'text-gray-400'}`}>
-                                        Reverse DNS
+                                        {t('zones.reverse_dns')}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                        PTR Lookup Helper (in-addr.arpa)
+                                        {t('zones.reverse_dns_desc')}
                                     </div>
                                 </div>
                             </button>
@@ -407,7 +409,7 @@ export default function ZonesPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">
-                                    {newZone.isActiveDirectory ? 'AD Domain Name' : (newZone as any).isReverse ? 'Subnet (e.g. 192.168.1.0)' : 'Zone Name'}
+                                    {newZone.isActiveDirectory ? t('zones.ad_domain_name') : (newZone as any).isReverse ? t('zones.subnet') : t('zones.zone_name')}
                                 </label>
                                 <input
                                     type="text"
@@ -430,7 +432,7 @@ export default function ZonesPage() {
                                 />
                                 {(newZone as any).isReverse && (newZone as any).formattedReverse && (
                                     <p className="text-xs text-yellow-400 mt-1">
-                                        Will create zone: <strong>{(newZone as any).formattedReverse}</strong>
+                                        {t('zones.will_create_zone')} <strong>{(newZone as any).formattedReverse}</strong>
                                     </p>
                                 )}
                             </div>
@@ -438,7 +440,7 @@ export default function ZonesPage() {
                             {newZone.isActiveDirectory ? (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">
-                                        Domain Controller IPs
+                                        {t('zones.dc_ips')}
                                     </label>
                                     <input
                                         type="text"
@@ -448,12 +450,12 @@ export default function ZonesPage() {
                                         placeholder="e.g. 10.0.0.10, 10.0.0.11"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Comma-separated list of DC IP addresses with DNS role
+                                        {t('zones.dc_ips_desc')}
                                     </p>
                                 </div>
                             ) : (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Zone Type</label>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">{t('zones.zone_type')}</label>
                                     <select
                                         value={newZone.type}
                                         onChange={(e) => setNewZone(prev => ({ ...prev, type: e.target.value }))}
@@ -471,7 +473,7 @@ export default function ZonesPage() {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">
-                                            Upstream Provider
+                                            {t('zones.upstream_provider')}
                                         </label>
                                         <select
                                             onChange={(e) => {
@@ -485,7 +487,7 @@ export default function ZonesPage() {
                                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 mb-2"
                                             value={selectedProvider}
                                         >
-                                            <option value="">Select a provider...</option>
+                                            <option value="">{t('zones.select_provider')}</option>
                                             {Object.keys(PROVIDERS).map(key => (
                                                 <option key={key} value={key}>{PROVIDERS[key].name}</option>
                                             ))}
@@ -494,7 +496,7 @@ export default function ZonesPage() {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">
-                                            Forwarder IP
+                                            {t('zones.forwarder_ip')}
                                         </label>
                                         <input
                                             type="text"
@@ -507,7 +509,7 @@ export default function ZonesPage() {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">
-                                            Protocol
+                                            {t('zones.protocol')}
                                         </label>
                                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                             {['Udp', 'Tcp', 'Tls', 'Https', 'Quic'].map(p => (
@@ -526,7 +528,7 @@ export default function ZonesPage() {
                                     </div>
 
                                     <p className="text-xs text-gray-500">
-                                        DNS server to forward queries to when records are not found locally
+                                        {t('zones.forwarder_desc')}
                                     </p>
                                 </div>
                             )}
@@ -536,13 +538,13 @@ export default function ZonesPage() {
                             <p className="text-xs text-gray-400">
                                 {newZone.isActiveDirectory ? (
                                     <>
-                                        <strong className="text-purple-400">Active Directory Mode:</strong> AdGuard will forward all
+                                        <strong className="text-purple-400">{t('zones.ad_mode_desc')}</strong> AdGuard will forward all
                                         <code className="bg-gray-700 px-1 mx-1 rounded">*.{newZone.name || 'domain'}</code>
                                         queries directly to your Domain Controllers.
                                     </>
                                 ) : (
                                     <>
-                                        <strong className="text-blue-400">Custom Zone Mode:</strong> Zone will be created in Technitium.
+                                        <strong className="text-blue-400">{t('zones.custom_mode_desc')}</strong> Zone will be created in Technitium.
                                         {newZone.type === 'ConditionalForwarder'
                                             ? ' Local records will be resolved, unknown records forwarded to ' + (newZone.forwarder || 'upstream') + '.'
                                             : ' You can add A, CNAME, TXT records manually.'}
@@ -561,7 +563,7 @@ export default function ZonesPage() {
                                 className="px-4 py-2 text-gray-400 hover:text-white"
                                 disabled={creating}
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={handleCreateZone}
@@ -574,12 +576,12 @@ export default function ZonesPage() {
                                 {creating ? (
                                     <>
                                         <RefreshCw size={18} className="animate-spin" />
-                                        Creating...
+                                        {t('zones.creating')}
                                     </>
                                 ) : (
                                     <>
                                         <Check size={18} />
-                                        {newZone.isActiveDirectory ? 'Add AD Domain' : 'Create Zone'}
+                                        {newZone.isActiveDirectory ? t('zones.add_ad_domain') : t('zones.create_zone')}
                                     </>
                                 )}
                             </button>

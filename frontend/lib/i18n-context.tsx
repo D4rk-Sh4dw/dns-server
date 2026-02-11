@@ -6,7 +6,7 @@ import { translations, Language } from './translations';
 interface I18nContextType {
     language: Language;
     setLanguage: (lang: Language) => void;
-    t: (key: string) => string;
+    t: (key: string, args?: (string | number)[]) => string;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
@@ -27,17 +27,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('app-language', lang);
     };
 
-    const t = (key: string): string => {
-        const keys = key.split('.');
-        let value: any = translations[language];
+    const t = (key: string, args?: (string | number)[]): string => {
+        let value = translations[language][key] || key;
 
-        // Simple lookup handling
-        if (value && value[key]) {
-            return value[key];
+        if (args && args.length > 0) {
+            args.forEach((arg, index) => {
+                value = value.replace(`{${index}}`, String(arg));
+            });
         }
 
-        // Fallback to key if not found
-        return key;
+        return value;
     };
 
     return (

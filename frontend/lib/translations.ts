@@ -275,6 +275,64 @@ export type TranslationKeys =
     | 'logs.value'
     | 'logs.ttl'
     | 'logs.view_json'
+    // Zones
+    | 'zones.title'
+    | 'zones.subtitle'
+    | 'zones.search_placeholder'
+    | 'zones.reset_cache'
+    | 'zones.refresh'
+    | 'zones.add_zone'
+    | 'zones.error'
+    | 'zones.zone_domain'
+    | 'zones.type'
+    | 'zones.target'
+    | 'zones.status'
+    | 'zones.actions'
+    | 'zones.active_directory'
+    | 'zones.reverse_dns'
+    | 'zones.primary'
+    | 'zones.internal'
+    | 'zones.active'
+    | 'zones.pending'
+    | 'zones.delete_zone_confirm'
+    | 'zones.delete_ad_confirm'
+    | 'zones.no_zones_match'
+    | 'zones.no_zones_configured'
+    | 'zones.loading'
+    | 'zones.add_dns_zone'
+    | 'zones.custom_zone'
+    | 'zones.custom_zone_desc'
+    | 'zones.ad_domain'
+    | 'zones.ad_domain_desc'
+    | 'zones.reverse_dns_desc'
+    | 'zones.ad_domain_name'
+    | 'zones.subnet'
+    | 'zones.zone_name'
+    | 'zones.will_create_zone'
+    | 'zones.dc_ips'
+    | 'zones.dc_ips_desc'
+    | 'zones.zone_type'
+    | 'zones.upstream_provider'
+    | 'zones.select_provider'
+    | 'zones.forwarder_ip'
+    | 'zones.protocol'
+    | 'zones.forwarder_desc'
+    | 'zones.ad_mode_desc'
+    | 'zones.custom_mode_desc'
+    | 'zones.conditional_forwarder_desc'
+    | 'zones.manual_records_desc'
+    | 'zones.forwarding_notice'
+    | 'zones.creating'
+    | 'zones.add_ad_domain'
+    | 'zones.create_zone'
+    | 'zones.cache_cleared'
+    | 'zones.cache_clear_error'
+    | 'zones.cache_clear_confirm'
+    | 'zones.enter_dc_ip'
+    | 'zones.enter_forwarder_ip'
+    | 'zones.failed_create'
+    | 'zones.failed_delete'
+    | 'zones.technitium_docker'
     // Common
     | 'common.save_changes'
     | 'common.error'
@@ -466,6 +524,65 @@ export const translations: Record<Language, Record<string, string>> = {
         'forwarding.technitium_zone': 'Technitium Zone',
         'forwarding.local': 'Local',
         'forwarding.no_zones': 'No forwarding zones configured.',
+
+        // Zones
+        'zones.title': 'DNS Zones',
+        'zones.subtitle': 'Manage DNS zones and Active Directory domain forwarding.',
+        'zones.search_placeholder': 'Search zones, IPs...',
+        'zones.reset_cache': 'Reset Cache',
+        'zones.refresh': 'Refresh Zones',
+        'zones.add_zone': 'Add Zone',
+        'zones.error': 'Error',
+        'zones.zone_domain': 'Zone / Domain',
+        'zones.type': 'Type',
+        'zones.target': 'Target',
+        'zones.status': 'Status',
+        'zones.actions': 'Actions',
+        'zones.active_directory': 'Active Directory',
+        'zones.reverse_dns': 'Reverse DNS',
+        'zones.primary': 'Primary',
+        'zones.internal': 'Internal',
+        'zones.active': 'Active',
+        'zones.pending': 'Pending',
+        'zones.delete_zone_confirm': 'Delete zone "{0}"?\n\nThis will:\n• Delete the zone from Technitium\n• Remove the forwarding rule from AdGuard',
+        'zones.delete_ad_confirm': 'Delete AD forwarding for "{0}"?\n\nThis will remove the forwarding rule from AdGuard.',
+        'zones.no_zones_match': 'No zones match your search.',
+        'zones.no_zones_configured': 'No zones configured. Click "Add Zone" to get started.',
+        'zones.loading': 'Loading zones...',
+        'zones.add_dns_zone': 'Add DNS Zone',
+        'zones.custom_zone': 'Custom Zone',
+        'zones.custom_zone_desc': 'Create zone in Technitium (Primary or Conditional)',
+        'zones.ad_domain': 'Active Directory',
+        'zones.ad_domain_desc': 'Forward to existing DC DNS servers',
+        'zones.reverse_dns_desc': 'PTR Lookup Helper (in-addr.arpa)',
+        'zones.ad_domain_name': 'AD Domain Name',
+        'zones.subnet': 'Subnet (e.g. 192.168.1.0)',
+        'zones.zone_name': 'Zone Name',
+        'zones.will_create_zone': 'Will create zone: ',
+        'zones.dc_ips': 'Domain Controller IPs',
+        'zones.dc_ips_desc': 'Comma-separated list of DC IP addresses with DNS role',
+        'zones.zone_type': 'Zone Type',
+        'zones.upstream_provider': 'Upstream Provider',
+        'zones.select_provider': 'Select a provider...',
+        'zones.forwarder_ip': 'Forwarder IP',
+        'zones.protocol': 'Protocol',
+        'zones.forwarder_desc': 'DNS server to forward queries to when records are not found locally',
+        'zones.ad_mode_desc': 'Active Directory Mode:',
+        'zones.custom_mode_desc': 'Custom Zone Mode:',
+        'zones.conditional_forwarder_desc': 'Local records will be resolved, unknown records forwarded to ',
+        'zones.manual_records_desc': 'You can add A, CNAME, TXT records manually.',
+        'zones.forwarding_notice': 'AdGuard forwards {0} to Technitium.',
+        'zones.creating': 'Creating...',
+        'zones.add_ad_domain': 'Add AD Domain',
+        'zones.create_zone': 'Create Zone',
+        'zones.cache_cleared': 'DNS Cache cleared successfully!',
+        'zones.cache_clear_error': 'Error clearing cache',
+        'zones.cache_clear_confirm': 'Are you sure you want to clear the AdGuard DNS cache? This can help resolve DNS issues but may temporarily slow down initial queries.',
+        'zones.enter_dc_ip': 'Please enter at least one Domain Controller IP',
+        'zones.enter_forwarder_ip': 'Please enter a Forwarder IP for Conditional Forwarder zone',
+        'zones.failed_create': 'Failed to create zone',
+        'zones.failed_delete': 'Failed to delete zone',
+        'zones.technitium_docker': 'Technitium (docker)',
     },
     de: {
         'app.title': 'UnifiedDNS',
@@ -747,6 +864,65 @@ export const translations: Record<Language, Record<string, string>> = {
         'logs.value': 'Wert',
         'logs.ttl': 'TTL',
         'logs.view_json': 'Raw JSON anzeigen',
+
+        // Zones
+        'zones.title': 'DNS-Zonen',
+        'zones.subtitle': 'Verwalten Sie DNS-Zonen und Active Directory-Domain-Weiterleitungen.',
+        'zones.search_placeholder': 'Zonen, IPs suchen...',
+        'zones.reset_cache': 'Cache zurücksetzen',
+        'zones.refresh': 'Zonen aktualisieren',
+        'zones.add_zone': 'Zone hinzufügen',
+        'zones.error': 'Fehler',
+        'zones.zone_domain': 'Zone / Domain',
+        'zones.type': 'Typ',
+        'zones.target': 'Ziel',
+        'zones.status': 'Status',
+        'zones.actions': 'Aktionen',
+        'zones.active_directory': 'Active Directory',
+        'zones.reverse_dns': 'Reverse DNS',
+        'zones.primary': 'Primär',
+        'zones.internal': 'Intern',
+        'zones.active': 'Aktiv',
+        'zones.pending': 'Ausstehend',
+        'zones.delete_zone_confirm': 'Zone "{0}" löschen?\n\nDies wird:\n• Die Zone aus Technitium löschen\n• Die Weiterleitungsregel aus AdGuard entfernen',
+        'zones.delete_ad_confirm': 'AD-Weiterleitung für "{0}" löschen?\n\nDies wird die Weiterleitungsregel aus AdGuard entfernen.',
+        'zones.no_zones_match': 'Keine Zonen entsprechen Ihrer Suche.',
+        'zones.no_zones_configured': 'Keine Zonen konfiguriert. Klicken Sie auf "Zone hinzufügen", um zu beginnen.',
+        'zones.loading': 'Lade Zonen...',
+        'zones.add_dns_zone': 'DNS-Zone hinzufügen',
+        'zones.custom_zone': 'Benutzerdefinierte Zone',
+        'zones.custom_zone_desc': 'Zone in Technitium erstellen (Primär oder Bedingt)',
+        'zones.ad_domain': 'Active Directory',
+        'zones.ad_domain_desc': 'Weiterleitung an vorhandene DC DNS-Server',
+        'zones.reverse_dns_desc': 'PTR-Lookup-Helfer (in-addr.arpa)',
+        'zones.ad_domain_name': 'AD Domain-Name',
+        'zones.subnet': 'Subnetz (z.B. 192.168.1.0)',
+        'zones.zone_name': 'Zonen-Name',
+        'zones.will_create_zone': 'Erstellt Zone: ',
+        'zones.dc_ips': 'Domain Controller IPs',
+        'zones.dc_ips_desc': 'Kommagetrennte Liste von DC-IP-Adressen mit DNS-Rolle',
+        'zones.zone_type': 'Zonen-Typ',
+        'zones.upstream_provider': 'Upstream-Anbieter',
+        'zones.select_provider': 'Anbieter auswählen...',
+        'zones.forwarder_ip': 'Forwarder IP',
+        'zones.protocol': 'Protokoll',
+        'zones.forwarder_desc': 'DNS-Server, an den Anfragen weitergeleitet werden, wenn keine lokalen Einträge gefunden werden',
+        'zones.ad_mode_desc': 'Active Directory Modus:',
+        'zones.custom_mode_desc': 'Benutzerdefinierter Zonen-Modus:',
+        'zones.conditional_forwarder_desc': 'Lokale Einträge werden aufgelöst, unbekannte Einträge weitergeleitet an ',
+        'zones.manual_records_desc': 'Sie können A, CNAME, TXT Einträge manuell hinzufügen.',
+        'zones.forwarding_notice': 'AdGuard leitet {0} an Technitium weiter.',
+        'zones.creating': 'Erstelle...',
+        'zones.add_ad_domain': 'AD Domain hinzufügen',
+        'zones.create_zone': 'Zone erstellen',
+        'zones.cache_cleared': 'DNS-Cache erfolgreich gelöscht!',
+        'zones.cache_clear_error': 'Fehler beim Löschen des Caches',
+        'zones.cache_clear_confirm': 'Sind Sie sicher, dass Sie den AdGuard DNS-Cache leeren möchten? Dies kann bei DNS-Problemen helfen, aber anfängliche Abfragen vorübergehend verlangsamen.',
+        'zones.enter_dc_ip': 'Bitte geben Sie mindestens eine Domain Controller IP ein',
+        'zones.enter_forwarder_ip': 'Bitte geben Sie eine Forwarder IP für die bedingte Weiterleitungszone ein',
+        'zones.failed_create': 'Zone konnte nicht erstellt werden',
+        'zones.failed_delete': 'Zone konnte nicht gelöscht werden',
+        'zones.technitium_docker': 'Technitium (docker)',
 
         // Common
         'common.save_changes': 'Save Changes',
