@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n-context';
+
 import { useEffect, useState, useMemo } from 'react';
 import { Search, RotateCw, Shield, AlertTriangle, Check, ArrowRight, Trash2, ChevronDown, ChevronUp, Ban, User, X } from 'lucide-react';
 
@@ -50,6 +52,7 @@ const isBlocked = (log: QueryLogItem) => {
 };
 
 export default function LogsPage() {
+    const { t } = useTranslation();
     const [logs, setLogs] = useState<QueryLogItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
@@ -126,7 +129,7 @@ export default function LogsPage() {
     }, [olderThan]);
 
     const handleClearLogs = async () => {
-        if (!confirm('Are you sure you want to clear the query log?')) return;
+        if (!confirm(t('logs.clear_confirm'))) return;
         try {
             await fetch('/api/adguard/querylog', {
                 method: 'POST',
@@ -136,7 +139,7 @@ export default function LogsPage() {
             setLogs([]);
             fetchLogs(true);
         } catch (err) {
-            alert('Failed to clear logs');
+            alert(t('filtering.action_failed'));
         }
     };
 
@@ -147,10 +150,10 @@ export default function LogsPage() {
         } else if (type === 'whitelist') {
             rule = `@@||${domain}^`;
         } else if (type === 'block_client') {
-            if (!clientName) return alert('No client selected');
+            if (!clientName) return alert(t('common.error'));
             rule = `||${domain}^$client='${clientName}'`;
         } else if (type === 'whitelist_client') {
-            if (!clientName) return alert('No client selected');
+            if (!clientName) return alert(t('common.error'));
             rule = `@@||${domain}^$client='${clientName}'`;
         }
 
@@ -164,7 +167,7 @@ export default function LogsPage() {
             alert(`Rule added: ${rule}`);
             fetchLogs(true);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to add rule');
+            alert(err instanceof Error ? err.message : t('filtering.action_failed'));
         }
     };
 
@@ -172,21 +175,21 @@ export default function LogsPage() {
         <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Query Log</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Real-time DNS query inspection.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('logs.title')}</h1>
+                    <p className="text-gray-400 text-sm md:text-base">{t('logs.subtitle')}</p>
                 </div>
                 <div className="flex gap-2 self-end sm:self-auto">
                     <button
                         onClick={handleClearLogs}
                         className="p-2 rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 transition-colors"
-                        title="Clear Logs"
+                        title={t('logs.clear_logs')}
                     >
                         <Trash2 size={20} />
                     </button>
                     <button
                         onClick={() => fetchLogs(true)}
                         className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                        title="Refresh"
+                        title={t('filtering.refresh_lists')}
                     >
                         <RotateCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
@@ -200,7 +203,7 @@ export default function LogsPage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                     <input
                         type="text"
-                        placeholder="Search domain, client IP, or answer..."
+                        placeholder={t('logs.search_placeholder')}
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                         className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
@@ -211,15 +214,15 @@ export default function LogsPage() {
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                    <option value="">All Queries</option>
-                    <option value="blocked">Blocked</option>
-                    <option value="blocked_services">Blocked Services</option>
-                    <option value="safe_browsing">Blocked Threats</option>
-                    <option value="parental">Blocked by Parental</option>
-                    <option value="processed">Processed</option>
-                    <option value="filtered">Filtered</option>
-                    <option value="rewritten">Rewritten</option>
-                    <option value="safe_search">Safe Search</option>
+                    <option value="">{t('logs.all_queries')}</option>
+                    <option value="blocked">{t('logs.blocked')}</option>
+                    <option value="blocked_services">{t('logs.blocked_services')}</option>
+                    <option value="safe_browsing">{t('logs.blocked_threats')}</option>
+                    <option value="parental">{t('logs.blocked_parental')}</option>
+                    <option value="processed">{t('logs.processed')}</option>
+                    <option value="filtered">{t('logs.filtered')}</option>
+                    <option value="rewritten">{t('logs.rewritten')}</option>
+                    <option value="safe_search">{t('logs.safe_search')}</option>
                 </select>
             </div>
 
@@ -229,11 +232,11 @@ export default function LogsPage() {
                     <thead className="bg-gray-950/50 text-gray-500 uppercase font-medium">
                         <tr>
                             <th className="px-6 py-4"></th>
-                            <th className="px-6 py-4">Time</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Client</th>
-                            <th className="px-6 py-4">Domain</th>
-                            <th className="px-6 py-4">Answer / Upstream</th>
+                            <th className="px-6 py-4">{t('logs.time')}</th>
+                            <th className="px-6 py-4">{t('logs.status')}</th>
+                            <th className="px-6 py-4">{t('logs.client')}</th>
+                            <th className="px-6 py-4">{t('logs.domain')}</th>
+                            <th className="px-6 py-4">{t('logs.answer_upstream')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
@@ -253,7 +256,7 @@ export default function LogsPage() {
                 </table>
                 {!loading && logs.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
-                        No logs found matching your criteria.
+                        {t('logs.no_logs')}
                     </div>
                 )}
                 {logs.length > 0 && (
@@ -263,7 +266,7 @@ export default function LogsPage() {
                             disabled={loading}
                             className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50"
                         >
-                            {loading ? 'Loading...' : 'Load More Logs'}
+                            {loading ? t('common.loading') : t('logs.load_more')}
                         </button>
                     </div>
                 )}
@@ -281,6 +284,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
     clients: Client[];
     onClientCreated?: () => void;
 }) {
+    const { t } = useTranslation();
     const blocked = isBlocked(log);
     const [selectedClient, setSelectedClient] = useState<string>('');
     const [clientSearch, setClientSearch] = useState('');
@@ -338,7 +342,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
 
         } catch (e) {
             console.error(e);
-            alert('Failed to create client');
+            alert(t('filtering.action_failed'));
         }
         setIsCreating(false);
     };
@@ -422,7 +426,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                             {/* Header Info */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Details</h4>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('logs.client_details')}</h4>
                                     <div className="space-y-1">
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-gray-400">IP Address:</span>
@@ -437,7 +441,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                             </div>
                                         )}
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-400">Proto:</span>
+                                            <span className="text-gray-400">{t('logs.proto')}:</span>
                                             {/* @ts-ignore */}
                                             <span className="text-white">{log.client_proto || 'UDP'}</span>
                                         </div>
@@ -446,7 +450,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Response Info</h4>
+                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('logs.response_info')}</h4>
                                         <div className="flex gap-2">
                                             {blocked ? (
                                                 <button
@@ -454,7 +458,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                                     className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded transition-colors"
                                                 >
                                                     <Shield size={10} />
-                                                    Whitelist Global
+                                                    {t('logs.whitelist_global')}
                                                 </button>
                                             ) : (
                                                 <button
@@ -462,23 +466,23 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                                     className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded transition-colors"
                                                 >
                                                     <Ban size={10} />
-                                                    Block Global
+                                                    {t('logs.block_global')}
                                                 </button>
                                             )}
                                         </div>
                                     </div>
                                     <div className="space-y-1">
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-400">Status:</span>
+                                            <span className="text-gray-400">{t('logs.status')}:</span>
                                             <span className="text-white">{log.status}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-400">Elapsed:</span>
+                                            <span className="text-gray-400">{t('logs.elapsed')}:</span>
                                             {/* @ts-ignore */}
                                             <span className="text-white">{log.elapsedMs ? `${parseFloat(log.elapsedMs).toFixed(2)} ms` : log.elapsed}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-400">Upstream:</span>
+                                            <span className="text-gray-400">{t('logs.upstream')}:</span>
                                             <span className="text-blue-400 font-mono text-xs truncate max-w-[200px]">{log.upstream}</span>
                                         </div>
                                     </div>
@@ -487,20 +491,20 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
 
                             {/* Client Operations */}
                             <div>
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Client Operations</h4>
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('logs.client_operations')}</h4>
 
                                 {!knownClient ? (
                                     <div className="bg-blue-900/10 border border-blue-500/20 rounded-lg p-4">
                                         <div className="flex items-center gap-3 mb-3">
                                             <User size={18} className="text-blue-400" />
                                             <div className="text-sm text-blue-100">
-                                                Unconfigured Client <span className="text-gray-400 text-xs ml-1">(No client matches IP {log.client})</span>
+                                                {t('logs.unconfigured_client')} <span className="text-gray-400 text-xs ml-1">({t('logs.no_client_ip')} {log.client})</span>
                                             </div>
                                         </div>
                                         <div className="flex gap-2 items-center">
                                             <input
                                                 type="text"
-                                                placeholder="Client Name"
+                                                placeholder={t('clients.client_name')}
                                                 value={newClientName}
                                                 onChange={(e) => setNewClientName(e.target.value)}
                                                 className="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:border-blue-500 outline-none"
@@ -511,13 +515,13 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                                 className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {isCreating ? <RotateCw size={14} className="animate-spin" /> : <User size={14} />}
-                                                Create Client
+                                                {t('logs.create_client')}
                                             </button>
                                         </div>
                                         <p className="text-[10px] text-gray-500 mt-2">
-                                            Creates a new client with IP <span className="font-mono text-gray-400">{log.client}</span>.
+                                            {t('logs.create_client_desc')} <span className="font-mono text-gray-400">{log.client}</span>.
                                             {/* @ts-ignore */}
-                                            {log.client_info?.name && <span> Detected hostname: <span className="text-gray-400">{log.client_info.name}</span>.</span>}
+                                            {log.client_info?.name && <span> {t('logs.detected_hostname')}: <span className="text-gray-400">{log.client_info.name}</span>.</span>}
                                         </p>
                                     </div>
                                 ) : (
@@ -531,7 +535,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                                         value={selectedClient}
                                                         onChange={(e) => setSelectedClient(e.target.value)}
                                                     >
-                                                        <option value="">-- Select Client --</option>
+                                                        <option value="">-- {t('logs.select_client')} --</option>
                                                         {clients.map(c => (
                                                             <option key={c.name} value={c.name}>{c.name} ({c.ids.join(', ')})</option>
                                                         ))}
@@ -545,7 +549,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-red-900/50"
                                                 >
                                                     <Ban size={14} />
-                                                    Block for Client
+                                                    {t('logs.block_client')}
                                                 </button>
                                                 <button
                                                     onClick={() => handleRule(log.question.name, 'whitelist_client', selectedClient)}
@@ -553,7 +557,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-900/30 text-green-400 hover:bg-green-900/50 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium border border-green-900/50"
                                                 >
                                                     <Shield size={14} />
-                                                    Whitelist for Client
+                                                    {t('logs.whitelist_client')}
                                                 </button>
                                             </div>
                                         </div>
@@ -566,7 +570,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
 
                             {/* DNS Question */}
                             <div>
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Question</h4>
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('logs.question')}</h4>
                                 <div className="bg-gray-900 rounded-lg p-3 text-sm font-mono flex gap-4 text-white">
                                     <span className="text-purple-400">[{log.question.type}]</span>
                                     <span className="text-purple-400">[{log.question.class || 'IN'}]</span>
@@ -577,12 +581,12 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                             {/* Blocking Rules */}
                             {log.rules && log.rules.length > 0 && (
                                 <div>
-                                    <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Matched Rules</h4>
+                                    <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">{t('logs.matched_rules')}</h4>
                                     <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-3 space-y-2">
                                         {log.rules.map((rule, i) => (
                                             <div key={i} className="font-mono text-sm text-red-300 break-all">
                                                 {rule.text}
-                                                {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">(List ID: {rule.filter_list_id})</span>}
+                                                {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">({t('logs.list_id')}: {rule.filter_list_id})</span>}
                                             </div>
                                         ))}
                                     </div>
@@ -592,14 +596,14 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                             {/* DNS Answers */}
                             {log.answer && log.answer.length > 0 && (
                                 <div>
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Answer</h4>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('logs.answer')}</h4>
                                     <div className="overflow-hidden rounded-lg border border-gray-800">
                                         <table className="w-full text-sm">
                                             <thead className="bg-gray-900 text-gray-400">
                                                 <tr>
-                                                    <th className="px-4 py-2 text-left">Type</th>
-                                                    <th className="px-4 py-2 text-left">Value</th>
-                                                    <th className="px-4 py-2 text-right">TTL</th>
+                                                    <th className="px-4 py-2 text-left">{t('logs.type')}</th>
+                                                    <th className="px-4 py-2 text-left">{t('logs.value')}</th>
+                                                    <th className="px-4 py-2 text-right">{t('logs.ttl')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-800 bg-gray-900/50">
@@ -619,7 +623,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                             {/* Raw JSON Toggle (Optional, maybe hidden or bottom) */}
                             <div className="pt-4 border-t border-gray-800">
                                 <details className="text-xs text-gray-600 cursor-pointer">
-                                    <summary className="hover:text-gray-400 font-medium">View Raw JSON</summary>
+                                    <summary className="hover:text-gray-400 font-medium">{t('logs.view_json')}</summary>
                                     <pre className="mt-2 text-green-500 font-mono overflow-auto p-2 bg-black rounded max-h-60">
                                         {JSON.stringify(log, null, 2)}
                                     </pre>
@@ -634,6 +638,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
 }
 
 function StatusBadge({ log }: { log: QueryLogItem }) {
+    const { t } = useTranslation();
     const status = log.status;
     const reason = log.reason;
     const blocked = isBlocked(log);
@@ -643,7 +648,7 @@ function StatusBadge({ log }: { log: QueryLogItem }) {
             <div className="flex flex-col items-start gap-1">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500">
                     <Shield size={12} />
-                    Blocked
+                    {t('logs.blocked')}
                 </span>
                 {(reason || status !== 'OK') && <span className="text-[10px] text-gray-500 max-w-[150px] truncate">{reason || status}</span>}
                 {log.rules && log.rules.length > 0 && (
@@ -658,14 +663,14 @@ function StatusBadge({ log }: { log: QueryLogItem }) {
         return (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500">
                 <AlertTriangle size={12} />
-                Filtered
+                {t('logs.filtered')}
             </span>
         );
     }
     return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
             <Check size={12} />
-            Allowed
+            {t('logs.processed')}
         </span>
     );
 }

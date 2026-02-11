@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n-context';
+
 import { useEffect, useState, useRef } from 'react';
 import { PREDEFINED_BLOCKLISTS, PREDEFINED_WHITELISTS } from '@/constants/predefined-lists';
 import {
@@ -70,6 +72,7 @@ interface Lease {
 
 
 export default function FilteringPage() {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<'global' | 'clients'>('global');
     const [loading, setLoading] = useState(false);
 
@@ -128,8 +131,8 @@ export default function FilteringPage() {
         <div className="p-4 md:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Filtering & Access Control</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Manage global lists, per-client rules, and DNS forwarding.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('filtering.title')}</h1>
+                    <p className="text-gray-400 text-sm md:text-base">{t('filtering.subtitle')}</p>
                 </div>
                 <button
                     onClick={fetchData}
@@ -145,13 +148,13 @@ export default function FilteringPage() {
                     active={activeTab === 'global'}
                     onClick={() => setActiveTab('global')}
                     icon={Shield}
-                    label="Global Rules"
+                    label={t('filtering.global_rules')}
                 />
                 <TabButton
                     active={activeTab === 'clients'}
                     onClick={() => setActiveTab('clients')}
                     icon={Users}
-                    label="Client Rules"
+                    label={t('filtering.client_rules')}
                 />
 
             </div>
@@ -186,6 +189,7 @@ export default function FilteringPage() {
 // --- Tab Components ---
 
 function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection, refresh }: any) {
+    const { t } = useTranslation();
     // ... Logic from original FilteringPage ...
     // State handled here or passed up? Locals are fine for modals.
     const [showAddModal, setShowAddModal] = useState(false);
@@ -229,7 +233,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             refresh();
         } catch (e) {
             console.error(e);
-            alert('Failed to set pause timer. Please try again.');
+            alert(t('filtering.failed_pause_timer'));
         }
     };
 
@@ -301,7 +305,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
         } catch (e) {
             console.error(e);
             setProtection(previousStatus); // Revert on error
-            alert(`Failed to ${enabled ? 'enable' : 'disable'} ${setting}. Please check if AdGuard is reachable.`);
+            alert(`${t('filtering.failed_update_protection')} ${setting}.`);
         }
     };
 
@@ -346,7 +350,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
         } catch (e) {
             console.error(e);
             if (action === 'toggle') setFiltering(previousFiltering);
-            alert(`Action "${action}" failed. please try again.`);
+            alert(`${t('filtering.action_failed')} "${action}".`);
             refresh(); // Ensure synced state
         }
     };
@@ -356,11 +360,11 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             {/* Protection Switches */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                    <h3 className="text-lg font-medium text-white mb-4">Protection Settings</h3>
+                    <h3 className="text-lg font-medium text-white mb-4">{t('filtering.protection_settings')}</h3>
                     <div className="space-y-1">
                         <ProtectionToggle
-                            icon={Shield} color="text-blue-400" title="DNS Protection"
-                            description={pauseTimer ? `Automatically re-enables in ${formatTime(pauseTimer)}` : "Enable DNS filtering and blocking"}
+                            icon={Shield} color="text-blue-400" title={t('filtering.dns_protection')}
+                            description={pauseTimer ? `${t('filtering.temporarily_disable')} ${formatTime(pauseTimer)}` : t('filtering.dns_protection_desc')}
                             checked={protection?.protectionEnabled ?? false}
                             onChange={(v: boolean) => toggleProtection('protection', v)}
                             variant="protection"
@@ -368,7 +372,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
 
                         {showTimerMenu && !protection?.protectionEnabled && (
                             <div className="ml-11 mt-2 p-4 bg-gray-950/50 rounded-lg border border-blue-500/20 animate-in slide-in-from-top-2 duration-200">
-                                <div className="text-sm text-gray-400 mb-3">Temporarily disable for:</div>
+                                <div className="text-sm text-gray-400 mb-3">{t('filtering.temporarily_disable')}</div>
                                 <div className="flex flex-wrap gap-2">
                                     {[1, 5, 10, 30].map(m => (
                                         <button
@@ -383,7 +387,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                                         onClick={() => setShowTimerMenu(false)}
                                         className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-xs font-medium rounded-md border border-blue-500/20 transition-colors"
                                     >
-                                        Stay Off
+                                        {t('filtering.stay_off')}
                                     </button>
                                 </div>
                             </div>
@@ -393,32 +397,32 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                             <div className="ml-11 mt-2 p-3 bg-blue-600/10 border border-blue-500/20 rounded-lg flex items-center justify-between animate-in fade-in duration-300">
                                 <div className="flex items-center gap-2 text-blue-400 text-sm">
                                     <RefreshCw size={14} className="animate-spin" />
-                                    <span>Protection paused: <strong>{formatTime(pauseTimer)}</strong> left</span>
+                                    <span>{t('filtering.protection_paused')} <strong>{formatTime(pauseTimer)}</strong></span>
                                 </div>
                                 <button
                                     onClick={cancelPause}
                                     className="text-white text-xs font-medium bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-md transition-colors"
                                 >
-                                    Enable Now
+                                    {t('filtering.enable_now')}
                                 </button>
                             </div>
                         )}
 
                         <ProtectionToggle
-                            icon={Baby} color="text-pink-400" title="Parental Control"
-                            description="Block adult content"
+                            icon={Baby} color="text-pink-400" title={t('filtering.parental_control')}
+                            description={t('filtering.parental_control_desc')}
                             checked={protection?.parentalEnabled ?? false}
                             onChange={(v: boolean) => toggleProtection('parental', v)}
                         />
                         <ProtectionToggle
-                            icon={ShieldCheck} color="text-green-400" title="Safe Browsing"
-                            description="Block malware and phishing domains"
+                            icon={ShieldCheck} color="text-green-400" title={t('filtering.safe_browsing')}
+                            description={t('filtering.safe_browsing_desc')}
                             checked={protection?.safeBrowsingEnabled ?? false}
                             onChange={(v: boolean) => toggleProtection('safeBrowsing', v)}
                         />
                         <ProtectionToggle
-                            icon={Search} color="text-yellow-400" title="Safe Search"
-                            description="Enforce safe search on search engines"
+                            icon={Search} color="text-yellow-400" title={t('filtering.safe_search')}
+                            description={t('filtering.safe_search_desc')}
                             checked={protection?.safeSearchEnabled ?? false}
                             onChange={(v: boolean) => toggleProtection('safeSearch', v)}
                             showDetails={true}
@@ -445,17 +449,17 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h3 className="text-lg font-medium text-white">Global Custom Rules</h3>
-                            <p className="text-sm text-gray-500">Manually block or allow domains for everyone.</p>
+                            <h3 className="text-lg font-medium text-white">{t('filtering.global_custom_rules')}</h3>
+                            <p className="text-sm text-gray-500">{t('filtering.global_custom_rules_desc')}</p>
                         </div>
                         <div className="flex gap-2">
                             <button onClick={() => setShowDocs(!showDocs)} className="p-2 text-gray-400 hover:text-white bg-gray-800 rounded-lg"><Info size={18} /></button>
-                            <button onClick={() => setShowRuleModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"><Plus size={18} /> Add Rule</button>
+                            <button onClick={() => setShowRuleModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"><Plus size={18} /> {t('filtering.add_rule')}</button>
                         </div>
                     </div>
                     {showDocs && (
                         <div className="mb-4 p-4 bg-blue-600/10 border border-blue-600/20 rounded-lg text-sm text-blue-100 space-y-2">
-                            <p><strong>Syntax Examples:</strong></p>
+                            <p><strong>{t('filtering.syntax_examples')}:</strong></p>
                             <ul className="list-disc ml-5 space-y-1 text-blue-200/80">
                                 <li><code>||example.com^</code> - Block domain</li>
                                 <li><code>@@||example.com^</code> - Whitelist domain</li>
@@ -476,8 +480,8 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
             {/* List Management Tabs */}
             <div className="space-y-6">
                 <ListSection
-                    title="Filter Blocklists"
-                    description="DNS requests matching these lists will be blocked."
+                    title={t('filtering.filter_blocklists')}
+                    description={t('filtering.filter_blocklists_desc')}
                     lists={filtering?.filters || []}
                     onToggle={(url: string, e: boolean) => handleListOp('toggle', { url, enabled: e, whitelist: false })}
                     onRemove={(url: string) => handleListOp('remove', { url, whitelist: false })}
@@ -489,8 +493,8 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
                 />
 
                 <ListSection
-                    title="Allow Whitelists"
-                    description="Domains matching these lists will always be allowed."
+                    title={t('filtering.allow_whitelists')}
+                    description={t('filtering.allow_whitelists_desc')}
                     lists={filtering?.whitelist_filters || []}
                     onToggle={(url: string, e: boolean) => handleListOp('toggle', { url, enabled: e, whitelist: true })}
                     onRemove={(url: string) => handleListOp('remove', { url, whitelist: true })}
@@ -533,6 +537,7 @@ function GlobalFilteringTab({ filtering, protection, setFiltering, setProtection
 }
 
 function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -559,7 +564,7 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
     const clientObj = clients.find((c: any) => c.name === selectedClient);
     const leaseObj = !clientObj ? availableLeases.find((l: any) => l.hostname === selectedClient || l.ip === selectedClient) : null;
 
-    let selectedName = selectedClient || 'Choose a Client';
+    let selectedName = selectedClient || t('filtering.choose_client');
     if (clientObj) {
         // Attempt to find associated hostname from leases for display
         const lease = leases.find((l: any) => clientObj.ids.includes(l.mac) || clientObj.ids.includes(l.ip));
@@ -597,7 +602,7 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
                     {/* Configured Clients Section */}
                     {filteredClients.length > 0 && (
                         <div className="border-b border-gray-700/50">
-                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase bg-gray-900/50 sticky top-0">Configured Clients</div>
+                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase bg-gray-900/50 sticky top-0">{t('filtering.configured_clients')}</div>
                             {filteredClients.map((c: any) => {
                                 // Find lease for extra info
                                 const lease = leases.find((l: any) => c.ids.includes(l.mac) || c.ids.includes(l.ip));
@@ -621,14 +626,14 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
                     {/* Detected Devices Section */}
                     {filteredLeases.length > 0 && (
                         <div>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-blue-400/80 uppercase bg-gray-900/50 sticky top-0">Recognized Devices (Create New)</div>
+                            <div className="px-3 py-1.5 text-xs font-semibold text-blue-400/80 uppercase bg-gray-900/50 sticky top-0">{t('filtering.recognized_devices')}</div>
                             {filteredLeases.map((l: any) => (
                                 <button
                                     key={l.mac}
                                     onClick={() => { onSelect(l.hostname || l.ip); setIsOpen(false); setSearch(''); }}
                                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-800/50 last:border-0 ${selectedClient === (l.hostname || l.ip) ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
                                 >
-                                    <div className="font-medium truncate">{l.hostname || 'Unknown Device'}</div>
+                                    <div className="font-medium truncate">{l.hostname || t('dashboard.unknown')}</div>
                                     <div className="text-xs text-gray-500 truncate">{l.ip} • {l.mac} {l.isStatic && <span className="ml-1 text-green-500 font-bold text-[10px] uppercase border border-green-500/30 px-1 rounded">Static</span>}</div>
                                 </button>
                             ))}
@@ -636,7 +641,7 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
                     )}
 
                     {filteredClients.length === 0 && filteredLeases.length === 0 && (
-                        <div className="p-3 text-sm text-gray-500 text-center">No clients or devices found</div>
+                        <div className="p-3 text-sm text-gray-500 text-center">{t('filtering.no_clients_found')}</div>
                     )}
                 </div>
             )}
@@ -645,6 +650,7 @@ function ClientSelector({ clients, leases, selectedClient, onSelect }: any) {
 }
 
 function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient, userRules, refresh }: any) {
+    const { t } = useTranslation();
     const [whitelistInput, setWhitelistInput] = useState('');
     const [blocklistInput, setBlocklistInput] = useState('');
 
@@ -748,7 +754,7 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
         return (
             <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Select Client to Manage</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('filtering.client_selector_label')}</label>
                     <ClientSelector clients={clients} leases={leases} selectedClient={selectedClient} onSelect={setSelectedClient} />
                 </div>
 
@@ -756,14 +762,14 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
                     <div className="inline-flex p-3 rounded-full bg-blue-500/10 text-blue-400 mb-4">
                         <Users size={32} />
                     </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">Configure New Client</h3>
+                    <h3 className="text-xl font-semibold text-white mb-2">{t('filtering.configure_new_client')}</h3>
                     <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                        This device was detected on your network but not yet configured as a client. Create a client entry to manage its filtering rules.
+                        {t('filtering.new_client_desc')}
                     </p>
 
                     <div className="grid gap-6 max-w-md mx-auto text-left">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Client Name</label>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">{t('filtering.client_name')}</label>
                             <input
                                 type="text"
                                 value={newClientName}
@@ -774,11 +780,11 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">IP Address</label>
+                                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">{t('filtering.ip_address')}</label>
                                 <div className="font-mono text-sm text-gray-300 bg-gray-900/50 px-3 py-2 rounded-lg border border-gray-800">{activeLease.ip}</div>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">MAC Address</label>
+                                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">{t('filtering.mac_address')}</label>
                                 <div className="font-mono text-sm text-gray-300 bg-gray-900/50 px-3 py-2 rounded-lg border border-gray-800">{activeLease.mac}</div>
                             </div>
                         </div>
@@ -789,7 +795,7 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
                             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2"
                         >
                             {isCreatingClient ? <RefreshCw className="animate-spin" size={20} /> : <Check size={20} />}
-                            Create Client
+                            {t('filtering.create_client')}
                         </button>
                     </div>
                 </div>
@@ -806,7 +812,7 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
         <div className="space-y-6 animate-in fade-in duration-300">
             {/* Client Selector */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                <label className="block text-sm font-medium text-gray-400 mb-2">Select Client to Manage</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">{t('filtering.client_selector_label')}</label>
                 <ClientSelector clients={clients} leases={leases} selectedClient={selectedClient} onSelect={setSelectedClient} />
             </div>
 
@@ -815,9 +821,9 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
                     {/* Blocklist */}
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col h-[500px]">
                         <h3 className="text-lg font-medium text-white mb-1 flex items-center gap-2">
-                            <Shield className="text-red-400" size={20} /> Blocked Domains
+                            <Shield className="text-red-400" size={20} /> {t('filtering.blocked_domains')}
                         </h3>
-                        <p className="text-xs text-gray-500 mb-4">Domains strictly blocked for <strong>{selectedClient}</strong>.</p>
+                        <p className="text-xs text-gray-500 mb-4">{t('filtering.blocked_domains_desc')} <strong>{selectedClient}</strong>.</p>
 
                         <div className="flex gap-2 mb-4">
                             <input
@@ -838,16 +844,16 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
                                     <button onClick={() => handleRemoveRule(rule)} className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
                                 </div>
                             ))}
-                            {blocked.length === 0 && <div className="text-gray-600 text-sm text-center py-4">No blocked domains</div>}
+                            {blocked.length === 0 && <div className="text-gray-600 text-sm text-center py-4">{t('filtering.no_blocked_domains')}</div>}
                         </div>
                     </div>
 
                     {/* Whitelist */}
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col h-[500px]">
                         <h3 className="text-lg font-medium text-white mb-1 flex items-center gap-2">
-                            <Check className="text-green-400" size={20} /> Allowed Domains
+                            <Check className="text-green-400" size={20} /> {t('filtering.allowed_domains')}
                         </h3>
-                        <p className="text-xs text-gray-500 mb-4">Domains allowed for <strong>{selectedClient}</strong> (bypasses blocklists).</p>
+                        <p className="text-xs text-gray-500 mb-4">{t('filtering.allowed_domains_desc')} <strong>{selectedClient}</strong>.</p>
 
                         <div className="flex gap-2 mb-4">
                             <input
@@ -868,14 +874,14 @@ function ClientFilteringTab({ clients, leases, selectedClient, setSelectedClient
                                     <button onClick={() => handleRemoveRule(rule)} className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
                                 </div>
                             ))}
-                            {whitelisted.length === 0 && <div className="text-gray-600 text-sm text-center py-4">No allowed domains</div>}
+                            {whitelisted.length === 0 && <div className="text-gray-600 text-sm text-center py-4">{t('filtering.no_allowed_domains')}</div>}
                         </div>
                     </div>
                 </div>
             ) : (
                 <div className="text-center py-20 bg-gray-900/50 border-2 border-dashed border-gray-800 rounded-xl">
                     <Users size={48} className="mx-auto text-gray-700 mb-4" />
-                    <p className="text-gray-500 text-lg">Select a client to manage their specific rules.</p>
+                    <p className="text-gray-500 text-lg">{t('filtering.select_client_msg')}</p>
                 </div>
             )}
         </div>
@@ -920,20 +926,21 @@ function ProtectionToggle({ icon: Icon, color, title, description, checked, onCh
 }
 
 function ListSection({ title, description, lists, onToggle, onRemove, onEdit, onAdd, onBrowse, onImport, onRefresh, variant = 'blocklist' }: any) {
+    const { t } = useTranslation();
     return (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
             <div className="p-6 border-b border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div><h3 className="text-lg font-medium text-white">{title}</h3><p className="text-sm text-gray-500">{description}</p></div>
                 <div className="flex gap-2 w-full md:w-auto flex-wrap">
-                    <button onClick={onRefresh} className="p-2 text-gray-400 hover:text-white bg-gray-800 rounded-lg" title="Refresh lists"><RefreshCw size={18} /></button>
-                    <button onClick={onBrowse} className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium border border-gray-700">Browse Predefined</button>
-                    <button onClick={onImport} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium"><Upload size={18} /> Import CSV</button>
-                    <button onClick={onAdd} className={`flex items-center gap-2 ${variant === 'whitelist' ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} text-white px-4 py-2 rounded-lg text-sm font-medium`}><Plus size={18} /> Add List</button>
+                    <button onClick={onRefresh} className="p-2 text-gray-400 hover:text-white bg-gray-800 rounded-lg" title={t('filtering.refresh_lists')}><RefreshCw size={18} /></button>
+                    <button onClick={onBrowse} className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium border border-gray-700">{t('filtering.browse_predefined')}</button>
+                    <button onClick={onImport} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium"><Upload size={18} /> {t('filtering.import_csv')}</button>
+                    <button onClick={onAdd} className={`flex items-center gap-2 ${variant === 'whitelist' ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} text-white px-4 py-2 rounded-lg text-sm font-medium`}><Plus size={18} /> {t('filtering.add_list')}</button>
                 </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-950/50"><tr><th className="px-6 py-3">Name</th><th className="px-6 py-3">Rules</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></tr></thead>
+                    <thead className="text-xs text-gray-500 uppercase bg-gray-950/50"><tr><th className="px-6 py-3">{t('filtering.name')}</th><th className="px-6 py-3">Rules</th><th className="px-6 py-3">{t('forwarding.status')}</th><th className="px-6 py-3 text-right">Actions</th></tr></thead>
                     <tbody className="divide-y divide-gray-800">
                         {lists.map((filter: any) => (
                             <tr key={filter.id} className="text-sm group hover:bg-gray-850 transition-colors">
@@ -952,42 +959,46 @@ function ListSection({ title, description, lists, onToggle, onRemove, onEdit, on
 
 // Modals
 function AddListModal({ isOpen, onClose, data, setData, onSubmit }: any) {
+    const { t } = useTranslation();
     if (!isOpen) return null;
     return (
-        <Modal title={data.whitelist ? "Add Whitelist" : "Add Blocklist"} onClose={onClose}>
+        <Modal title={data.whitelist ? t('filtering.add_whitelist') : t('filtering.add_blocklist')} onClose={onClose}>
             <div className="space-y-4">
-                <input type="text" value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" placeholder="Name" autoFocus />
-                <input type="text" value={data.url} onChange={(e) => setData({ ...data, url: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" placeholder="URL" />
+                <input type="text" value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" placeholder={t('filtering.name')} autoFocus />
+                <input type="text" value={data.url} onChange={(e) => setData({ ...data, url: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" placeholder={t('filtering.url')} />
             </div>
-            <div className="flex justify-end gap-3 mt-8"><button onClick={onClose} className="text-gray-400">Cancel</button><button onClick={onSubmit} className="bg-blue-600 text-white px-6 py-2 rounded-lg">Add</button></div>
+            <div className="flex justify-end gap-3 mt-8"><button onClick={onClose} className="text-gray-400">{t('filtering.cancel')}</button><button onClick={onSubmit} className="bg-blue-600 text-white px-6 py-2 rounded-lg">{t('filtering.add')}</button></div>
         </Modal>
     );
 }
 
 function EditListModal({ isOpen, onClose, data, setData, onSubmit }: any) {
+    const { t } = useTranslation();
     if (!isOpen) return null;
     return (
-        <Modal title="Edit List" onClose={onClose}>
+        <Modal title={t('filtering.edit_list')} onClose={onClose}>
             <div className="space-y-4">
                 <input type="text" value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" />
                 <input type="text" value={data.url} onChange={(e) => setData({ ...data, url: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" />
             </div>
-            <div className="flex justify-end gap-3 mt-8"><button onClick={onClose} className="text-gray-400">Cancel</button><button onClick={onSubmit} className="bg-blue-600 text-white px-6 py-2 rounded-lg">Save</button></div>
+            <div className="flex justify-end gap-3 mt-8"><button onClick={onClose} className="text-gray-400">{t('filtering.cancel')}</button><button onClick={onSubmit} className="bg-blue-600 text-white px-6 py-2 rounded-lg">{t('filtering.save')}</button></div>
         </Modal>
     );
 }
 
 function AddRuleModal({ isOpen, onClose, rule, setRule, onSubmit }: any) {
+    const { t } = useTranslation();
     if (!isOpen) return null;
     return (
-        <Modal title="Add Custom Rule" onClose={onClose}>
+        <Modal title={t('filtering.add_custom_rule')} onClose={onClose}>
             <input type="text" value={rule} onChange={(e) => setRule(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white font-mono" placeholder="||example.com^" autoFocus />
-            <div className="flex justify-end gap-3 mt-8"><button onClick={onClose} className="text-gray-400">Cancel</button><button onClick={onSubmit} className="bg-blue-600 text-white px-6 py-2 rounded-lg">Add Rule</button></div>
+            <div className="flex justify-end gap-3 mt-8"><button onClick={onClose} className="text-gray-400">{t('filtering.cancel')}</button><button onClick={onSubmit} className="bg-blue-600 text-white px-6 py-2 rounded-lg">{t('filtering.add_rule')}</button></div>
         </Modal>
     );
 }
 
 function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSelect, existingUrls = [] }: any) {
+    const { t } = useTranslation();
     const [lists, setLists] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -1061,14 +1072,14 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
     if (!isOpen) return null;
 
     return (
-        <Modal title={`Browse ${whitelist ? 'Whitelists' : 'Blocklists'}`} onClose={onClose} maxWidth="max-w-4xl">
+        <Modal title={`${t('filtering.browse_predefined')} (${whitelist ? t('filtering.allow_whitelists') : t('filtering.filter_blocklists')})`} onClose={onClose} maxWidth="max-w-4xl">
             {/* Header with search and view toggle */}
             <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                     <input
                         type="text"
-                        placeholder="Search lists..."
+                        placeholder={t('filtering.search_lists')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
@@ -1107,7 +1118,7 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
                         }}
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1.5 px-2 py-1 hover:bg-blue-400/10 rounded-lg transition-all"
                     >
-                        {selectedUrls.size === filteredLists.filter(l => !existingUrls.includes(l.url)).length ? 'Deselect All' : 'Select All Available'}
+                        {selectedUrls.size === filteredLists.filter(l => !existingUrls.includes(l.url)).length ? t('filtering.deselect_all') : t('filtering.select_all_available')}
                     </button>
                 </div>
             )}
@@ -1116,7 +1127,7 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
             {loading && (
                 <div className="flex items-center justify-center py-12">
                     <RefreshCw className="animate-spin text-blue-500" size={32} />
-                    <span className="ml-3 text-gray-400">Loading lists from GitHub...</span>
+                    <span className="ml-3 text-gray-400">{t('filtering.loading_lists')}</span>
                 </div>
             )}
 
@@ -1126,9 +1137,9 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
                     <div className="flex items-start gap-2">
                         <Info className="text-yellow-500 mt-0.5" size={16} />
                         <div>
-                            <div className="text-yellow-500 font-medium text-sm">Failed to load CSV</div>
+                            <div className="text-yellow-500 font-medium text-sm">{t('filtering.failed_load_csv')}</div>
                             <div className="text-yellow-600 text-xs mt-1">{error}</div>
-                            <div className="text-gray-500 text-xs mt-1">Showing fallback lists instead.</div>
+                            <div className="text-gray-500 text-xs mt-1">{t('filtering.showing_fallback')}</div>
                         </div>
                     </div>
                 </div>
@@ -1176,7 +1187,7 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
                                         <div className="flex gap-2">
                                             {existingUrls.includes(list.url) ? (
                                                 <div className="w-full py-2 bg-gray-900/50 text-gray-500 text-sm font-medium rounded-lg border border-gray-800 flex items-center justify-center gap-2">
-                                                    <Check size={14} /> Added
+                                                    <Check size={14} /> {t('filtering.added')}
                                                 </div>
                                             ) : (
                                                 <>
@@ -1188,7 +1199,7 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
                                                             }`}
                                                     >
                                                         {selectedUrls.has(list.url) ? <Check size={16} /> : <Plus size={16} />}
-                                                        {selectedUrls.has(list.url) ? 'Selected' : 'Select'}
+                                                        {selectedUrls.has(list.url) ? t('filtering.selected') : t('filtering.select')}
                                                     </button>
                                                 </>
                                             )}
@@ -1251,8 +1262,8 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
                                 <div className="p-4 bg-gray-800/30 rounded-full mb-4 ring-1 ring-gray-700">
                                     <Search size={32} className="text-gray-600" />
                                 </div>
-                                <h3 className="text-white font-medium">No results found</h3>
-                                <p className="text-gray-500 text-sm mt-1 max-w-[200px]">No lists found matching "{search}". Try a different terms.</p>
+                                <h3 className="text-white font-medium">{t('filtering.no_results')}</h3>
+                                <p className="text-gray-500 text-sm mt-1 max-w-[200px]">No lists found matching "{search}".</p>
                             </div>
                         )}
                     </div>
@@ -1263,14 +1274,14 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
             {!loading && selectedUrls.size > 0 && (
                 <div className="mt-6 pt-4 border-t border-gray-800 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-300">
                     <div className="text-sm text-gray-400">
-                        <span className="text-blue-400 font-medium">{selectedUrls.size}</span> list{selectedUrls.size === 1 ? '' : 's'} selected
+                        <span className="text-blue-400 font-medium">{selectedUrls.size}</span> {t('filtering.lists_selected')}
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={() => setSelectedUrls(new Set())}
                             className="text-sm text-gray-500 hover:text-white transition-colors"
                         >
-                            Clear Selection
+                            {t('filtering.clear_selection')}
                         </button>
                         <button
                             onClick={handleBatchAdd}
@@ -1280,12 +1291,12 @@ function PredefinedListsModal({ isOpen, onClose, whitelist, onSelect, onBatchSel
                             {submitting ? (
                                 <>
                                     <RefreshCw size={16} className="animate-spin" />
-                                    Adding...
+                                    {t('filtering.adding')}
                                 </>
                             ) : (
                                 <>
                                     <Plus size={16} />
-                                    Add Selected Lists
+                                    {t('filtering.add_selected_lists')}
                                 </>
                             )}
                         </button>
@@ -1335,6 +1346,7 @@ function Switch({ checked, onChange, size = 'md', variant }: { checked: boolean;
 
 // Import CSV Modal
 function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
+    const { t } = useTranslation();
     const [csvContent, setCsvContent] = useState('');
     const [parsedLists, setParsedLists] = useState<any[]>([]);
     const [selectedLists, setSelectedLists] = useState<Set<string>>(new Set());
@@ -1412,12 +1424,12 @@ function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
     if (!isOpen) return null;
 
     return (
-        <Modal title={`Import ${whitelist ? 'Whitelist' : 'Blocklist'} CSV`} onClose={onClose} maxWidth="max-w-3xl">
+        <Modal title={t('filtering.import_csv')} onClose={onClose} maxWidth="max-w-3xl">
             {parsedLists.length === 0 ? (
                 // File upload view
                 <div className="space-y-4">
                     <div className="text-sm text-gray-400 mb-4">
-                        Upload a CSV file containing filter lists. The CSV should have columns: <code className="text-blue-400">enabled,url,name,id</code>
+                        {t('filtering.upload_csv_desc')} <code className="text-blue-400">enabled,url,name,id</code>
                     </div>
 
                     <div
@@ -1425,9 +1437,9 @@ function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
                         className="border-2 border-dashed border-gray-700 rounded-xl p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-800/50 transition-colors"
                     >
                         <Upload size={48} className="mx-auto text-gray-600 mb-4" />
-                        <div className="text-white font-medium mb-2">Click to upload CSV file</div>
-                        <div className="text-sm text-gray-500">or drag and drop</div>
-                        <div className="text-xs text-gray-600 mt-2">Supports .csv and .txt files</div>
+                        <div className="text-white font-medium mb-2">{t('filtering.click_upload')}</div>
+                        <div className="text-sm text-gray-500">{t('filtering.drag_drop')}</div>
+                        <div className="text-xs text-gray-600 mt-2">{t('filtering.supports_csv')}</div>
                     </div>
 
                     <input
@@ -1447,7 +1459,7 @@ function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
                     {loading && (
                         <div className="flex items-center justify-center py-8">
                             <RefreshCw className="animate-spin text-blue-500 mr-3" size={24} />
-                            <span className="text-gray-400">Parsing CSV...</span>
+                            <span className="text-gray-400">{t('filtering.parsing_csv')}</span>
                         </div>
                     )}
                 </div>
@@ -1456,22 +1468,22 @@ function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
                 <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
                         <div>
-                            <div className="text-white font-medium">Found {parsedLists.length} lists</div>
-                            <div className="text-sm text-gray-400">{selectedLists.size} selected for import</div>
+                            <div className="text-white font-medium">{t('filtering.found_lists')} {parsedLists.length}</div>
+                            <div className="text-sm text-gray-400">{selectedLists.size} {t('filtering.selected_import')}</div>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setSelectedLists(new Set(parsedLists.map(l => l.url)))}
                                 className="text-sm text-blue-400 hover:text-blue-300"
                             >
-                                Select All
+                                {t('filtering.select_all')}
                             </button>
                             <span className="text-gray-600">|</span>
                             <button
                                 onClick={() => setSelectedLists(new Set())}
                                 className="text-sm text-blue-400 hover:text-blue-300"
                             >
-                                Deselect All
+                                {t('filtering.deselect_all')}
                             </button>
                         </div>
                     </div>
@@ -1507,21 +1519,21 @@ function ImportCSVModal({ isOpen, onClose, whitelist, onImport }: any) {
                             onClick={handleReset}
                             className="text-gray-400 hover:text-white"
                         >
-                            Upload Different File
+                            {t('filtering.upload_different')}
                         </button>
                         <div className="flex gap-3">
                             <button
                                 onClick={onClose}
                                 className="text-gray-400 hover:text-white"
                             >
-                                Cancel
+                                {t('filtering.cancel')}
                             </button>
                             <button
                                 onClick={handleImport}
                                 disabled={selectedLists.size === 0}
                                 className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-6 py-2 rounded-lg transition-colors"
                             >
-                                Import {selectedLists.size} List{selectedLists.size !== 1 ? 's' : ''}
+                                {t('filtering.import_lists')}
                             </button>
                         </div>
                     </div>

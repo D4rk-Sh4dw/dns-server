@@ -65,7 +65,225 @@ export type TranslationKeys =
     | 'dashboard.recursive_resolver'
     | 'dashboard.dashboard_api'
     | 'dashboard.no_records'
-    | 'dashboard.unknown';
+    | 'dashboard.unknown'
+    // Filtering
+    | 'filtering.title'
+    | 'filtering.subtitle'
+    | 'filtering.global_rules'
+    | 'filtering.client_rules'
+    | 'filtering.protection_settings'
+    | 'filtering.dns_protection'
+    | 'filtering.dns_protection_desc'
+    | 'filtering.parental_control'
+    | 'filtering.parental_control_desc'
+    | 'filtering.safe_browsing'
+    | 'filtering.safe_browsing_desc'
+    | 'filtering.safe_search'
+    | 'filtering.safe_search_desc'
+    | 'filtering.global_custom_rules'
+    | 'filtering.global_custom_rules_desc'
+    | 'filtering.add_rule'
+    | 'filtering.syntax_examples'
+    | 'filtering.filter_blocklists'
+    | 'filtering.filter_blocklists_desc'
+    | 'filtering.allow_whitelists'
+    | 'filtering.allow_whitelists_desc'
+    | 'filtering.refresh_lists'
+    | 'filtering.browse_predefined'
+    | 'filtering.import_csv'
+    | 'filtering.add_list'
+    | 'filtering.add_whitelist'
+    | 'filtering.add_blocklist'
+    | 'filtering.edit_list'
+    | 'filtering.name'
+    | 'filtering.url'
+    | 'filtering.cancel'
+    | 'filtering.add'
+    | 'filtering.save'
+    | 'filtering.add_custom_rule'
+    | 'filtering.browse_whitelists'
+    | 'filtering.browse_blocklists'
+    | 'filtering.search_lists'
+    | 'filtering.select_all_available'
+    | 'filtering.deselect_all'
+    | 'filtering.loading_lists'
+    | 'filtering.failed_load_csv'
+    | 'filtering.showing_fallback'
+    | 'filtering.added'
+    | 'filtering.select'
+    | 'filtering.selected'
+    | 'filtering.no_results'
+    | 'filtering.lists_selected'
+    | 'filtering.clear_selection'
+    | 'filtering.add_selected_lists'
+    | 'filtering.adding'
+    | 'filtering.upload_csv_desc'
+    | 'filtering.click_upload'
+    | 'filtering.drag_drop'
+    | 'filtering.supports_csv'
+    | 'filtering.parsing_csv'
+    | 'filtering.found_lists'
+    | 'filtering.selected_import'
+    | 'filtering.select_all'
+    | 'filtering.upload_different'
+    | 'filtering.import_lists'
+    | 'filtering.client_selector_label'
+    | 'filtering.choose_client'
+    | 'filtering.configure_new_client'
+    | 'filtering.new_client_desc'
+    | 'filtering.client_name'
+    | 'filtering.ip_address'
+    | 'filtering.mac_address'
+    | 'filtering.create_client'
+    | 'filtering.blocked_domains'
+    | 'filtering.blocked_domains_desc'
+    | 'filtering.allowed_domains'
+    | 'filtering.allowed_domains_desc'
+    | 'filtering.no_blocked_domains'
+    | 'filtering.no_allowed_domains'
+    | 'filtering.select_client_msg'
+    | 'filtering.temporarily_disable'
+    | 'filtering.stay_off'
+    | 'filtering.protection_paused'
+    | 'filtering.enable_now'
+    | 'filtering.configured_clients'
+    | 'filtering.recognized_devices'
+    | 'filtering.no_clients_found'
+    | 'filtering.suggested'
+    | 'filtering.optional'
+    | 'filtering.failed_pause_timer'
+    | 'filtering.failed_update_protection'
+    | 'filtering.action_failed'
+    // Forwarding
+    | 'forwarding.title'
+    | 'forwarding.subtitle'
+    | 'forwarding.adguard_upstreams'
+    | 'forwarding.adguard_upstreams_desc'
+    | 'forwarding.save_changes'
+    | 'forwarding.predefined_providers'
+    | 'forwarding.ip_or_url'
+    | 'forwarding.upstream_placeholder'
+    | 'forwarding.no_upstreams'
+    | 'forwarding.save_upstream_error'
+    | 'forwarding.fetch_data_error'
+    | 'forwarding.technitium_zones'
+    | 'forwarding.technitium_zones_desc'
+    | 'forwarding.technitium_controls'
+    | 'forwarding.domain_zone'
+    | 'forwarding.type'
+    | 'forwarding.target_forwarder'
+    | 'forwarding.status'
+    | 'forwarding.managed_by'
+    | 'forwarding.ad_domain'
+    | 'forwarding.technitium_zone'
+    | 'forwarding.local'
+    | 'forwarding.no_zones'
+    // Services
+    | 'services.title'
+    | 'services.subtitle'
+    | 'services.pause_blocking'
+    | 'services.time_zone'
+    | 'services.start_time'
+    | 'services.end_time'
+    | 'services.days'
+    | 'services.save_schedule'
+    | 'services.saving'
+    | 'services.schedule_saved'
+    | 'services.blocked_services'
+    | 'services.filter_services'
+    | 'services.no_services_found'
+    // Clients
+    | 'clients.title'
+    | 'clients.subtitle'
+    | 'clients.add_client'
+    | 'clients.search_placeholder'
+    | 'clients.failed_load'
+    | 'clients.no_clients'
+    | 'clients.edit_client'
+    | 'clients.add_new_client'
+    | 'clients.basic_info'
+    | 'clients.client_name'
+    | 'clients.identifiers'
+    | 'clients.tags'
+    | 'clients.protection_settings'
+    | 'clients.global_settings'
+    | 'clients.use_global'
+    | 'clients.dns_filtering'
+    | 'clients.safe_browsing'
+    | 'clients.parental_control'
+    | 'clients.safe_search'
+    | 'clients.whitelist'
+    | 'clients.whitelist_desc'
+    | 'clients.no_whitelist'
+    | 'clients.create_first'
+    | 'clients.blocklist'
+    | 'clients.blocklist_desc'
+    | 'clients.no_blocklist'
+    | 'clients.blocked_services'
+    | 'clients.blocked_services_desc'
+    | 'clients.use_global_blocked'
+    | 'clients.use_global_blocked_desc'
+    | 'clients.block_all'
+    | 'clients.unblock_all'
+    | 'clients.delete_client'
+    | 'clients.delete_confirm'
+    // Logs
+    | 'logs.title'
+    | 'logs.subtitle'
+    | 'logs.clear_logs'
+    | 'logs.clear_confirm'
+    | 'logs.search_placeholder'
+    | 'logs.all_queries'
+    | 'logs.blocked'
+    | 'logs.blocked_services'
+    | 'logs.blocked_threats'
+    | 'logs.blocked_parental'
+    | 'logs.processed'
+    | 'logs.filtered'
+    | 'logs.rewritten'
+    | 'logs.safe_search'
+    | 'logs.time'
+    | 'logs.status'
+    | 'logs.client'
+    | 'logs.domain'
+    | 'logs.answer_upstream'
+    | 'logs.no_logs'
+    | 'logs.load_more'
+    | 'logs.client_details'
+    | 'logs.ip_address'
+    | 'logs.hostname'
+    | 'logs.proto'
+    | 'logs.response_info'
+    | 'logs.whitelist_global'
+    | 'logs.block_global'
+    | 'logs.elapsed'
+    | 'logs.upstream'
+    | 'logs.client_operations'
+    | 'logs.unconfigured_client'
+    | 'logs.no_client_ip'
+    | 'logs.create_client'
+    | 'logs.create_client_desc'
+    | 'logs.detected_hostname'
+    | 'logs.select_client'
+    | 'logs.block_client'
+    | 'logs.whitelist_client'
+    | 'logs.question'
+    | 'logs.matched_rules'
+    | 'logs.list_id'
+    | 'logs.answer'
+    | 'logs.type'
+    | 'logs.value'
+    | 'logs.ttl'
+    | 'logs.view_json'
+    // Common
+    | 'common.save_changes'
+    | 'common.error'
+    | 'common.cancel'
+    | 'common.add'
+    | 'common.save'
+    | 'common.delete'
+    | 'common.retry'
+    | 'common.loading';
 
 export const translations: Record<Language, Record<string, string>> = {
     en: {
@@ -135,6 +353,119 @@ export const translations: Record<Language, Record<string, string>> = {
         'dashboard.dashboard_api': 'Dashboard API',
         'dashboard.no_records': 'No records found',
         'dashboard.unknown': 'Unknown',
+        // Filtering
+        'filtering.title': 'Filtering & Access Control',
+        'filtering.subtitle': 'Manage global lists, per-client rules, and DNS forwarding.',
+        'filtering.global_rules': 'Global Rules',
+        'filtering.client_rules': 'Client Rules',
+        'filtering.protection_settings': 'Protection Settings',
+        'filtering.dns_protection': 'DNS Protection',
+        'filtering.dns_protection_desc': 'Enable DNS filtering and blocking',
+        'filtering.parental_control': 'Parental Control',
+        'filtering.parental_control_desc': 'Block adult content',
+        'filtering.safe_browsing': 'Safe Browsing',
+        'filtering.safe_browsing_desc': 'Block malware and phishing domains',
+        'filtering.safe_search': 'Safe Search',
+        'filtering.safe_search_desc': 'Enforce safe search on search engines',
+        'filtering.global_custom_rules': 'Global Custom Rules',
+        'filtering.global_custom_rules_desc': 'Manually block or allow domains for everyone.',
+        'filtering.add_rule': 'Add Rule',
+        'filtering.syntax_examples': 'Syntax Examples',
+        'filtering.filter_blocklists': 'Filter Blocklists',
+        'filtering.filter_blocklists_desc': 'DNS requests matching these lists will be blocked.',
+        'filtering.allow_whitelists': 'Allow Whitelists',
+        'filtering.allow_whitelists_desc': 'Domains matching these lists will always be allowed.',
+        'filtering.refresh_lists': 'Refresh lists',
+        'filtering.browse_predefined': 'Browse Predefined',
+        'filtering.import_csv': 'Import CSV',
+        'filtering.add_list': 'Add List',
+        'filtering.add_whitelist': 'Add Whitelist',
+        'filtering.add_blocklist': 'Add Blocklist',
+        'filtering.edit_list': 'Edit List',
+        'filtering.name': 'Name',
+        'filtering.url': 'URL',
+        'filtering.cancel': 'Cancel',
+        'filtering.add': 'Add',
+        'filtering.save': 'Save',
+        'filtering.add_custom_rule': 'Add Custom Rule',
+        'filtering.browse_whitelists': 'Browse Whitelists',
+        'filtering.browse_blocklists': 'Browse Blocklists',
+        'filtering.search_lists': 'Search lists...',
+        'filtering.select_all_available': 'Select All Available',
+        'filtering.deselect_all': 'Deselect All',
+        'filtering.loading_lists': 'Loading lists from GitHub...',
+        'filtering.failed_load_csv': 'Failed to load CSV',
+        'filtering.showing_fallback': 'Showing fallback lists instead.',
+        'filtering.added': 'Added',
+        'filtering.select': 'Select',
+        'filtering.selected': 'Selected',
+        'filtering.no_results': 'No results found',
+        'filtering.lists_selected': 'list(s) selected',
+        'filtering.clear_selection': 'Clear Selection',
+        'filtering.add_selected_lists': 'Add Selected Lists',
+        'filtering.adding': 'Adding...',
+        'filtering.upload_csv_desc': 'Upload a CSV file containing filter lists. The CSV should have columns: enabled,url,name,id',
+        'filtering.click_upload': 'Click to upload CSV file',
+        'filtering.drag_drop': 'or drag and drop',
+        'filtering.supports_csv': 'Supports .csv and .txt files',
+        'filtering.parsing_csv': 'Parsing CSV...',
+        'filtering.found_lists': 'Found lists',
+        'filtering.selected_import': 'selected for import',
+        'filtering.select_all': 'Select All',
+        'filtering.upload_different': 'Upload Different File',
+        'filtering.import_lists': 'Import List(s)',
+        'filtering.client_selector_label': 'Select Client to Manage',
+        'filtering.choose_client': 'Choose a Client',
+        'filtering.configure_new_client': 'Configure New Client',
+        'filtering.new_client_desc': 'This device was detected on your network but not yet configured as a client. Create a client entry to manage its filtering rules.',
+        'filtering.client_name': 'Client Name',
+        'filtering.ip_address': 'IP Address',
+        'filtering.mac_address': 'MAC Address',
+        'filtering.create_client': 'Create Client',
+        'filtering.blocked_domains': 'Blocked Domains',
+        'filtering.blocked_domains_desc': 'Domains strictly blocked for',
+        'filtering.allowed_domains': 'Allowed Domains',
+        'filtering.allowed_domains_desc': 'Domains allowed for',
+        'filtering.no_blocked_domains': 'No blocked domains',
+        'filtering.no_allowed_domains': 'No allowed domains',
+        'filtering.select_client_msg': 'Select a client to manage their specific rules.',
+        'filtering.temporarily_disable': 'Temporarily disable for:',
+        'filtering.stay_off': 'Stay Off',
+        'filtering.protection_paused': 'Protection paused:',
+        'filtering.enable_now': 'Enable Now',
+        'filtering.configured_clients': 'Configured Clients',
+        'filtering.recognized_devices': 'Recognized Devices (Create New)',
+        'filtering.no_clients_found': 'No clients or devices found',
+        'filtering.suggested': 'Suggested',
+        'filtering.optional': 'Optional',
+        'filtering.failed_pause_timer': 'Failed to set pause timer. Please try again.',
+        'filtering.failed_update_protection': 'Failed to update protection setting:',
+        'filtering.action_failed': 'Action failed:',
+
+        // Forwarding
+        'forwarding.title': 'Forwarding & Upstreams',
+        'forwarding.subtitle': 'Manage global AdGuard upstream servers and view forwarding zones.',
+        'forwarding.adguard_upstreams': 'AdGuard Upstream Servers',
+        'forwarding.adguard_upstreams_desc': 'Default DNS servers used for resolving non-local queries.',
+        'forwarding.save_changes': 'Save Changes',
+        'forwarding.predefined_providers': 'Predefined Providers...',
+        'forwarding.ip_or_url': 'IP Address or URL (e.g. 1.1.1.1)',
+        'forwarding.upstream_placeholder': 'IP Address or URL (e.g. 1.1.1.1)',
+        'forwarding.no_upstreams': 'No upstream servers configured. DNS resolution might fail.',
+        'forwarding.save_upstream_error': 'Failed to save upstream servers.',
+        'forwarding.fetch_data_error': 'Failed to fetch data.',
+        'forwarding.technitium_zones': 'Technitium Zones (Read-Only)',
+        'forwarding.technitium_zones_desc': 'These zones are managed via',
+        'forwarding.technitium_controls': 'Technitium Controls > Zones & Records',
+        'forwarding.domain_zone': 'Domain / Zone',
+        'forwarding.type': 'Type',
+        'forwarding.target_forwarder': 'Target Forwarder',
+        'forwarding.status': 'Status',
+        'forwarding.managed_by': 'Managed By',
+        'forwarding.ad_domain': 'AD Domain',
+        'forwarding.technitium_zone': 'Technitium Zone',
+        'forwarding.local': 'Local',
+        'forwarding.no_zones': 'No forwarding zones configured.',
     },
     de: {
         'app.title': 'UnifiedDNS',
@@ -203,5 +534,228 @@ export const translations: Record<Language, Record<string, string>> = {
         'dashboard.dashboard_api': 'Dashboard API',
         'dashboard.no_records': 'Keine Einträge gefunden',
         'dashboard.unknown': 'Unbekannt',
+        // Filtering
+        'filtering.title': 'Filterung & Zugriffskontrolle',
+        'filtering.subtitle': 'Verwalten Sie globale Listen, Client-Regeln und DNS-Weiterleitung.',
+        'filtering.global_rules': 'Globale Regeln',
+        'filtering.client_rules': 'Client-Regeln',
+        'filtering.protection_settings': 'Schutzeinstellungen',
+        'filtering.dns_protection': 'DNS-Schutz',
+        'filtering.dns_protection_desc': 'DNS-Filterung und Blockierung aktivieren',
+        'filtering.parental_control': 'Kindersicherung',
+        'filtering.parental_control_desc': 'Nicht jugendfreie Inhalte blockieren',
+        'filtering.safe_browsing': 'Sicheres Surfen',
+        'filtering.safe_browsing_desc': 'Malware- und Phishing-Domains blockieren',
+        'filtering.safe_search': 'Sichere Suche',
+        'filtering.safe_search_desc': 'Sichere Suche auf Suchmaschinen erzwingen',
+        'filtering.global_custom_rules': 'Globale Benutzerregeln',
+        'filtering.global_custom_rules_desc': 'Domains manuell für alle blockieren oder zulassen.',
+        'filtering.add_rule': 'Regel hinzufügen',
+        'filtering.syntax_examples': 'Syntax-Beispiele',
+        'filtering.filter_blocklists': 'Filter-Blocklisten',
+        'filtering.filter_blocklists_desc': 'DNS-Anfragen, die diesen Listen entsprechen, werden blockiert.',
+        'filtering.allow_whitelists': 'Zulassungslisten (Whitelists)',
+        'filtering.allow_whitelists_desc': 'Domains, die diesen Listen entsprechen, werden immer zugelassen.',
+        'filtering.refresh_lists': 'Listen aktualisieren',
+        'filtering.browse_predefined': 'Vordefinierte durchsuchen',
+        'filtering.import_csv': 'CSV importieren',
+        'filtering.add_list': 'Liste hinzufügen',
+        'filtering.add_whitelist': 'Whitelist hinzufügen',
+        'filtering.add_blocklist': 'Blocklist hinzufügen',
+        'filtering.edit_list': 'Liste bearbeiten',
+        'filtering.name': 'Name',
+        'filtering.url': 'URL',
+        'filtering.cancel': 'Abbrechen',
+        'filtering.add': 'Hinzufügen',
+        'filtering.save': 'Speichern',
+        'filtering.add_custom_rule': 'Benutzerregel hinzufügen',
+        'filtering.browse_whitelists': 'Whitelists durchsuchen',
+        'filtering.browse_blocklists': 'Blocklists durchsuchen',
+        'filtering.search_lists': 'Listen durchsuchen...',
+        'filtering.select_all_available': 'Alle verfügbaren auswählen',
+        'filtering.deselect_all': 'Alle abwählen',
+        'filtering.loading_lists': 'Lade Listen von GitHub...',
+        'filtering.failed_load_csv': 'CSV konnte nicht geladen werden',
+        'filtering.showing_fallback': 'Zeige stattdessen Fallback-Listen.',
+        'filtering.added': 'Hinzugefügt',
+        'filtering.select': 'Auswählen',
+        'filtering.selected': 'Ausgewählt',
+        'filtering.no_results': 'Keine Ergebnisse gefunden',
+        'filtering.lists_selected': 'Liste(n) ausgewählt',
+        'filtering.clear_selection': 'Auswahl aufheben',
+        'filtering.add_selected_lists': 'Ausgewählte Listen hinzufügen',
+        'filtering.adding': 'Hinzufügen...',
+        'filtering.upload_csv_desc': 'Laden Sie eine CSV-Datei mit Filterlisten hoch. Spalten: enabled,url,name,id',
+        'filtering.click_upload': 'Klicken zum Hochladen',
+        'filtering.drag_drop': 'oder Drag & Drop',
+        'filtering.supports_csv': 'Unterstützt .csv und .txt',
+        'filtering.parsing_csv': 'Verarbeite CSV...',
+        'filtering.found_lists': 'Gefundene Listen',
+        'filtering.selected_import': 'für Import ausgewählt',
+        'filtering.select_all': 'Alle auswählen',
+        'filtering.upload_different': 'Andere Datei hochladen',
+        'filtering.import_lists': 'Liste(n) importieren',
+        'filtering.client_selector_label': 'Client zur Verwaltung auswählen',
+        'filtering.choose_client': 'Client wählen',
+        'filtering.configure_new_client': 'Neuen Client konfigurieren',
+        'filtering.new_client_desc': 'Dieses Gerät wurde im Netzwerk erkannt, ist aber noch kein Client. Erstellen Sie einen Eintrag, um Regeln festzulegen.',
+        'filtering.client_name': 'Client-Name',
+        'filtering.ip_address': 'IP-Adresse',
+        'filtering.mac_address': 'MAC-Adresse',
+        'filtering.create_client': 'Client erstellen',
+        'filtering.blocked_domains': 'Blockierte Domains',
+        'filtering.blocked_domains_desc': 'Domains strikt blockiert für',
+        'filtering.allowed_domains': 'Erlaubte Domains',
+        'filtering.allowed_domains_desc': 'Domains erlaubt für (umgeht Blocklisten)',
+        'filtering.no_blocked_domains': 'Keine blockierten Domains',
+        'filtering.no_allowed_domains': 'Keine erlaubten Domains',
+        'filtering.select_client_msg': 'Wählen Sie einen Client, um dessen Regeln zu verwalten.',
+        'filtering.temporarily_disable': 'Vorübergehend deaktivieren für:',
+        'filtering.stay_off': 'Aus bleiben',
+        'filtering.protection_paused': 'Schutz pausiert:',
+        'filtering.enable_now': 'Jetzt aktivieren',
+        'filtering.configured_clients': 'Konfigurierte Clients',
+        'filtering.recognized_devices': 'Erkannte Geräte (Neu erstellen)',
+        'filtering.no_clients_found': 'Keine Clients oder Geräte gefunden',
+        'filtering.suggested': 'Empfohlen',
+        'filtering.optional': 'Optional',
+        'filtering.failed_pause_timer': 'Pause-Timer konnte nicht gesetzt werden. Bitte versuchen Sie es erneut.',
+        'filtering.failed_update_protection': 'Schutzeinstellung konnte nicht aktualisiert werden:',
+        'filtering.action_failed': 'Aktion fehlgeschlagen:',
+
+        // Forwarding
+        'forwarding.title': 'Weiterleitung & Upstreams',
+        'forwarding.subtitle': 'Verwalten Sie globale AdGuard Upstream-Server und Zonen.',
+        'forwarding.adguard_upstreams': 'AdGuard Upstream-Server',
+        'forwarding.adguard_upstreams_desc': 'Standard-DNS-Server für externe Abfragen.',
+        'forwarding.save_changes': 'Änderungen speichern',
+        'forwarding.predefined_providers': 'Vordefinierte Anbieter...',
+        'forwarding.ip_or_url': 'IP-Adresse oder URL (z.B. 1.1.1.1)',
+        'forwarding.upstream_placeholder': 'IP-Adresse oder URL (z.B. 1.1.1.1)',
+        'forwarding.no_upstreams': 'Keine Upstream-Server konfiguriert. DNS-Auflösung könnte fehlschlagen.',
+        'forwarding.save_upstream_error': 'Upstream-Server konnten nicht gespeichert werden.',
+        'forwarding.fetch_data_error': 'Daten konnten nicht geladen werden.',
+        'forwarding.technitium_zones': 'Technitium Zonen (Schreibgeschützt)',
+        'forwarding.technitium_zones_desc': 'Diese Zonen werden verwaltet über',
+        'forwarding.technitium_controls': 'Technitium Steuerung > Zonen & Einträge',
+        'forwarding.domain_zone': 'Domain / Zone',
+        'forwarding.type': 'Typ',
+        'forwarding.target_forwarder': 'Ziel / Forwarder',
+        'forwarding.status': 'Status',
+        'forwarding.managed_by': 'Verwaltet von',
+        'forwarding.ad_domain': 'AD Domain',
+        'forwarding.technitium_zone': 'Technitium Zone',
+        'forwarding.local': 'Lokal',
+        'forwarding.no_zones': 'Keine Weiterleitungszonen konfiguriert.',
+
+        // Services
+        'services.title': 'Dienste blockieren',
+        'services.subtitle': 'Blockieren Sie beliebte Anwendungen und konfigurieren Sie Pausenzeiten.',
+        'services.pause_blocking': 'Dienstblockierung pausieren',
+        'services.time_zone': 'Zeitzone',
+        'services.start_time': 'Pausen-Startzeit',
+        'services.end_time': 'Pausen-Endzeit',
+        'services.days': 'Wochentage',
+        'services.save_schedule': 'Zeitplan speichern',
+        'services.saving': 'Speichern...',
+        'services.schedule_saved': 'Zeitplan gespeichert!',
+        'services.blocked_services': 'Blockierte Dienste',
+        'services.filter_services': 'Dienste filtern...',
+        'services.no_services_found': 'Keine Dienste gefunden für',
+
+        // Clients
+        'clients.title': 'Client-Verwaltung',
+        'clients.subtitle': 'Konfigurieren Sie DNS-Richtlinien und Schutzeinstellungen pro Gerät.',
+        'clients.add_client': 'Client hinzufügen',
+        'clients.search_placeholder': 'Suche nach Name oder IP/MAC-Adresse...',
+        'clients.failed_load': 'Clients konnten nicht geladen werden',
+        'clients.no_clients': 'Keine Clients gefunden',
+        'clients.edit_client': 'Client bearbeiten',
+        'clients.add_new_client': 'Neuen Client hinzufügen',
+        'clients.basic_info': 'Basis-Informationen',
+        'clients.client_name': 'Client-Name',
+        'clients.identifiers': 'Identifikatoren (IP, MAC, CIDR)',
+        'clients.tags': 'Tags',
+        'clients.protection_settings': 'Schutzeinstellungen',
+        'clients.global_settings': 'Globale Einstellungen',
+        'clients.use_global': 'Von serverweiten Regeln erben',
+        'clients.dns_filtering': 'DNS-Filterung',
+        'clients.safe_browsing': 'Safe Browsing',
+        'clients.parental_control': 'Kindersicherung',
+        'clients.safe_search': 'Sichere Suche',
+        'clients.whitelist': 'Client Whitelist',
+        'clients.whitelist_desc': 'Domänen, die speziell für diesen Client erlaubt sind.',
+        'clients.no_whitelist': 'Keine benutzerdefinierten erlaubten Domänen für diesen Client.',
+        'clients.create_first': 'Bitte erstellen Sie zuerst den Client, um spezifische Regeln hinzuzufügen.',
+        'clients.blocklist': 'Client Blocklist',
+        'clients.blocklist_desc': 'Domänen, die speziell für diesen Client blockiert sind.',
+        'clients.no_blocklist': 'Keine benutzerdefinierten blockierten Domänen für diesen Client.',
+        'clients.blocked_services': 'Blockierte Dienste',
+        'clients.blocked_services_desc': 'Dienste, die den serverweiten Regeln entsprechen, werden standardmäßig blockiert',
+        'clients.use_global_blocked': 'Globale blockierte Dienste verwenden',
+        'clients.use_global_blocked_desc': 'Serverweite Liste blockierter Dienste verwenden',
+        'clients.block_all': 'Alle blockieren',
+        'clients.unblock_all': 'Alle freigeben',
+        'clients.delete_client': 'Client löschen',
+        'clients.delete_confirm': 'Client löschen',
+
+        // Logs
+        'logs.title': 'Abfrageprotokoll',
+        'logs.subtitle': 'Echtzeit-DNS-Abfrageinspektion.',
+        'logs.clear_logs': 'Protokolle löschen',
+        'logs.clear_confirm': 'Sind Sie sicher, dass Sie das Abfrageprotokoll löschen möchten?',
+        'logs.search_placeholder': 'Suche nach Domain, Client-IP oder Antwort...',
+        'logs.all_queries': 'Alle Abfragen',
+        'logs.blocked': 'Blockiert',
+        'logs.blocked_services': 'Blockierte Dienste',
+        'logs.blocked_threats': 'Blockierte Bedrohungen',
+        'logs.blocked_parental': 'Durch Kindersicherung blockiert',
+        'logs.processed': 'Verarbeitet',
+        'logs.filtered': 'Gefiltert',
+        'logs.rewritten': 'Umgeschrieben',
+        'logs.safe_search': 'Sichere Suche',
+        'logs.time': 'Zeit',
+        'logs.status': 'Status',
+        'logs.client': 'Client',
+        'logs.domain': 'Domain',
+        'logs.answer_upstream': 'Antwort / Upstream',
+        'logs.no_logs': 'Keine Protokolle gefunden, die Ihren Kriterien entsprechen.',
+        'logs.load_more': 'Mehr Protokolle laden',
+        'logs.client_details': 'Client-Details',
+        'logs.ip_address': 'IP-Adresse',
+        'logs.hostname': 'Hostname',
+        'logs.proto': 'Proto',
+        'logs.response_info': 'Antwort-Info',
+        'logs.whitelist_global': 'Global zulassen',
+        'logs.block_global': 'Global blockieren',
+        'logs.elapsed': 'Dauer',
+        'logs.upstream': 'Upstream',
+        'logs.client_operations': 'Client-Operationen',
+        'logs.unconfigured_client': 'Nicht konfigurierter Client',
+        'logs.no_client_ip': 'Kein Client entspricht IP',
+        'logs.create_client': 'Client erstellen',
+        'logs.create_client_desc': 'Erstellt einen neuen Client mit IP',
+        'logs.detected_hostname': 'Erkannter Hostname',
+        'logs.select_client': 'Client auswählen',
+        'logs.block_client': 'Für Client blockieren',
+        'logs.whitelist_client': 'Für Client zulassen',
+        'logs.question': 'Frage',
+        'logs.matched_rules': 'Übereinstimmende Regeln',
+        'logs.list_id': 'Listen-ID',
+        'logs.answer': 'Antwort',
+        'logs.type': 'Typ',
+        'logs.value': 'Wert',
+        'logs.ttl': 'TTL',
+        'logs.view_json': 'Raw JSON anzeigen',
+
+        // Common
+        'common.save_changes': 'Save Changes',
+        'common.error': 'Error',
+        'common.cancel': 'Cancel',
+        'common.add': 'Add',
+        'common.save': 'Save',
+        'common.delete': 'Delete',
+        'common.retry': 'Retry',
+        'common.loading': 'Loading...',
     },
 };

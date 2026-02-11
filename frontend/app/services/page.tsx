@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n-context';
+
 import { useEffect, useState } from 'react';
 import { RefreshCw, Clock, Save, ShieldOff } from 'lucide-react';
 import { POPULAR_SERVICES, ServiceDefinition } from '../../config/services';
@@ -13,6 +15,7 @@ function Switch({ checked }: { checked: boolean }) {
 }
 
 export default function ServicesPage() {
+    const { t } = useTranslation();
     const [availableServices, setAvailableServices] = useState<any[]>([]);
     const [blockedServices, setBlockedServices] = useState<string[]>([]);
     const [schedule, setSchedule] = useState<any>({});
@@ -119,10 +122,10 @@ export default function ServicesPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            alert('Schedule saved!');
+            alert(t('services.schedule_saved'));
         } catch (err) {
             console.error(err);
-            alert('Failed to save schedule');
+            alert(`${t('filtering.action_failed')} "save schedule".`);
         }
         setScheduleSaving(false);
     };
@@ -148,8 +151,8 @@ export default function ServicesPage() {
         <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Service Blocking</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Block popular applications and configure pause schedules.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('services.title')}</h1>
+                    <p className="text-gray-400 text-sm md:text-base">{t('services.subtitle')}</p>
                 </div>
                 <button
                     onClick={fetchData}
@@ -163,12 +166,12 @@ export default function ServicesPage() {
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                 <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
                     <Clock className="text-blue-500" size={24} />
-                    Pause Service Blocking
+                    {t('services.pause_blocking')}
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Time Zone</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">{t('services.time_zone')}</label>
                         <select
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
                             value={schedule.schedule?.time_zone || 'UTC'}
@@ -183,7 +186,7 @@ export default function ServicesPage() {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Pause Start Time</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">{t('services.start_time')}</label>
                         <input
                             type="time"
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
@@ -202,7 +205,7 @@ export default function ServicesPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Pause End Time</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">{t('services.end_time')}</label>
                         <input
                             type="time"
                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
@@ -216,7 +219,7 @@ export default function ServicesPage() {
                 </div>
 
                 <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Days of Week</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('services.days')}</label>
                     <div className="flex flex-wrap gap-2">
                         {['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((day, idx) => (
                             <button
@@ -249,7 +252,7 @@ export default function ServicesPage() {
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                     >
                         <Save size={18} />
-                        {scheduleSaving ? 'Saving...' : 'Save Schedule'}
+                        {scheduleSaving ? t('services.saving') : t('services.save_schedule')}
                     </button>
                 </div>
             </div>
@@ -259,11 +262,11 @@ export default function ServicesPage() {
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-medium text-white flex items-center gap-2">
                         <ShieldOff className="text-red-500" size={20} />
-                        Blocked Services ({blockedServices.length})
+                        {t('services.blocked_services')} ({blockedServices.length})
                     </h3>
                     <input
                         type="text"
-                        placeholder="Filter services..."
+                        placeholder={t('services.filter_services')}
                         value={filter}
                         onChange={e => setFilter(e.target.value)}
                         className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:border-blue-500"
@@ -310,7 +313,7 @@ export default function ServicesPage() {
                     })}
                     {filteredServices.length === 0 && !loading && (
                         <div className="col-span-full text-center text-gray-500 py-8">
-                            No services found matching term "{filter}".
+                            {t('services.no_services_found')} "{filter}".
                         </div>
                     )}
                 </div>
