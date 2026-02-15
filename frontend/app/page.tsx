@@ -301,10 +301,17 @@ function QueryChart({ data }: { data?: any[] }) {
   // { "dns_queries": [...numbers...], "time_units": "hours" }
   // Users want to see the volume over time.
 
-  const chartData = data.map((value, index) => ({
-    time: `${index}h`,
-    queries: value,
-  }));
+  const now = new Date();
+  const currentHour = now.getHours();
+  const totalPoints = data.length;
+
+  const chartData = data.map((value, index) => {
+    const hour = (currentHour - (totalPoints - 1 - index) + 24) % 24;
+    return {
+      time: `${hour.toString().padStart(2, '0')}:00`,
+      queries: value,
+    };
+  });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
