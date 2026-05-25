@@ -230,20 +230,40 @@ function CloudflareSettings() {
     const [testResult, setTestResult] = useState<boolean | null>(null);
 
     useEffect(() => {
-        // Load from localStorage (credentials stored client-side for this demo)
-        const saved = localStorage.getItem('cloudflare_config');
-        if (saved) {
-            try {
-                setConfig(JSON.parse(saved));
-            } catch (e) { }
-        }
-        setLoading(false);
+        // Load from server (persisted in data volume)
+        fetch('/api/system/cloudflare-config')
+            .then(r => r.json())
+            .then(data => {
+                if (data && !data.error) {
+                    setConfig({
+                        email: data.email || '',
+                        apiToken: data.apiToken || '',
+                        apiKey: data.apiKey || '',
+                        authType: data.authType || 'token',
+                    });
+                }
+            })
+            .catch(() => {
+                // Fallback to localStorage for backwards compatibility
+                const saved = localStorage.getItem('cloudflare_config');
+                if (saved) {
+                    try { setConfig(JSON.parse(saved)); } catch (e) { }
+                }
+            })
+            .finally(() => setLoading(false));
     }, []);
 
     const handleSave = async () => {
         setSaving(true);
         setSaveResult(null);
         try {
+            const res = await fetch('/api/system/cloudflare-config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config),
+            });
+            if (!res.ok) throw new Error('Server error');
+            // Also keep localStorage in sync for same-session use by other components
             localStorage.setItem('cloudflare_config', JSON.stringify(config));
             setSaveResult('success');
             setTimeout(() => setSaveResult(null), 3000);

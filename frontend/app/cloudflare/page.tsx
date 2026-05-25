@@ -56,14 +56,23 @@ export default function CloudflarePage() {
         priority: 10,
     });
 
-    // Load CF config from localStorage
+    // Load CF config from server (with localStorage fallback)
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem('cloudflare_config');
-            if (raw) setConfig(JSON.parse(raw));
-        } catch (e) {
-            console.error('Failed to load cloudflare config:', e);
-        }
+        fetch('/api/system/cloudflare-config')
+            .then(r => r.json())
+            .then(data => {
+                if (data && !data.error && (data.apiToken || data.apiKey)) {
+                    setConfig(data);
+                    localStorage.setItem('cloudflare_config', JSON.stringify(data));
+                } else {
+                    const raw = localStorage.getItem('cloudflare_config');
+                    if (raw) try { setConfig(JSON.parse(raw)); } catch (e) { }
+                }
+            })
+            .catch(() => {
+                const raw = localStorage.getItem('cloudflare_config');
+                if (raw) try { setConfig(JSON.parse(raw)); } catch (e) { }
+            });
     }, []);
 
     const credPayload = useMemo(() => {

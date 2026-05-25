@@ -141,11 +141,18 @@ export default function ZonesPage() {
             // Push to Cloudflare if enabled
             if (newZone.pushToCloudflare && newZone.name) {
                 try {
-                    // Get Cloudflare config from localStorage
-                    const cfConfig = localStorage.getItem('cloudflare_config');
-                    if (cfConfig) {
-                        const cf = JSON.parse(cfConfig);
-                        if (cf.apiToken || cf.apiKey) {
+                    // Get Cloudflare config from server, fallback to localStorage
+                    let cf: any = null;
+                    try {
+                        const cfRes = await fetch('/api/system/cloudflare-config');
+                        const cfData = await cfRes.json();
+                        if (cfData && !cfData.error && (cfData.apiToken || cfData.apiKey)) cf = cfData;
+                    } catch (e) { }
+                    if (!cf) {
+                        const raw = localStorage.getItem('cloudflare_config');
+                        if (raw) cf = JSON.parse(raw);
+                    }
+                    if (cf && (cf.apiToken || cf.apiKey)) {
                             await fetch('/api/cloudflare/zones', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -153,13 +160,12 @@ export default function ZonesPage() {
                                     action: 'create',
                                     zone: (newZone as any).formattedReverse || newZone.name,
                                     publicIpv4: newZone.cloudflarePublicIp || undefined,
-                                    publicIpv6: undefined, // Could add another input for IPv6
+                                    publicIpv6: undefined,
                                     email: cf.authType === 'key' ? cf.email : undefined,
                                     apiToken: cf.authType === 'token' ? cf.apiToken : undefined,
                                     apiKey: cf.authType === 'key' ? cf.apiKey : undefined,
                                 }),
                             });
-                        }
                     }
                 } catch (cfErr) {
                     console.error('Failed to push zone to Cloudflare:', cfErr);

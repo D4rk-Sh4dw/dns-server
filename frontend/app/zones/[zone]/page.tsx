@@ -62,14 +62,23 @@ export default function ZoneDetailPage() {
     const [cfRecords, setCfRecords] = useState<any[]>([]);
     const [cfLoading, setCfLoading] = useState(false);
 
-    // Load CF config from localStorage
+    // Load CF config from server (with localStorage fallback)
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem('cloudflare_config');
-            if (raw) setCfConfig(JSON.parse(raw));
-        } catch (e) {
-            console.error('Failed to load CF config:', e);
-        }
+        fetch('/api/system/cloudflare-config')
+            .then(r => r.json())
+            .then(data => {
+                if (data && !data.error && (data.apiToken || data.apiKey)) {
+                    setCfConfig(data);
+                    localStorage.setItem('cloudflare_config', JSON.stringify(data));
+                } else {
+                    const raw = localStorage.getItem('cloudflare_config');
+                    if (raw) setCfConfig(JSON.parse(raw));
+                }
+            })
+            .catch(() => {
+                const raw = localStorage.getItem('cloudflare_config');
+                if (raw) try { setCfConfig(JSON.parse(raw)); } catch (e) { }
+            });
     }, []);
 
     // Fetch Cloudflare records for this zone
