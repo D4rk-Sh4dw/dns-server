@@ -12,22 +12,25 @@ interface CloudflareConfig {
 // Runtime config (from settings page) takes precedence over env vars
 let runtimeConfig: CloudflareConfig = {};
 
-let config: CloudflareConfig = {
-    email: process.env.CLOUDFLARE_EMAIL,
-    apiToken: process.env.CLOUDFLARE_API_TOKEN,
-    apiKey: process.env.CLOUDFLARE_API_KEY,
-};
+// Get env vars at runtime (not build time) to avoid issues
+function getEnvConfig(): CloudflareConfig {
+    return {
+        email: process.env.CLOUDFLARE_EMAIL,
+        apiToken: process.env.CLOUDFLARE_API_TOKEN,
+        apiKey: process.env.CLOUDFLARE_API_KEY,
+    };
+}
 
 export function setCloudflareConfig(newConfig: Partial<CloudflareConfig>) {
     runtimeConfig = { ...runtimeConfig, ...newConfig };
 }
 
 export function getCloudflareConfig(): CloudflareConfig {
-    return { ...config, ...runtimeConfig };
+    return { ...getEnvConfig(), ...runtimeConfig };
 }
 
 function validateConfig() {
-    const activeConfig = { ...config, ...runtimeConfig };
+    const activeConfig = { ...getEnvConfig(), ...runtimeConfig };
     if (!activeConfig.apiToken && !activeConfig.apiKey) {
         throw new Error('Cloudflare API Token or Global API Key is required');
     }
@@ -39,7 +42,7 @@ function validateConfig() {
 async function cloudflareFetch(endpoint: string, options: RequestInit = {}) {
     validateConfig();
 
-    const activeConfig = { ...config, ...runtimeConfig };
+    const activeConfig = { ...getEnvConfig(), ...runtimeConfig };
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
