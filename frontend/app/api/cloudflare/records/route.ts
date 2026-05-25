@@ -52,7 +52,11 @@ export async function GET(request: Request) {
 
         // Set runtime config if provided
         if (email || apiToken || apiKey) {
-            cloudflare.setCloudflareConfig({ email, apiToken, apiKey });
+            cloudflare.setCloudflareConfig({ 
+                email: email || undefined, 
+                apiToken: apiToken || undefined, 
+                apiKey: apiKey || undefined 
+            });
         }
 
         if (!zoneId) {
