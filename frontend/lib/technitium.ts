@@ -1,12 +1,18 @@
 // Technitium DNS API Client
 // Docs: https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md
 
-const TECHNITIUM_URL = process.env.TECHNITIUM_URL || 'http://dns-technitium:5380';
-const TECHNITIUM_PASSWORD = process.env.TECHNITIUM_PASSWORD;
+// Get env vars at runtime to avoid build-time issues
+function getTechnitiumConfig() {
+    return {
+        url: process.env.TECHNITIUM_URL || 'http://dns-technitium:5380',
+        password: process.env.TECHNITIUM_PASSWORD,
+    };
+}
 
-// Validate credentials at runtime, not at module load time (to allow builds without env vars)
+// Validate credentials at runtime
 function validateCredentials() {
-    if (!TECHNITIUM_PASSWORD) {
+    const config = getTechnitiumConfig();
+    if (!config.password) {
         throw new Error('TECHNITIUM_PASSWORD environment variable is required');
     }
 }
@@ -30,9 +36,10 @@ async function getToken(forceRefresh = false): Promise<string> {
 
     if (cachedToken && !forceRefresh) return cachedToken;
 
+    const config = getTechnitiumConfig();
     console.log(`[Technitium] Fetching new token (forceRefresh=${forceRefresh})...`);
     try {
-        const response = await fetch(`${TECHNITIUM_URL}/api/user/login?user=admin&pass=${TECHNITIUM_PASSWORD}`);
+        const response = await fetch(`${config.url}/api/user/login?user=admin&pass=${config.password}`);
         const text = await response.text();
 
         let data;
@@ -58,10 +65,11 @@ async function getToken(forceRefresh = false): Promise<string> {
 
 async function technitiumFetch(endpoint: string, params: Record<string, string> = {}, options: { method?: string; body?: any } = {}) {
     try {
-        const token = await getToken();
+        const config = getTechnitiumConfig();
+        const token = await getToken()
         // For GET requests, params go in URL. For POST, they might be query params OR body, depending on API.
         const queryParams = new URLSearchParams({ token, ...params });
-        const url = `${TECHNITIUM_URL}${endpoint}?${queryParams}`;
+        const url = `${config.url}${endpoint}?${queryParams}`;
 
         const fetchOptions: RequestInit = {
             method: options.method || 'GET',
@@ -77,7 +85,7 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
             cachedToken = null;
             const newToken = await getToken(true);
             const retryParams = new URLSearchParams({ token: newToken, ...params });
-            const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
+            const retryUrl = `${config.url}${endpoint}?${retryParams}`;
             response = await fetch(retryUrl, fetchOptions);
         }
 
@@ -110,7 +118,7 @@ async function technitiumFetch(endpoint: string, params: Record<string, string> 
 
                 // Retry the request
                 const retryParams = new URLSearchParams({ token: newToken, ...params });
-                const retryUrl = `${TECHNITIUM_URL}${endpoint}?${retryParams}`;
+                const retryUrl = `${config.url}${endpoint}?${retryParams}`;
 
                 const retryResponse = await fetch(retryUrl, fetchOptions);
                 const retryText = await retryResponse.text();

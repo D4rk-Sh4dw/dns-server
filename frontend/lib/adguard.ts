@@ -5,25 +5,34 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const PAUSE_FILE = '/tmp/pause_state.json';
-const ADGUARD_URL = process.env.ADGUARD_URL || 'http://10.10.10.2:3000';
-const ADGUARD_USER = process.env.ADGUARD_USER || 'admin';
-const ADGUARD_PASS = process.env.ADGUARD_PASS;
 
-// Validate credentials at runtime, not at module load time (to allow builds without env vars)
+// Get env vars at runtime to avoid build-time issues
+function getAdGuardConfig() {
+    return {
+        url: process.env.ADGUARD_URL || 'http://10.10.10.2:3000',
+        user: process.env.ADGUARD_USER || 'admin',
+        pass: process.env.ADGUARD_PASS,
+    };
+}
+
+// Validate credentials at runtime
 function validateCredentials() {
-    if (!ADGUARD_PASS) {
+    const config = getAdGuardConfig();
+    if (!config.pass) {
         throw new Error('ADGUARD_PASS environment variable is required');
     }
 }
 
 function getAuthHeader() {
     validateCredentials();
-    const credentials = Buffer.from(`${ADGUARD_USER}:${ADGUARD_PASS}`).toString('base64');
+    const config = getAdGuardConfig();
+    const credentials = Buffer.from(`${config.user}:${config.pass}`).toString('base64');
     return `Basic ${credentials}`;
 }
 
 async function adguardFetch(endpoint: string, options: RequestInit = {}) {
-    const url = `${ADGUARD_URL}${endpoint}`;
+    const config = getAdGuardConfig();
+    const url = `${config.url}${endpoint}`;
     const headers: Record<string, string> = {
         'Authorization': getAuthHeader(),
     };
