@@ -16,6 +16,10 @@ services:
       - AUTH_SECRET=this_is_a_very_secret_key_for_nextauth
       - ADMIN_USER=admin
       - ADMIN_PASSWORD=admin123
+      # Cloudflare DNS Integration (optional)
+      # - CLOUDFLARE_EMAIL=your-email@example.com
+      # - CLOUDFLARE_API_TOKEN=your-zone-api-token
+      # - CLOUDFLARE_API_KEY=your-global-api-key
     volumes:
       - ./config:/app/config_mount
       - ./data:/app/data_mount

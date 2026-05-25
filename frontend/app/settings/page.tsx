@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, RefreshCw, CheckCircle, XCircle, Shield, Server, Database, Wifi, Upload } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, XCircle, Shield, Server, Database, Wifi, Upload, Cloud } from 'lucide-react';
 
 import { useTranslation } from '@/lib/i18n-context';
 
@@ -210,6 +210,197 @@ export default function SettingsPage() {
             <AdGuardImport />
 
             <OpnsenseSettings />
+
+            <CloudflareSettings />
+        </div>
+    );
+}
+
+function CloudflareSettings() {
+    const [config, setConfig] = useState<any>({
+        email: '',
+        apiToken: '',
+        apiKey: '',
+        authType: 'token', // 'token' = Zone API Token, 'key' = Global API Key
+    });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [testing, setTesting] = useState(false);
+    const [testResult, setTestResult] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        // Load from localStorage (credentials stored client-side for this demo)
+        const saved = localStorage.getItem('cloudflare_config');
+        if (saved) {
+            try {
+                setConfig(JSON.parse(saved));
+            } catch (e) { }
+        }
+        setLoading(false);
+    }, []);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            // Save to localStorage (in production, should be server-side)
+            localStorage.setItem('cloudflare_config', JSON.stringify(config));
+            alert('Cloudflare configuration saved!');
+        } catch (err) {
+            alert('Failed to save configuration');
+        }
+        setSaving(false);
+    };
+
+    const handleTest = async () => {
+        setTesting(true);
+        setTestResult(null);
+        try {
+            // Pass credentials directly in the request body
+            const res = await fetch('/api/cloudflare/zones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'test',
+                    email: config.authType === 'key' ? config.email : undefined,
+                    apiToken: config.authType === 'token' ? config.apiToken : undefined,
+                    apiKey: config.authType === 'key' ? config.apiKey : undefined,
+                }),
+            });
+            const data = await res.json();
+            setTestResult(data.connected);
+        } catch (err) {
+            setTestResult(false);
+        }
+        setTesting(false);
+    };
+
+    if (loading) return <div className="text-white p-6">Loading Cloudflare settings...</div>;
+
+    return (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                <Cloud className="text-orange-400" size={24} />
+                Cloudflare DNS Integration
+            </h2>
+
+            <p className="text-gray-400 text-sm mb-6">
+                Configure Cloudflare to push DNS zones directly from this dashboard. 
+                You can use either a Zone API Token (recommended) or a Global API Key.
+            </p>
+
+            <div className="space-y-6">
+                {/* Auth Type Selection */}
+                <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="authType"
+                            value="token"
+                            checked={config.authType === 'token'}
+                            onChange={() => setConfig({ ...config, authType: 'token' })}
+                            className="w-4 h-4 text-orange-500 bg-gray-800 border-gray-700 focus:ring-orange-500"
+                        />
+                        <span className="text-white">Zone API Token</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="authType"
+                            value="key"
+                            checked={config.authType === 'key'}
+                            onChange={() => setConfig({ ...config, authType: 'key' })}
+                            className="w-4 h-4 text-orange-500 bg-gray-800 border-gray-700 focus:ring-orange-500"
+                        />
+                        <span className="text-white">Global API Key</span>
+                    </label>
+                </div>
+
+                {/* Email (only for Global API Key) */}
+                {config.authType === 'key' && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Cloudflare Email</label>
+                        <input
+                            type="email"
+                            value={config.email}
+                            onChange={e => setConfig({ ...config, email: e.target.value })}
+                            placeholder="your-email@example.com"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                        />
+                    </div>
+                )}
+
+                {/* API Token (Zone Token) */}
+                {config.authType === 'token' && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Zone API Token</label>
+                        <input
+                            type="password"
+                            value={config.apiToken}
+                            onChange={e => setConfig({ ...config, apiToken: e.target.value })}
+                            placeholder="Your Cloudflare Zone API Token"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Create a token with <code>Zone:Read</code> and <code>Zone:DNS:Write</code> permissions.
+                        </p>
+                    </div>
+                )}
+
+                {/* Global API Key */}
+                {config.authType === 'key' && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Global API Key</label>
+                        <input
+                            type="password"
+                            value={config.apiKey}
+                            onChange={e => setConfig({ ...config, apiKey: e.target.value })}
+                            placeholder="Your Cloudflare Global API Key"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Find your API key in Cloudflare Dashboard → Profile → API Tokens → Global API Key.
+                        </p>
+                    </div>
+                )}
+
+                {/* Test Connection */}
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={handleTest}
+                        disabled={testing || (!config.apiToken && !config.apiKey)}
+                        className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw size={18} className={testing ? 'animate-spin' : ''} />
+                        {testing ? 'Testing...' : 'Test Connection'}
+                    </button>
+                    {testResult === true && (
+                        <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium">
+                            <CheckCircle size={16} /> Connected successfully!
+                        </span>
+                    )}
+                    {testResult === false && (
+                        <span className="flex items-center gap-1.5 text-red-400 text-sm font-medium">
+                            <XCircle size={16} /> Connection failed. Check your credentials.
+                        </span>
+                    )}
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-2">
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                        <Save size={18} />
+                        {saving ? 'Saving...' : 'Save Cloudflare Config'}
+                    </button>
+                </div>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4">
+                Note: Credentials are stored in your browser&apos;s local storage. For production, consider server-side storage.
+            </p>
         </div>
     );
 }

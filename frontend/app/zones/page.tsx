@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, RefreshCw, ChevronRight, Trash2, Check, AlertCircle, Server, Globe, Search } from 'lucide-react';
+import { Plus, RefreshCw, ChevronRight, Trash2, Check, AlertCircle, Server, Globe, Search, Cloud } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n-context';
 
@@ -71,6 +71,8 @@ export default function ZonesPage() {
         dcServers: '',
         forwarder: '',
         protocol: 'Udp', // Default Technitium protocol value
+        pushToCloudflare: false,
+        cloudflarePublicIp: '',
     });
     const [selectedProvider, setSelectedProvider] = useState('');
     const [creating, setCreating] = useState(false);
@@ -136,7 +138,36 @@ export default function ZonesPage() {
             const data = await res.json();
             if (data.error) throw new Error(data.error);
 
-            setNewZone({ name: '', type: 'Primary', isActiveDirectory: false, dcServers: '', forwarder: '', protocol: 'Udp' });
+            // Push to Cloudflare if enabled
+            if (newZone.pushToCloudflare && newZone.name) {
+                try {
+                    // Get Cloudflare config from localStorage
+                    const cfConfig = localStorage.getItem('cloudflare_config');
+                    if (cfConfig) {
+                        const cf = JSON.parse(cfConfig);
+                        if (cf.apiToken || cf.apiKey) {
+                            await fetch('/api/cloudflare/zones', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'create',
+                                    zone: (newZone as any).formattedReverse || newZone.name,
+                                    publicIpv4: newZone.cloudflarePublicIp || undefined,
+                                    publicIpv6: undefined, // Could add another input for IPv6
+                                    email: cf.authType === 'key' ? cf.email : undefined,
+                                    apiToken: cf.authType === 'token' ? cf.apiToken : undefined,
+                                    apiKey: cf.authType === 'key' ? cf.apiKey : undefined,
+                                }),
+                            });
+                        }
+                    }
+                } catch (cfErr) {
+                    console.error('Failed to push zone to Cloudflare:', cfErr);
+                    // Don't fail the whole operation if Cloudflare push fails
+                }
+            }
+
+            setNewZone({ name: '', type: 'Primary', isActiveDirectory: false, dcServers: '', forwarder: '', protocol: 'Udp', pushToCloudflare: false, cloudflarePublicIp: '' });
             setShowCreateModal(false);
             await fetchZones();
         } catch (err) {
@@ -530,6 +561,43 @@ export default function ZonesPage() {
                                     <p className="text-xs text-gray-500">
                                         {t('zones.forwarder_desc')}
                                     </p>
+                                </div>
+                            )}
+
+                            {/* Cloudflare Push Option */}
+                            {!newZone.isActiveDirectory && newZone.type !== 'ConditionalForwarder' && (
+                                <div className="border-t border-gray-700 pt-4 mt-4">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={newZone.pushToCloudflare}
+                                            onChange={(e) => setNewZone(prev => ({ ...prev, pushToCloudflare: e.target.checked }))}
+                                            className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-orange-500 focus:ring-orange-500"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Cloud size={18} className="text-orange-400" />
+                                            <span className="text-white font-medium">Push to Cloudflare</span>
+                                        </div>
+                                    </label>
+
+                                    {newZone.pushToCloudflare && (
+                                        <div className="mt-3 ml-8 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <label className="block text-sm font-medium text-gray-400 mb-1">
+                                                Public IP for A/AAAA Records
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newZone.cloudflarePublicIp}
+                                                onChange={(e) => setNewZone(prev => ({ ...prev, cloudflarePublicIp: e.target.value }))}
+                                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                                                placeholder="e.g. 203.0.113.10"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                This IP will be used for A (IPv4) and AAAA (IPv6) records pointing to @ (root domain).
+                                                Internally, Technitium will use different IPs (you can configure this in the zone details).
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

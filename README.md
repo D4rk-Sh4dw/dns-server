@@ -110,6 +110,33 @@ If you're integrating with OPNsense that uses a self-signed certificate:
 - Configure `skip_ssl_verify: true` in your OPNsense configuration
 - This is safe as it only affects OPNsense API calls
 
+### Cloudflare DNS Integration (Optional)
+
+You can push DNS zones directly to Cloudflare from the dashboard. This creates the zone in Cloudflare and automatically adds A/AAAA records pointing to your public IP.
+
+**Option 1: Environment Variables (Server-side)**
+```yaml
+# In docker-compose.yml
+CLOUDFLARE_EMAIL: your-email@example.com
+CLOUDFLARE_API_TOKEN: your-zone-api-token  # Recommended
+# OR for full access:
+CLOUDFLARE_API_KEY: your-global-api-key
+```
+
+**Option 2: Settings Page (Browser-side)**
+1. Go to **Settings** in the dashboard
+2. Scroll to **Cloudflare DNS Integration**
+3. Choose authentication type:
+   - **Zone API Token** (recommended): Create in Cloudflare Dashboard with `Zone:Read` and `Zone:DNS:Write` permissions
+   - **Global API Key**: Use with your Cloudflare email
+4. Click **Test Connection** to verify
+5. Click **Save Cloudflare Config**
+
+**Using Cloudflare Push:**
+1. When creating a new zone, check **"Push to Cloudflare"**
+2. Enter your **Public IP** for A/AAAA records
+3. The zone will be created in both Technitium (local) and Cloudflare (public)
+
 ### Direct Access to AdGuard/Technitium
 
 > [!IMPORTANT]
