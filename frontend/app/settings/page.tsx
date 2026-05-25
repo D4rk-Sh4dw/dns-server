@@ -225,6 +225,7 @@ function CloudflareSettings() {
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [saveResult, setSaveResult] = useState<'success' | 'error' | null>(null);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<boolean | null>(null);
 
@@ -241,12 +242,13 @@ function CloudflareSettings() {
 
     const handleSave = async () => {
         setSaving(true);
+        setSaveResult(null);
         try {
-            // Save to localStorage (in production, should be server-side)
             localStorage.setItem('cloudflare_config', JSON.stringify(config));
-            alert('Cloudflare configuration saved!');
+            setSaveResult('success');
+            setTimeout(() => setSaveResult(null), 3000);
         } catch (err) {
-            alert('Failed to save configuration');
+            setSaveResult('error');
         }
         setSaving(false);
     };
@@ -386,7 +388,17 @@ function CloudflareSettings() {
                 </div>
 
                 {/* Save Button */}
-                <div className="flex justify-end pt-2">
+                <div className="flex items-center justify-end gap-4 pt-2">
+                    {saveResult === 'success' && (
+                        <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium">
+                            <CheckCircle size={16} /> Saved successfully!
+                        </span>
+                    )}
+                    {saveResult === 'error' && (
+                        <span className="flex items-center gap-1.5 text-red-400 text-sm font-medium">
+                            <XCircle size={16} /> Failed to save.
+                        </span>
+                    )}
                     <button
                         onClick={handleSave}
                         disabled={saving}
