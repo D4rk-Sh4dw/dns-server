@@ -3,7 +3,7 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers, LogOut } from 'lucide-react'
+import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers, LogOut, Cloud } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-context'
@@ -143,6 +143,7 @@ function SidebarContent({ pathname }: { pathname: string }) {
         {t('nav.technitium_controls')}
       </div>
       <NavItem href="/zones" icon={Globe} label={t('nav.zones_records')} active={pathname.startsWith('/zones')} />
+      <NavItem href="/cloudflare" icon={Cloud} label="Cloudflare" active={pathname.startsWith('/cloudflare')} />
 
       <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
         {t('nav.system')}
