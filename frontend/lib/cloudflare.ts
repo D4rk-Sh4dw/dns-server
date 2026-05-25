@@ -22,7 +22,7 @@ export function getCloudflareConfig(): CloudflareConfig {
 
 function validateConfig() {
     if (!runtimeConfig.apiToken && !runtimeConfig.apiKey) {
-        throw new Error('Cloudflare API Token or Global API Key is required');
+        throw new Error('Cloudflare API Token or Global API Key is required. Please configure in Settings.');
     }
     if (runtimeConfig.apiKey && !runtimeConfig.email) {
         throw new Error('Cloudflare Email is required when using Global API Key');
@@ -30,7 +30,10 @@ function validateConfig() {
 }
 
 async function cloudflareFetch(endpoint: string, options: RequestInit = {}) {
-    validateConfig();
+    // Only validate if credentials are set (lazy validation)
+    if (runtimeConfig.apiToken || runtimeConfig.apiKey) {
+        validateConfig();
+    }
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -61,6 +64,10 @@ async function cloudflareFetch(endpoint: string, options: RequestInit = {}) {
 
 // Zone Management
 export async function listZones(): Promise<any[]> {
+    // Return empty array if no credentials configured
+    if (!runtimeConfig.apiToken && !runtimeConfig.apiKey) {
+        return [];
+    }
     const response = await cloudflareFetch('/zones');
     return response;
 }
