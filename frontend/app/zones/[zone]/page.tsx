@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle, Edit2, Search } from 'lucide-react';
+import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle, Edit2, Search, Cloud } from 'lucide-react';
 import Link from 'next/link';
 
 interface DnsRecord {
@@ -42,6 +42,9 @@ export default function ZoneDetailPage() {
         priority: 10,
         weight: 0,
         port: 0,
+        // Cloudflare sync fields
+        pushToCloudflare: false,
+        cloudflareValue: '', // Separate IP for Cloudflare
     });
 
     useEffect(() => {
@@ -144,7 +147,49 @@ export default function ZoneDetailPage() {
                 throw new Error(data.error || 'Failed to add record');
             }
 
-            setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0 });
+            // Push to Cloudflare if enabled and it's an A/AAAA record
+            if (newRecord.pushToCloudflare && (newRecord.type === 'A' || newRecord.type === 'AAAA') && newRecord.cloudflareValue) {
+                try {
+                    const cfConfig = localStorage.getItem('cloudflare_config');
+                    if (cfConfig) {
+                        const cf = JSON.parse(cfConfig);
+                        if (cf.apiToken || cf.apiKey) {
+                            // Get zone ID from Cloudflare
+                            const zoneRes = await fetch('/api/cloudflare/zones', {
+                                method: 'GET',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                },
+                            });
+                            const cfZones = await zoneRes.json();
+                            const cfZone = cfZones.find((z: any) => z.name === zone);
+                            
+                            if (cfZone) {
+                                // Create the record in Cloudflare
+                                await fetch('/api/cloudflare/records', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        action: 'create',
+                                        zoneId: cfZone.id,
+                                        type: newRecord.type,
+                                        name: newRecord.name === '@' || !newRecord.name ? zone : `${newRecord.name}.${zone}`,
+                                        content: newRecord.cloudflareValue,
+                                        ttl: newRecord.ttl,
+                                        email: cf.authType === 'key' ? cf.email : undefined,
+                                        apiToken: cf.authType === 'token' ? cf.apiToken : undefined,
+                                        apiKey: cf.authType === 'key' ? cf.apiKey : undefined,
+                                    }),
+                                });
+                            }
+                        }
+                    }
+                } catch (cfErr) {
+                    console.error('Failed to push record to Cloudflare:', cfErr);
+                }
+            }
+
+            setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0, pushToCloudflare: false, cloudflareValue: '' });
             setShowAddModal(false);
             setIsEditing(false);
             setOriginalRecord(null);
@@ -421,6 +466,42 @@ export default function ZoneDetailPage() {
                                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                                 />
                             </div>
+
+                            {/* Cloudflare Sync Option - only for A/AAAA records */}
+                            {(newRecord.type === 'A' || newRecord.type === 'AAAA') && (
+                                <div className="border-t border-gray-700 pt-4 mt-4">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={newRecord.pushToCloudflare}
+                                            onChange={(e) => setNewRecord(prev => ({ ...prev, pushToCloudflare: e.target.checked }))}
+                                            className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-orange-500 focus:ring-orange-500"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Cloud size={18} className="text-orange-400" />
+                                            <span className="text-white font-medium">Also sync to Cloudflare</span>
+                                        </div>
+                                    </label>
+
+                                    {newRecord.pushToCloudflare && (
+                                        <div className="mt-3 ml-8 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <label className="block text-sm font-medium text-gray-400 mb-1">
+                                                {newRecord.type === 'A' ? 'Public IPv4' : 'Public IPv6'} for Cloudflare
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newRecord.cloudflareValue}
+                                                onChange={(e) => setNewRecord(prev => ({ ...prev, cloudflareValue: e.target.value }))}
+                                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                                                placeholder={newRecord.type === 'A' ? 'e.g. 203.0.113.10' : 'e.g. 2001:db8::1'}
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                This IP will be used for the record in Cloudflare (different from Technitium internal IP).
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
                             <button
@@ -428,7 +509,7 @@ export default function ZoneDetailPage() {
                                     setShowAddModal(false);
                                     setIsEditing(false);
                                     setOriginalRecord(null);
-                                    setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0 });
+                                    setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0, pushToCloudflare: false, cloudflareValue: '' });
                                 }}
                                 className="px-4 py-2 text-gray-400 hover:text-white"
                             >
