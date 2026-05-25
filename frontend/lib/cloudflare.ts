@@ -5,36 +5,26 @@ const CLOUDFLARE_API_URL = 'https://api.cloudflare.com/client/v4';
 
 interface CloudflareConfig {
     email?: string;
-    apiToken?: string;  // Zone API Token
-    apiKey?: string;    // Global API Key
+    apiToken?: string;
+    apiKey?: string;
 }
 
-// Runtime config (from settings page) takes precedence over env vars
+// Runtime config only - credentials passed from API routes
 let runtimeConfig: CloudflareConfig = {};
-
-// Get env vars at runtime (not build time) to avoid issues
-function getEnvConfig(): CloudflareConfig {
-    return {
-        email: process.env.CLOUDFLARE_EMAIL,
-        apiToken: process.env.CLOUDFLARE_API_TOKEN,
-        apiKey: process.env.CLOUDFLARE_API_KEY,
-    };
-}
 
 export function setCloudflareConfig(newConfig: Partial<CloudflareConfig>) {
     runtimeConfig = { ...runtimeConfig, ...newConfig };
 }
 
 export function getCloudflareConfig(): CloudflareConfig {
-    return { ...getEnvConfig(), ...runtimeConfig };
+    return runtimeConfig;
 }
 
 function validateConfig() {
-    const activeConfig = { ...getEnvConfig(), ...runtimeConfig };
-    if (!activeConfig.apiToken && !activeConfig.apiKey) {
+    if (!runtimeConfig.apiToken && !runtimeConfig.apiKey) {
         throw new Error('Cloudflare API Token or Global API Key is required');
     }
-    if (activeConfig.apiKey && !activeConfig.email) {
+    if (runtimeConfig.apiKey && !runtimeConfig.email) {
         throw new Error('Cloudflare Email is required when using Global API Key');
     }
 }
@@ -42,19 +32,16 @@ function validateConfig() {
 async function cloudflareFetch(endpoint: string, options: RequestInit = {}) {
     validateConfig();
 
-    const activeConfig = { ...getEnvConfig(), ...runtimeConfig };
-
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...(options.headers as Record<string, string>),
     };
 
-    // Use API Token (preferred) or Global API Key
-    if (activeConfig.apiToken) {
-        headers['Authorization'] = `Bearer ${activeConfig.apiToken}`;
-    } else if (activeConfig.apiKey && activeConfig.email) {
-        headers['X-Auth-Email'] = activeConfig.email;
-        headers['X-Auth-Key'] = activeConfig.apiKey;
+    if (runtimeConfig.apiToken) {
+        headers['Authorization'] = `Bearer ${runtimeConfig.apiToken}`;
+    } else if (runtimeConfig.apiKey && runtimeConfig.email) {
+        headers['X-Auth-Email'] = runtimeConfig.email;
+        headers['X-Auth-Key'] = runtimeConfig.apiKey;
     }
 
     const response = await fetch(`${CLOUDFLARE_API_URL}${endpoint}`, {
