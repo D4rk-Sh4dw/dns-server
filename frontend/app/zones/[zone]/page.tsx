@@ -44,7 +44,7 @@ export default function ZoneDetailPage() {
         port: 0,
         // Cloudflare sync fields
         pushToCloudflare: false,
-        cloudflareValue: '', // Separate IP for Cloudflare
+        cloudflareValue: '', // Separate value for Cloudflare (IP, hostname, TXT, etc.)
     });
 
     useEffect(() => {
@@ -147,8 +147,8 @@ export default function ZoneDetailPage() {
                 throw new Error(data.error || 'Failed to add record');
             }
 
-            // Push to Cloudflare if enabled and it's an A/AAAA record
-            if (newRecord.pushToCloudflare && (newRecord.type === 'A' || newRecord.type === 'AAAA') && newRecord.cloudflareValue) {
+            // Push to Cloudflare if enabled (for all record types)
+            if (newRecord.pushToCloudflare && newRecord.cloudflareValue) {
                 try {
                     const cfConfig = localStorage.getItem('cloudflare_config');
                     if (cfConfig) {
@@ -467,41 +467,56 @@ export default function ZoneDetailPage() {
                                 />
                             </div>
 
-                            {/* Cloudflare Sync Option - only for A/AAAA records */}
-                            {(newRecord.type === 'A' || newRecord.type === 'AAAA') && (
-                                <div className="border-t border-gray-700 pt-4 mt-4">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={newRecord.pushToCloudflare}
-                                            onChange={(e) => setNewRecord(prev => ({ ...prev, pushToCloudflare: e.target.checked }))}
-                                            className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-orange-500 focus:ring-orange-500"
-                                        />
-                                        <div className="flex items-center gap-2">
-                                            <Cloud size={18} className="text-orange-400" />
-                                            <span className="text-white font-medium">Also sync to Cloudflare</span>
-                                        </div>
-                                    </label>
+                            {/* Cloudflare Sync Option - for all record types */}
+                            <div className="border-t border-gray-700 pt-4 mt-4">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={newRecord.pushToCloudflare}
+                                        onChange={(e) => setNewRecord(prev => ({ ...prev, pushToCloudflare: e.target.checked }))}
+                                        className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-orange-500 focus:ring-orange-500"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <Cloud size={18} className="text-orange-400" />
+                                        <span className="text-white font-medium">Also sync to Cloudflare</span>
+                                    </div>
+                                </label>
 
-                                    {newRecord.pushToCloudflare && (
-                                        <div className="mt-3 ml-8 animate-in fade-in slide-in-from-top-2 duration-200">
-                                            <label className="block text-sm font-medium text-gray-400 mb-1">
-                                                {newRecord.type === 'A' ? 'Public IPv4' : 'Public IPv6'} for Cloudflare
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={newRecord.cloudflareValue}
-                                                onChange={(e) => setNewRecord(prev => ({ ...prev, cloudflareValue: e.target.value }))}
-                                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
-                                                placeholder={newRecord.type === 'A' ? 'e.g. 203.0.113.10' : 'e.g. 2001:db8::1'}
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                This IP will be used for the record in Cloudflare (different from Technitium internal IP).
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                {newRecord.pushToCloudflare && (
+                                    <div className="mt-3 ml-8 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                                            {newRecord.type === 'A' ? 'Public IPv4' : 
+                                             newRecord.type === 'AAAA' ? 'Public IPv6' :
+                                             newRecord.type === 'CNAME' || newRecord.type === 'NS' ? 'Target Hostname' :
+                                             newRecord.type === 'MX' ? 'Mail Server' :
+                                             newRecord.type === 'TXT' ? 'TXT Value' :
+                                             newRecord.type === 'SRV' ? 'Target Hostname' :
+                                             newRecord.type === 'CAA' ? 'CAA Value' :
+                                             newRecord.type === 'PTR' ? 'PTR Target' : 'Value'} for Cloudflare
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newRecord.cloudflareValue}
+                                            onChange={(e) => setNewRecord(prev => ({ ...prev, cloudflareValue: e.target.value }))}
+                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                                            placeholder={
+                                                newRecord.type === 'A' ? 'e.g. 203.0.113.10' :
+                                                newRecord.type === 'AAAA' ? 'e.g. 2001:db8::1' :
+                                                newRecord.type === 'CNAME' ? 'e.g. target.example.com' :
+                                                newRecord.type === 'MX' ? 'e.g. mail.example.com' :
+                                                newRecord.type === 'TXT' ? 'e.g. v=spf1 include:_spf.google.com ~all' :
+                                                newRecord.type === 'NS' ? 'e.g. ns1.cloudflare.com' :
+                                                newRecord.type === 'SRV' ? 'e.g. target.example.com' :
+                                                newRecord.type === 'CAA' ? 'e.g. 0 issue "letsencrypt.org"' :
+                                                newRecord.type === 'PTR' ? 'e.g. hostname.example.com' : ''
+                                            }
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            This value will be used for the record in Cloudflare (different from Technitium internal value).
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
                             <button
