@@ -57,6 +57,69 @@ export default function ZoneDetailPage() {
 
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Cloudflare state
+    const [cfConfig, setCfConfig] = useState<{ email?: string; apiToken?: string; apiKey?: string; authType?: 'token' | 'key' } | null>(null);
+    const [cfRecords, setCfRecords] = useState<any[]>([]);
+    const [cfLoading, setCfLoading] = useState(false);
+
+    // Load CF config from localStorage
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('cloudflare_config');
+            if (raw) setCfConfig(JSON.parse(raw));
+        } catch (e) {
+            console.error('Failed to load CF config:', e);
+        }
+    }, []);
+
+    // Fetch Cloudflare records for this zone
+    const fetchCfRecords = async () => {
+        if (!cfConfig || (!cfConfig.apiToken && !cfConfig.apiKey)) return;
+        setCfLoading(true);
+        try {
+            const creds = {
+                email: cfConfig.email,
+                apiToken: cfConfig.authType === 'token' ? cfConfig.apiToken : undefined,
+                apiKey: cfConfig.authType === 'key' ? cfConfig.apiKey : undefined,
+            };
+            const qs = new URLSearchParams();
+            if (creds.email) qs.set('email', creds.email);
+            if (creds.apiToken) qs.set('apiToken', creds.apiToken);
+            if (creds.apiKey) qs.set('apiKey', creds.apiKey);
+
+            // First get zone ID
+            const zoneRes = await fetch(`/api/cloudflare/zones?${qs}`);
+            const zoneData = await zoneRes.json();
+            const cfZone = Array.isArray(zoneData) ? zoneData.find((z: any) => z.name === zone) : null;
+
+            if (cfZone) {
+                const recRes = await fetch(`/api/cloudflare/records?zoneId=${cfZone.id}&${qs}`);
+                const recData = await recRes.json();
+                setCfRecords(Array.isArray(recData) ? recData : []);
+            } else {
+                setCfRecords([]);
+            }
+        } catch (e) {
+            console.error('Failed to fetch CF records:', e);
+            setCfRecords([]);
+        } finally {
+            setCfLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (cfConfig) fetchCfRecords();
+    }, [cfConfig, zone]);
+
+    // Check if a record is synced to Cloudflare
+    const isRecordSynced = (record: DnsRecord): boolean => {
+        const shortName = record.name === zone || record.name === `${zone}.` ? '@' : record.name.replace(`.${zone}`, '');
+        return cfRecords.some(r => {
+            const rShort = r.name === zone || r.name === `${zone}.` ? '@' : r.name.replace(`.${zone}`, '');
+            return rShort === shortName && r.type === record.type;
+        });
+    };
+
     const getRecordValue = (record: DnsRecord): string => {
         const rd = record.rData;
         if (!rd) return '';
@@ -212,16 +275,23 @@ export default function ZoneDetailPage() {
         else if (rd.exchange) value = rd.exchange;
         else if (rd.target) value = rd.target;
 
+        // Check if synced to Cloudflare and get CF value
+        const shortName = record.name === zone || record.name === `${zone}.` ? '@' : record.name.replace(`.${zone}`, '');
+        const cfRec = cfRecords.find(r => {
+            const rShort = r.name === zone || r.name === `${zone}.` ? '@' : r.name.replace(`.${zone}`, '');
+            return rShort === shortName && r.type === record.type;
+        });
+
         setNewRecord({
-            name: record.name.replace(`.${zone}`, '').replace(zone, '') || '@', // Try to reconstruct subdomain, default to @ if empty/match
+            name: shortName,
             type: record.type,
             value,
             ttl: record.ttl,
             priority: rd.preference || rd.priority || 10,
             weight: rd.weight || 0,
             port: rd.port || 0,
-            pushToCloudflare: false,
-            cloudflareValue: ''
+            pushToCloudflare: !!cfRec,
+            cloudflareValue: cfRec?.content || ''
         });
 
         setShowAddModal(true);
@@ -312,6 +382,7 @@ export default function ZoneDetailPage() {
                             <th className="px-6 py-4">Type</th>
                             <th className="px-6 py-4">Value</th>
                             <th className="px-6 py-4">TTL</th>
+                            <th className="px-6 py-4 text-center">Cloudflare</th>
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -334,6 +405,15 @@ export default function ZoneDetailPage() {
                                     {getRecordValue(record)}
                                 </td>
                                 <td className="px-6 py-4 text-gray-500 text-sm">{record.ttl}s</td>
+                                <td className="px-6 py-4 text-center">
+                                    {isRecordSynced(record) ? (
+                                        <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-orange-500/20 text-orange-400">
+                                            <Cloud size={12} /> Synced
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-gray-600">Internal only</span>
+                                    )}
+                                </td>
                                 <td className="px-6 py-4 text-right flex justify-end gap-2">
                                     <button
                                         onClick={() => handleEditRecord(record)}
@@ -352,7 +432,7 @@ export default function ZoneDetailPage() {
                         ))}
                         {!filteredRecords.length && !loading && (
                             <tr>
-                                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                                     {searchQuery ? 'No records match your search.' : 'No records in this zone. Click "Add Record" to get started.'}
                                 </td>
                             </tr>
@@ -364,7 +444,7 @@ export default function ZoneDetailPage() {
             {/* Add/Edit Record Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-lg">
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                         <h3 className="text-lg font-medium text-white mb-4">
                             {isEditing ? 'Edit DNS Record' : 'Add DNS Record'}
                         </h3>
@@ -376,116 +456,126 @@ export default function ZoneDetailPage() {
                             </div>
                         )}
 
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                        {/* Technitium Section */}
+                        <div className="bg-blue-900/10 border border-blue-800/50 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <h4 className="text-blue-400 font-medium">Technitium (Internal)</h4>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                                            {zone.endsWith('.in-addr.arpa') ? 'Last IP octet' : 'Name (subdomain)'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newRecord.name}
+                                            onChange={(e) => setNewRecord(prev => ({ ...prev, name: e.target.value }))}
+                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                            placeholder={zone.endsWith('.in-addr.arpa') ? 'e.g. 50' : '@ for root, or subdomain'}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
+                                        <select
+                                            value={newRecord.type}
+                                            onChange={(e) => setNewRecord(prev => ({ ...prev, type: e.target.value }))}
+                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                            disabled={isEditing}
+                                        >
+                                            {RECORD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">
-                                        {zone.endsWith('.in-addr.arpa') ? 'Last IP octet' : 'Name (subdomain)'}
+                                        {newRecord.type === 'A' || newRecord.type === 'AAAA' ? 'IP Address' :
+                                            newRecord.type === 'CNAME' || newRecord.type === 'NS' ? 'Target' :
+                                                newRecord.type === 'MX' ? 'Mail Server' :
+                                                    newRecord.type === 'TXT' ? 'Text Value' :
+                                                        newRecord.type === 'SRV' ? 'Target Host' : 'Value'}
                                     </label>
                                     <input
                                         type="text"
-                                        value={newRecord.name}
-                                        onChange={(e) => setNewRecord(prev => ({ ...prev, name: e.target.value }))}
+                                        value={newRecord.value}
+                                        onChange={(e) => setNewRecord(prev => ({ ...prev, value: e.target.value }))}
                                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                        placeholder={zone.endsWith('.in-addr.arpa') ? 'e.g. 50' : '@ for root, or subdomain'}
+                                        placeholder={
+                                            newRecord.type === 'A' ? '192.168.1.100' :
+                                                newRecord.type === 'AAAA' ? '2001:db8::1' :
+                                                    newRecord.type === 'CNAME' ? 'target.example.com' :
+                                                        newRecord.type === 'MX' ? 'mail.example.com' :
+                                                            newRecord.type === 'TXT' ? 'v=spf1 include:...' : ''
+                                        }
                                     />
                                 </div>
+                                {(newRecord.type === 'MX' || newRecord.type === 'SRV') && (
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
+                                            <input
+                                                type="number"
+                                                value={newRecord.priority}
+                                                onChange={(e) => setNewRecord(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
+                                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        {newRecord.type === 'SRV' && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-400 mb-1">Weight</label>
+                                                    <input
+                                                        type="number"
+                                                        value={newRecord.weight}
+                                                        onChange={(e) => setNewRecord(prev => ({ ...prev, weight: parseInt(e.target.value) }))}
+                                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-400 mb-1">Port</label>
+                                                    <input
+                                                        type="number"
+                                                        value={newRecord.port}
+                                                        onChange={(e) => setNewRecord(prev => ({ ...prev, port: parseInt(e.target.value) }))}
+                                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
-                                    <select
-                                        value={newRecord.type}
-                                        onChange={(e) => setNewRecord(prev => ({ ...prev, type: e.target.value }))}
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                        disabled={isEditing} // Prevent type change during edit to avoid complex delete logic
-                                    >
-                                        {RECORD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">
-                                    {newRecord.type === 'A' || newRecord.type === 'AAAA' ? 'IP Address' :
-                                        newRecord.type === 'CNAME' || newRecord.type === 'NS' ? 'Target' :
-                                            newRecord.type === 'MX' ? 'Mail Server' :
-                                                newRecord.type === 'TXT' ? 'Text Value' :
-                                                    newRecord.type === 'SRV' ? 'Target Host' : 'Value'}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newRecord.value}
-                                    onChange={(e) => setNewRecord(prev => ({ ...prev, value: e.target.value }))}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                    placeholder={
-                                        newRecord.type === 'A' ? '192.168.1.100' :
-                                            newRecord.type === 'AAAA' ? '2001:db8::1' :
-                                                newRecord.type === 'CNAME' ? 'target.example.com' :
-                                                    newRecord.type === 'MX' ? 'mail.example.com' :
-                                                        newRecord.type === 'TXT' ? 'v=spf1 include:...' : ''
-                                    }
-                                />
-                            </div>
-                            {(newRecord.type === 'MX' || newRecord.type === 'SRV') && (
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
-                                        <input
-                                            type="number"
-                                            value={newRecord.priority}
-                                            onChange={(e) => setNewRecord(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
-                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
-                                    {newRecord.type === 'SRV' && (
-                                        <>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1">Weight</label>
-                                                <input
-                                                    type="number"
-                                                    value={newRecord.weight}
-                                                    onChange={(e) => setNewRecord(prev => ({ ...prev, weight: parseInt(e.target.value) }))}
-                                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1">Port</label>
-                                                <input
-                                                    type="number"
-                                                    value={newRecord.port}
-                                                    onChange={(e) => setNewRecord(prev => ({ ...prev, port: parseInt(e.target.value) }))}
-                                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">TTL (seconds)</label>
-                                <input
-                                    type="number"
-                                    value={newRecord.ttl}
-                                    onChange={(e) => setNewRecord(prev => ({ ...prev, ttl: parseInt(e.target.value) }))}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-
-                            {/* Cloudflare Sync Option - for all record types */}
-                            <div className="border-t border-gray-700 pt-4 mt-4">
-                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">TTL (seconds)</label>
                                     <input
-                                        type="checkbox"
-                                        checked={newRecord.pushToCloudflare}
-                                        onChange={(e) => setNewRecord(prev => ({ ...prev, pushToCloudflare: e.target.checked }))}
-                                        className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-orange-500 focus:ring-orange-500"
+                                        type="number"
+                                        value={newRecord.ttl}
+                                        onChange={(e) => setNewRecord(prev => ({ ...prev, ttl: parseInt(e.target.value) }))}
+                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                                     />
-                                    <div className="flex items-center gap-2">
-                                        <Cloud size={18} className="text-orange-400" />
-                                        <span className="text-white font-medium">Also sync to Cloudflare</span>
-                                    </div>
-                                </label>
+                                </div>
+                            </div>
+                        </div>
 
-                                {newRecord.pushToCloudflare && (
-                                    <div className="mt-3 ml-8 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {/* Cloudflare Section */}
+                        <div className={`border rounded-lg p-4 ${newRecord.pushToCloudflare ? 'bg-orange-900/10 border-orange-800/50' : 'bg-gray-800/30 border-gray-700 border-dashed'}`}>
+                            <label className="flex items-center gap-3 cursor-pointer mb-4">
+                                <input
+                                    type="checkbox"
+                                    checked={newRecord.pushToCloudflare}
+                                    onChange={(e) => setNewRecord(prev => ({ ...prev, pushToCloudflare: e.target.checked }))}
+                                    className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-orange-500 focus:ring-orange-500"
+                                />
+                                <div className="flex items-center gap-2">
+                                    <Cloud size={18} className="text-orange-400" />
+                                    <span className="text-white font-medium">Sync to Cloudflare</span>
+                                </div>
+                            </label>
+
+                            {newRecord.pushToCloudflare && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">
                                             {newRecord.type === 'A' ? 'Public IPv4' : 
                                              newRecord.type === 'AAAA' ? 'Public IPv6' :
@@ -517,8 +607,8 @@ export default function ZoneDetailPage() {
                                             This value will be used for the record in Cloudflare (different from Technitium internal value).
                                         </p>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
                             <button
