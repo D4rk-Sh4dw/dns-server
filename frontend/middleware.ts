@@ -1,6 +1,11 @@
 import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
-export default withAuth;
+const authDisabled = process.env.AUTH_DISABLED === "true";
+
+export default authDisabled
+    ? (req) => NextResponse.next()
+    : withAuth;
 
 export const config = {
     matcher: [

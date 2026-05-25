@@ -16,6 +16,8 @@ services:
       - AUTH_SECRET=this_is_a_very_secret_key_for_nextauth
       - ADMIN_USER=admin
       - ADMIN_PASSWORD=admin123
+      # Disable built-in authentication when using forward auth (e.g., Authentik)
+      # - AUTH_DISABLED=true
       # Cloudflare DNS Integration (optional)
       # - CLOUDFLARE_EMAIL=your-email@example.com
       # - CLOUDFLARE_API_TOKEN=your-zone-api-token

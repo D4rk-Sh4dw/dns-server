@@ -1,28 +1,41 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 
-const handler = NextAuth({
-    providers: [
-        CredentialsProvider({
-            name: "Credentials",
-            credentials: {
-                username: { label: "Username", type: "text" },
-                password: { label: "Password", type: "password" }
-            },
-            async authorize(credentials) {
-                const adminUser = process.env.ADMIN_USER
-                const adminPassword = process.env.ADMIN_PASSWORD
+const authDisabled = process.env.AUTH_DISABLED === "true";
 
-                if (
-                    credentials?.username === adminUser &&
-                    credentials?.password === adminPassword
-                ) {
-                    return { id: "1", name: adminUser, email: "admin@example.com" }
+const handler = NextAuth({
+    providers: authDisabled
+        ? [
+            CredentialsProvider({
+                id: "no-auth",
+                name: "No Authentication",
+                credentials: {},
+                async authorize() {
+                    return { id: "1", name: "admin", email: "admin@local" }
                 }
-                return null
-            }
-        })
-    ],
+            })
+        ]
+        : [
+            CredentialsProvider({
+                name: "Credentials",
+                credentials: {
+                    username: { label: "Username", type: "text" },
+                    password: { label: "Password", type: "password" }
+                },
+                async authorize(credentials) {
+                    const adminUser = process.env.ADMIN_USER
+                    const adminPassword = process.env.ADMIN_PASSWORD
+
+                    if (
+                        credentials?.username === adminUser &&
+                        credentials?.password === adminPassword
+                    ) {
+                        return { id: "1", name: adminUser, email: "admin@example.com" }
+                    }
+                    return null
+                }
+            })
+        ],
     pages: {
         signIn: "/login",
     },

@@ -68,30 +68,7 @@ export default function RootLayout({
 
                 <div className="p-4 border-t border-gray-900">
                   <LanguageSwitcher />
-                  <div className="flex items-center justify-between gap-3 mt-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
-                        AD
-                      </div>
-                      <div className="text-sm">
-                        <p className="text-white font-medium"><AdminUserLabel /></p>
-                        <p className="text-gray-500 text-xs">admin@local</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        import('next-auth/react').then(({ signOut }) => {
-                          signOut({ redirect: false }).then(() => {
-                            window.location.href = '/login';
-                          });
-                        });
-                      }}
-                      className="text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-lg transition-colors"
-                      title="Log Out"
-                    >
-                      <LogOut size={18} />
-                    </button>
-                  </div>
+                  <AuthUserSection />
                 </div>
               </aside>
             </>
@@ -181,4 +158,38 @@ function LanguageSwitcher() {
       </button>
     </div>
   )
+}
+
+function AuthUserSection() {
+  const { t } = useTranslation();
+  const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === 'true';
+
+  return (
+    <div className="flex items-center justify-between gap-3 mt-4">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
+          AD
+        </div>
+        <div className="text-sm">
+          <p className="text-white font-medium"><AdminUserLabel /></p>
+          <p className="text-gray-500 text-xs">admin@local</p>
+        </div>
+      </div>
+      {!authDisabled && (
+        <button
+          onClick={() => {
+            import('next-auth/react').then(({ signOut }) => {
+              signOut({ redirect: false }).then(() => {
+                window.location.href = '/login';
+              });
+            });
+          }}
+          className="text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-lg transition-colors"
+          title="Log Out"
+        >
+          <LogOut size={18} />
+        </button>
+      )}
+    </div>
+  );
 }

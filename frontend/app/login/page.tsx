@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Shield, Lock, User } from 'lucide-react'
@@ -9,6 +9,16 @@ export default function LoginPage() {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === 'true'
+
+    useEffect(() => {
+        if (authDisabled) {
+            signIn('no-auth', { redirect: false }).then(() => {
+                router.push('/')
+                router.refresh()
+            })
+        }
+    }, [authDisabled, router])
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -37,6 +47,25 @@ export default function LoginPage() {
             setError('An error occurred during login')
             setLoading(false)
         }
+    }
+
+    if (authDisabled) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
+                    <div className="p-8 text-center">
+                        <div className="flex justify-center mb-6">
+                            <div className="bg-gray-800 p-1 rounded-full overflow-hidden border border-gray-700">
+                                <img src="/logo.png" alt="Logo" className="w-12 h-12" />
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Authentication Disabled</h2>
+                        <p className="text-gray-400 mb-6">Signing you in automatically...</p>
+                        <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+                    </div>
+                </div>
+            </div>
+        )
     }
 
     return (
