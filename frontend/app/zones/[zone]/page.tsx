@@ -219,7 +219,9 @@ export default function ZoneDetailPage() {
             ttl: record.ttl,
             priority: rd.preference || rd.priority || 10,
             weight: rd.weight || 0,
-            port: rd.port || 0
+            port: rd.port || 0,
+            pushToCloudflare: false,
+            cloudflareValue: ''
         });
 
         setShowAddModal(true);
