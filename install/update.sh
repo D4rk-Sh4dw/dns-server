@@ -25,6 +25,7 @@ echo -e "${BLUE}=== DNS Dashboard Update ===${NC}"
 # 2. Check if running inline via wget and cwd has docker-compose.yml
 # 3. Check default INSTALL_DIR
 # 4. Search common locations
+# 5. Prompt user interactively
 
 if [ -f "./docker-compose.yml" ]; then
     INSTALL_DIR="$(pwd)"
@@ -45,14 +46,25 @@ else
         INSTALL_DIR="$FOUND_DIR"
         echo -e "${GREEN}Found installation at: $INSTALL_DIR${NC}"
     else
-        echo -e "${RED}Error: Could not find installation directory.${NC}"
-        echo "Either run this script from the project directory or set INSTALL_DIR."
-        echo "Usage: INSTALL_DIR=/path/to/dns-server bash update.sh"
-        echo ""
-        echo "Example (standalone):"
-        echo "  cd /opt/dns-server && bash install/update.sh"
-        echo "  INSTALL_DIR=/opt/dns-server bash install/update.sh"
-        exit 1
+        # Interactive prompt
+        echo -e "${YELLOW}Could not automatically detect the installation directory.${NC}"
+        echo -e "${YELLOW}Please enter the path to your dns-server installation:${NC}"
+        read -r -p "> " USER_DIR
+        if [ -z "$USER_DIR" ]; then
+            echo -e "${RED}No path provided. Aborting.${NC}"
+            exit 1
+        fi
+        # Expand ~ and remove trailing slash
+        USER_DIR="${USER_DIR/#\~/$HOME}"
+        USER_DIR="${USER_DIR%/}"
+        if [ -f "$USER_DIR/docker-compose.yml" ]; then
+            INSTALL_DIR="$USER_DIR"
+            echo -e "${GREEN}Verified: $INSTALL_DIR${NC}"
+        else
+            echo -e "${RED}Error: No docker-compose.yml found in $USER_DIR${NC}"
+            exit 1
+        fi
+    fi
     fi
 fi
 
