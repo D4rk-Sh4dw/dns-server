@@ -78,27 +78,24 @@ else
     echo -e "${YELLOW}Standalone (wget) installation detected.${NC}"
 fi
 
-# --- Helper: Extract env vars from a docker-compose.yml ---
-# Returns lines like: "  - KEY=VALUE" for all services
-extract_env_vars() {
+# --- Helper: Extract env keys from a docker-compose.yml ---
+# Returns "SERVICE:KEY" for every env var
+extract_env_keys() {
     local file="$1"
     local in_env=false
     local service=""
     while IFS= read -r line; do
-        # Detect service header
         if [[ "$line" =~ ^[[:space:]]*([a-z0-9_-]+):$ ]]; then
             service="${BASH_REMATCH[1]}"
             in_env=false
         fi
-        # Detect environment: section
         if [[ "$line" =~ ^[[:space:]]*environment: ]]; then
             in_env=true
             continue
         fi
-        # End of environment section if line is not indented enough or is another key
         if $in_env; then
-            if [[ "$line" =~ ^[[:space:]]*-[[:space:]]+(.*) ]]; then
-                echo "$service:${BASH_REMATCH[1]}"
+            if [[ "$line" =~ ^[[:space:]]*-[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)= ]]; then
+                echo "${service}:${BASH_REMATCH[1]}"
             elif [[ ! "$line" =~ ^[[:space:]]+- ]] && [[ "$line" =~ ^[[:space:]]*[a-z] ]]; then
                 in_env=false
             fi
@@ -106,111 +103,84 @@ extract_env_vars() {
     done < "$file"
 }
 
-# --- Helper: Restore env vars into a docker-compose.yml ---
-# Takes the new compose file and a saved env vars file, merges them
+# --- Helper: Restore missing env vars into a new docker-compose.yml ---
+# Compares old env vars with new file and appends any that are missing
 restore_env_vars() {
-    local compose_file="$1"
-    local env_backup="$2"
+    local old_compose="$1"  # backup of old docker-compose.yml
+    local new_compose="$2"  # newly downloaded docker-compose.yml
     
-    if [ ! -f "$env_backup" ] || [ ! -s "$env_backup" ]; then
+    if [ ! -f "$old_compose" ] || [ ! -s "$old_compose" ]; then
         return
     fi
 
-    echo -e "${YELLOW}Restoring custom environment variables...${NC}"
+    # Get keys present in old and new compose files
+    local old_keys
+    old_keys=$(extract_env_keys "$old_compose")
+    local new_keys
+    new_keys=$(extract_env_keys "$new_compose")
+
+    # Find keys in old but not in new, collect them per service
+    local missing=false
+    local pending_vars=""
+    local pending_svc=""
     
-    # Read saved env vars into associative arrays per service
-    declare -A saved_envs
-    while IFS=: read -r svc key_value; do
-        # Extract just the key (before the =)
-        key="${key_value%%=*}"
-        if [ -n "$saved_envs[$svc]" ]; then
-            saved_envs[$svc]="${saved_envs[$svc]}|$key_value"
-        else
-            saved_envs[$svc]="$key_value"
-        fi
-    done < "$env_backup"
-
-    # Now process the new compose file
-    local tmp_file="${compose_file}.tmp"
-    local in_env=false
-    local current_service=""
-    
-    while IFS= read -r line; do
-        # Detect service header
-        if [[ "$line" =~ ^[[:space:]]*([a-z0-9_-]+):$ ]]; then
-            # Before switching service, inject any missing env vars for previous service
-            if [ -n "$current_service" ] && [ -n "${saved_envs[$current_service]}" ]; then
-                # Get env keys already present in the new file for this service
-                # (we track this during the environment section parsing)
-                :
-            fi
-            current_service="${BASH_REMATCH[1]}"
-            in_env=false
-        fi
-
-        # Detect environment: section
-        if [[ "$line" =~ ^[[:space:]]*environment: ]]; then
-            in_env=true
-            echo "$line" >> "$tmp_file"
-            continue
-        fi
-
-        # End of environment section
-        if $in_env; then
-            if [[ ! "$line" =~ ^[[:space:]]+- ]] && [[ "$line" =~ ^[[:space:]]*[a-z] ]]; then
-                # We're leaving the environment section - inject missing vars
-                if [ -n "$current_service" ] && [ -n "${saved_envs[$current_service]}" ]; then
-                    # Collect keys already present in new file
-                    present_keys=""
-                    # We'll handle this differently - just append all saved vars
-                    # that aren't already in the file
-                    IFS='|' read -ra vars <<< "${saved_envs[$current_service]}"
-                    for var in "${vars[@]}"; do
-                        key="${var%%=*}"
-                        # Check if this key already exists in the new compose file for this service
-                        if ! grep -q "^[[:space:]]*- ${key}=" "$tmp_file" 2>/dev/null; then
-                            # Get the indentation from the last env line
-                            indent="      "
-                            echo "${indent}- ${var}" >> "$tmp_file"
-                            echo -e "  ${YELLOW}+ Restored: ${current_service} → ${key}${NC}"
+    while IFS=: read -r svc key; do
+        [ -z "$svc" ] || [ -z "$key" ] && continue
+        # Check if this service:key exists in new file
+        if ! echo "$new_keys" | grep -q "^${svc}:${key}$"; then
+            # Extract the full env line from the old compose file for this key
+            old_line=$(grep -E "^\s+-\s+${key}=" "$old_compose" | head -1)
+            if [ -n "$old_line" ]; then
+                echo -e "  ${YELLOW}+ Restored: ${svc} → ${key}${NC}"
+                # Append the missing env line right after the service's environment section
+                # Simple approach: find the last env line in the service and append after it
+                local result=""
+                local in_svc=false in_env=false inserted=false
+                while IFS= read -r nl; do
+                    result="${result}${nl}"$'\n'
+                    if [[ "$nl" =~ ^[[:space:]]*${svc}: ]]; then
+                        in_svc=true
+                    elif $in_svc && [[ "$nl" =~ ^[[:space:]]*environment: ]]; then
+                        in_env=true
+                    elif $in_svc && $in_env && [[ "$nl" =~ ^[[:space:]]*- ]]; then
+                        : # still in env section, keep going
+                    elif $in_svc && $in_env && [[ ! "$nl" =~ ^[[:space:]]*- ]] && [[ "$nl" =~ ^[[:space:]]*[a-z] ]]; then
+                        # Leaving env section - insert missing var before this line
+                        if ! $inserted; then
+                            result="${result}${old_line}"$'\n'
+                            inserted=true
                         fi
-                    done
+                        in_env=false
+                        in_svc=false
+                    fi
+                done < "$new_compose"
+                # If env section was at end of file
+                if $in_env && ! $inserted; then
+                    result="${result}${old_line}"$'\n'
                 fi
-                in_env=false
+                echo -n "$result" > "$new_compose"
+                missing=true
             fi
         fi
+    done <<< "$old_keys"
 
-        echo "$line" >> "$tmp_file"
-    done < "$compose_file"
-
-    # Handle case where environment section is the last section in the file
-    if $in_env && [ -n "$current_service" ] && [ -n "${saved_envs[$current_service]}" ]; then
-        IFS='|' read -ra vars <<< "${saved_envs[$current_service]}"
-        for var in "${vars[@]}"; do
-            key="${var%%=*}"
-            if ! grep -q "^[[:space:]]*- ${key}=" "$tmp_file" 2>/dev/null; then
-                indent="      "
-                echo "${indent}- ${var}" >> "$tmp_file"
-                echo -e "  ${YELLOW}+ Restored: ${current_service} → ${key}${NC}"
-            fi
-        done
+    if [ "$missing" = false ]; then
+        echo -e "${GREEN}All environment variables already present in new file.${NC}"
     fi
-
-    mv "$tmp_file" "$compose_file"
 }
 
-# --- Step 1: Backup existing env vars ---
+# --- Step 1: Backup existing docker-compose.yml ---
 echo ""
-echo -e "${BLUE}[1/6] Backing up environment variables...${NC}"
+echo -e "${BLUE}[1/6] Backing up current configuration...${NC}"
 
-ENV_BACKUP=$(mktemp)
-extract_env_vars docker-compose.yml > "$ENV_BACKUP" 2>/dev/null || true
-
-if [ -s "$ENV_BACKUP" ]; then
-    ENV_COUNT=$(wc -l < "$ENV_BACKUP")
-    echo -e "${GREEN}Saved $ENV_COUNT environment variables from current docker-compose.yml${NC}"
+COMPOSE_BACKUP=""
+if [ -f "docker-compose.yml" ]; then
+    COMPOSE_BACKUP=$(mktemp)
+    cp docker-compose.yml "$COMPOSE_BACKUP"
+    ENV_COUNT=$(extract_env_keys docker-compose.yml | wc -l)
+    echo -e "${GREEN}Backed up docker-compose.yml ($ENV_COUNT env vars)${NC}"
 else
-    echo -e "${YELLOW}No environment variables found in current docker-compose.yml${NC}"
+    echo -e "${YELLOW}No existing docker-compose.yml found.${NC}"
 fi
 
 # --- Step 2: Pull latest files ---
@@ -248,13 +218,13 @@ else
     echo -e "${GREEN}Files downloaded successfully.${NC}"
 
     # --- Restore env vars for standalone installations ---
-    if [ -s "$ENV_BACKUP" ]; then
-        restore_env_vars docker-compose.yml "$ENV_BACKUP"
+    if [ -n "$COMPOSE_BACKUP" ] && [ -f "$COMPOSE_BACKUP" ]; then
+        restore_env_vars "$COMPOSE_BACKUP" docker-compose.yml
     fi
 fi
 
 # Clean up temp file
-rm -f "$ENV_BACKUP"
+rm -f "$COMPOSE_BACKUP"
 
 # --- Step 3: Check for breaking changes ---
 echo ""
