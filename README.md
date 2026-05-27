@@ -46,12 +46,29 @@ For Proxmox users, the easiest way is to run the Docker setup inside an LXC cont
 
 ## Updating
 
-To get the latest features (like the new search or CSV import):
+### Git-based Installation (LXC / Cloned Repo)
 
 ```bash
 git pull
 docker compose up -d --build
 ```
+
+### Standalone Installation (wget-based)
+
+Use the update script – it automatically downloads the latest files, **preserves your custom environment variables** (passwords, API keys, etc.), and restarts the services:
+
+```bash
+bash install/update.sh
+```
+
+Or run it directly from GitHub without cloning:
+
+```bash
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/update.sh)"
+```
+
+> [!NOTE]
+> The update script detects your installation type automatically (Git vs standalone) and handles both. It also takes care of configuration migrations (e.g. deleting Technitium's `webservice.config` when new environment variables need to take effect).
 
 ## Managing Filter Lists (CSV Support)
 
