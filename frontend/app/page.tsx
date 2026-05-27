@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Activity,
   Shield,
@@ -21,6 +21,8 @@ interface AdGuardStats {
   top_queried_domains: { [key: string]: number }[];
   top_blocked_domains: { [key: string]: number }[];
   top_clients: { [key: string]: number }[];
+  top_upstreams_avg_time?: { name: string; count: number }[];
+  top_upstreams_responses?: { name: string; count: number }[];
 }
 
 interface DashboardData {
@@ -426,7 +428,18 @@ function ServiceStatus({ name, status, version, isOperational }: any) {
 function UpstreamLatency({ upstreams, upstreamResponses }: { upstreams?: { name: string; count: number }[]; upstreamResponses?: { name: string; count: number }[] }) {
   const { t } = useTranslation();
 
-  if (!upstreams || upstreams.length === 0) {
+  // Safely normalize upstream data - AdGuard may return different formats
+  const normalizedUpstreams: { name: string; avgTime: number }[] = useMemo(() => {
+    if (!upstreams || !Array.isArray(upstreams) || upstreams.length === 0) return [];
+    return upstreams
+      .filter(u => u && typeof u.name === 'string')
+      .map(u => ({
+        name: u.name,
+        avgTime: typeof u.count === 'number' ? u.count : 0,
+      }));
+  }, [upstreams]);
+
+  if (normalizedUpstreams.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[200px] flex flex-col">
         <h3 className="text-lg font-medium text-white mb-4">{t('dashboard.upstream_response_times')}</h3>
@@ -437,9 +450,11 @@ function UpstreamLatency({ upstreams, upstreamResponses }: { upstreams?: { name:
 
   // Build a response count map for quick lookup
   const responseMap = new Map<string, number>();
-  if (upstreamResponses) {
+  if (upstreamResponses && Array.isArray(upstreamResponses)) {
     for (const item of upstreamResponses) {
-      responseMap.set(item.name, item.count);
+      if (item && typeof item.name === 'string') {
+        responseMap.set(item.name, typeof item.count === 'number' ? item.count : 0);
+      }
     }
   }
 
@@ -470,14 +485,14 @@ function UpstreamLatency({ upstreams, upstreamResponses }: { upstreams?: { name:
     return 'bg-red-500';
   };
 
-  const maxTime = Math.max(...upstreams.map(u => u.count), 0.001);
+  const maxTime = Math.max(...normalizedUpstreams.map(u => u.avgTime), 0.001);
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm">
       <h3 className="text-lg font-medium text-white mb-4">{t('dashboard.upstream_response_times')}</h3>
       <div className="space-y-3">
-        {upstreams.slice(0, 8).map((upstream, i) => {
-          const ms = upstream.count * 1000; // AdGuard returns seconds, convert to ms
+        {normalizedUpstreams.slice(0, 8).map((upstream, i) => {
+          const ms = upstream.avgTime * 1000; // AdGuard returns seconds, convert to ms
           const queries = responseMap.get(upstream.name) || 0;
           return (
             <div key={i} className="space-y-1">
