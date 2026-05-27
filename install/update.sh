@@ -65,7 +65,6 @@ else
             exit 1
         fi
     fi
-    fi
 fi
 
 cd "$INSTALL_DIR"
