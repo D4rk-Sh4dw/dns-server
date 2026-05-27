@@ -852,6 +852,7 @@ function DnsCacheSettings() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    cache_enabled: config.cache_enabled,
                     cache_size: parseInt(config.cache_size),
                     cache_ttl_min: parseInt(config.cache_ttl_min),
                     cache_ttl_max: parseInt(config.cache_ttl_max),
@@ -907,6 +908,16 @@ function DnsCacheSettings() {
                             />
                         </div>
                     </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="checkbox"
+                        id="cache_enabled"
+                        checked={config.cache_enabled}
+                        onChange={e => setConfig({ ...config, cache_enabled: e.target.checked })}
+                        className="w-4 h-4 rounded bg-gray-800 border-gray-700"
+                    />
+                    <label htmlFor="cache_enabled" className="text-white">DNS Cache aktivieren</label>
                 </div>
                 <div className="flex items-center gap-3">
                     <input
