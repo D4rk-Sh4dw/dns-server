@@ -70,6 +70,7 @@ function LogsPage() {
     const [olderThan, setOlderThan] = useState<string | undefined>(undefined);
     const [expandedLog, setExpandedLog] = useState<number | null>(null);
     const [clients, setClients] = useState<Client[]>([]);
+    const [filterListNames, setFilterListNames] = useState<Record<number, string>>({});
 
     useEffect(() => {
         // Fetch clients for the dropdown
@@ -83,6 +84,21 @@ function LogsPage() {
                 }
             })
             .catch(err => console.error('Failed to fetch clients', err));
+
+        // Fetch filter list names for rule display
+        fetch('/api/adguard/filtering')
+            .then(res => res.json())
+            .then(data => {
+                const map: Record<number, string> = {};
+                for (const f of (data.filters || [])) {
+                    map[f.id] = f.name;
+                }
+                for (const f of (data.whitelist_filters || [])) {
+                    map[f.id] = f.name;
+                }
+                setFilterListNames(map);
+            })
+            .catch(err => console.error('Failed to fetch filter lists', err));
     }, []);
 
     const refreshClients = () => {
@@ -260,6 +276,7 @@ function LogsPage() {
                                 handleRule={handleRule}
                                 clients={clients}
                                 onClientCreated={refreshClients}
+                                filterListNames={filterListNames}
                             />
                         ))}
                     </tbody>
@@ -285,7 +302,7 @@ function LogsPage() {
     );
 }
 
-function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, clients, onClientCreated }: {
+function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, clients, onClientCreated, filterListNames }: {
     log: QueryLogItem;
     isExpanded: boolean;
     onToggle: () => void;
@@ -293,6 +310,7 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
     handleRule: (domain: string, type: 'block' | 'whitelist' | 'block_client' | 'whitelist_client', clientName?: string) => void;
     clients: Client[];
     onClientCreated?: () => void;
+    filterListNames: Record<number, string>;
 }) {
     const { t } = useTranslation();
     const blocked = isBlocked(log);
@@ -596,7 +614,11 @@ function LogItem({ log, isExpanded, onToggle, onFilterClient, handleRule, client
                                         {log.rules.map((rule, i) => (
                                             <div key={i} className="font-mono text-sm text-red-300 break-all">
                                                 {rule.text}
-                                                {rule.filter_list_id && <span className="ml-2 text-xs text-gray-500">({t('logs.list_id')}: {rule.filter_list_id})</span>}
+                                                {rule.filter_list_id && (
+                                                    <span className="ml-2 text-xs text-gray-500">
+                                                        ({filterListNames[rule.filter_list_id] || `${t('logs.list_id')}: ${rule.filter_list_id}`})
+                                                    </span>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
