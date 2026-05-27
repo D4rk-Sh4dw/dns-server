@@ -56,6 +56,7 @@ server {
         sub_filter_types text/html;
         sub_filter '</body>' '<script>
         (function() {
+            if (document.cookie.indexOf("session=") !== -1) return;
             var attempts = 0;
             var maxAttempts = 30;
             var interval = setInterval(function() {
@@ -128,6 +129,7 @@ server {
         sub_filter_types text/html;
         sub_filter '</body>' '<script>
         (function() {
+            if (localStorage.getItem("token")) return;
             var attempts = 0;
             var maxAttempts = 30;
             var interval = setInterval(function() {
