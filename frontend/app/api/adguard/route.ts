@@ -30,6 +30,11 @@ export async function GET() {
             }
         }
 
+        // Debug: Log the stats structure to verify upstream data
+        console.log('AdGuard stats keys:', Object.keys(stats || {}));
+        console.log('top_upstrems_avg_time:', JSON.stringify(stats?.top_upstrems_avg_time)?.substring(0, 200));
+        console.log('top_upstreams_avg_time:', JSON.stringify(stats?.top_upstreams_avg_time)?.substring(0, 200));
+
         return NextResponse.json({
             status,
             stats: {
