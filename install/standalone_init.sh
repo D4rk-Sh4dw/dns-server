@@ -29,6 +29,12 @@ fi
 echo "Downloading docker-compose.yml..."
 wget -qO docker-compose.yml "$BASE_URL/docker-compose.yml"
 
+echo "Downloading .env.example..."
+wget -qO .env.example "$BASE_URL/.env.example"
+
+echo "Creating .env from .env.example..."
+cp .env.example .env
+
 echo "Downloading default AdGuard Home configuration..."
 wget -qO config/adguard/AdGuardHome.yaml "$BASE_URL/config/adguard/AdGuardHome.yaml"
 
@@ -42,5 +48,8 @@ if [ -z "$IP_ADDR" ]; then IP_ADDR="localhost"; fi
 echo ""
 echo "===================================================="
 echo "Installation complete!"
-echo "Access the Dashboard at: http://$IP_ADDR/"
+echo "Access the Dashboard at: http://$IP_ADDR:8080/"
+echo ""
+echo "IMPORTANT: Edit .env to change default credentials!"
+echo "  Default login: admin / admin123"
 echo "===================================================="

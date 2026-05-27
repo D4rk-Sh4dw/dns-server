@@ -44,6 +44,23 @@ For Proxmox users, the easiest way is to run the Docker setup inside an LXC cont
     bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/lxc_install.sh)"
     ```
 
+## Configuration
+
+All configuration is stored in a **`.env`** file (never overwritten by updates). The `docker-compose.yml` references these variables with `${VAR}` syntax.
+
+1. Copy `.env.example` to `.env` and adjust values:
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+2. Restart services to apply changes:
+   ```bash
+   docker compose up -d
+   ```
+
+> [!NOTE]
+> The `.env` file is created automatically during installation. For existing installations, the update script will create it from `.env.example` if missing.
+
 ## Updating
 
 ### Git-based Installation (LXC / Cloned Repo)
@@ -55,7 +72,7 @@ docker compose up -d --build
 
 ### Standalone Installation (wget-based)
 
-Use the update script – it automatically downloads the latest files, **preserves your custom environment variables** (passwords, API keys, etc.), and restarts the services:
+Use the update script – it downloads the latest files while **keeping your `.env` configuration safe**:
 
 ```bash
 bash install/update.sh
@@ -117,13 +134,14 @@ To automatically load lists from a repository:
 
 ### Required Environment Variables
 
-The following environment variables **must** be set in your `docker-compose.yml`:
+The following environment variables **must** be set in your `.env` file:
 
 - `ADMIN_USER` - Dashboard login username
 - `ADMIN_PASSWORD` - Dashboard login password
 - `AUTH_SECRET` - Secret key for session encryption (use a strong random string)
 - `ADGUARD_USER` - AdGuard Home username
 - `ADGUARD_PASS` - AdGuard Home password
+- `TECHNITIUM_USER` - Technitium DNS admin username
 - `TECHNITIUM_PASSWORD` - Technitium DNS admin password
 
 ### OPNsense Integration (Optional)
@@ -137,13 +155,12 @@ If you're integrating with OPNsense that uses a self-signed certificate:
 
 You can push DNS zones directly to Cloudflare from the dashboard. This creates the zone in Cloudflare and automatically adds A/AAAA records pointing to your public IP.
 
-**Option 1: Environment Variables (Server-side)**
-```yaml
-# In docker-compose.yml
-CLOUDFLARE_EMAIL: your-email@example.com
-CLOUDFLARE_API_TOKEN: your-zone-api-token  # Recommended
+**Option 1: Environment Variables (in `.env`)**
+```bash
+CLOUDFLARE_EMAIL=your-email@example.com
+CLOUDFLARE_API_TOKEN=your-zone-api-token  # Recommended
 # OR for full access:
-CLOUDFLARE_API_KEY: your-global-api-key
+CLOUDFLARE_API_KEY=your-global-api-key
 ```
 
 **Option 2: Settings Page (Browser-side)**
@@ -178,24 +195,24 @@ CLOUDFLARE_API_KEY: your-global-api-key
 
 ## Security & Passwords
 
-The system uses centralized credentials to enable the "Single Pane of Glass" experience and autologin features. If you change a password, you must update it in the `docker-compose.yml` (or your `.env`) to keep the services connected.
+The system uses centralized credentials to enable the "Single Pane of Glass" experience and autologin features. If you change a password, you must update it in your `.env` file to keep the services connected.
 
 ### 1. Changing Technitium DNS Password
 1.  Open the **Technitium UI** (directly or via Dashboard).
 2.  Go to **Settings -> User Accounts** and change the password for `admin`.
-3.  Update `TECHNITIUM_PASSWORD` and `DNS_SERVER_ADMIN_PASSWORD` in your `docker-compose.yml`.
+3.  Update `TECHNITIUM_PASSWORD` in your `.env` file.
 4.  Restart with `docker compose up -d`.
 
 ### 2. Changing AdGuard Home Password
 1.  Open the **AdGuard UI** (directly or via Dashboard).
 2.  Go to **Settings -> General Settings** and change the password for your user.
-3.  Update `ADGUARD_PASS` in your `docker-compose.yml`.
+3.  Update `ADGUARD_PASS` in your `.env` file.
 4.  Restart with `docker compose up -d`.
     *Note: The Dashboard and Autologin require the clear-text password to communicate with the AdGuard API.*
 
 ### 3. Changing Dashboard Login
 The main login for the Unified Dashboard is managed solely via environment variables:
-1.  Update `ADMIN_USER` and `ADMIN_PASSWORD` in your `docker-compose.yml`.
+1.  Update `ADMIN_USER` and `ADMIN_PASSWORD` in your `.env` file.
 2.  Restart with `docker compose up -d`.
 
 ## Project Structure

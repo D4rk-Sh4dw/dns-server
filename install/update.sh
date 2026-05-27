@@ -3,7 +3,7 @@
 # DNS Dashboard Update Script
 # Updates an existing installation by pulling the latest changes and restarting services.
 # Supports both Git-based and standalone (wget-based) installations.
-# IMPORTANT: Preserves existing environment variables in docker-compose.yml.
+# Configuration is stored in .env (never overwritten by updates).
 
 set -e
 
@@ -21,12 +21,6 @@ NC='\033[0m'
 echo -e "${BLUE}=== DNS Dashboard Update ===${NC}"
 
 # --- Detect installation directory ---
-# 1. Check if running from within the project dir (./install/update.sh)
-# 2. Check if running inline via wget and cwd has docker-compose.yml
-# 3. Check default INSTALL_DIR
-# 4. Search common locations
-# 5. Prompt user interactively
-
 if [ -f "./docker-compose.yml" ]; then
     INSTALL_DIR="$(pwd)"
     echo -e "${GREEN}Detected project directory: $INSTALL_DIR${NC}"
@@ -54,7 +48,6 @@ else
             echo -e "${RED}No path provided. Aborting.${NC}"
             exit 1
         fi
-        # Expand ~ and remove trailing slash
         USER_DIR="${USER_DIR/#\~/$HOME}"
         USER_DIR="${USER_DIR%/}"
         if [ -f "$USER_DIR/docker-compose.yml" ]; then
@@ -78,131 +71,63 @@ else
     echo -e "${YELLOW}Standalone (wget) installation detected.${NC}"
 fi
 
-# --- Helper: Extract env keys from a docker-compose.yml ---
-# Returns "SERVICE:KEY" for every env var
-extract_env_keys() {
-    local file="$1"
-    local in_env=false
-    local service=""
-    while IFS= read -r line; do
-        if [[ "$line" =~ ^[[:space:]]*([a-z0-9_-]+):$ ]]; then
-            service="${BASH_REMATCH[1]}"
-            in_env=false
-        fi
-        if [[ "$line" =~ ^[[:space:]]*environment: ]]; then
-            in_env=true
-            continue
-        fi
-        if $in_env; then
-            if [[ "$line" =~ ^[[:space:]]*-[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)= ]]; then
-                echo "${service}:${BASH_REMATCH[1]}"
-            elif [[ ! "$line" =~ ^[[:space:]]+- ]] && [[ "$line" =~ ^[[:space:]]*[a-z] ]]; then
-                in_env=false
-            fi
-        fi
-    done < "$file"
-}
-
-# --- Helper: Restore missing env vars into a new docker-compose.yml ---
-# Compares old env vars with new file and appends any that are missing
-restore_env_vars() {
-    local old_compose="$1"  # backup of old docker-compose.yml
-    local new_compose="$2"  # newly downloaded docker-compose.yml
-    
-    if [ ! -f "$old_compose" ] || [ ! -s "$old_compose" ]; then
-        return
-    fi
-
-    # Get keys present in old and new compose files
-    local old_keys
-    old_keys=$(extract_env_keys "$old_compose")
-    local new_keys
-    new_keys=$(extract_env_keys "$new_compose")
-
-    # Find keys in old but not in new, collect them per service
-    local missing=false
-    local pending_vars=""
-    local pending_svc=""
-    
-    while IFS=: read -r svc key; do
-        [ -z "$svc" ] || [ -z "$key" ] && continue
-        # Check if this service:key exists in new file
-        if ! echo "$new_keys" | grep -q "^${svc}:${key}$"; then
-            # Extract the full env line from the old compose file for this key
-            old_line=$(grep -E "^\s+-\s+${key}=" "$old_compose" | head -1)
-            if [ -n "$old_line" ]; then
-                echo -e "  ${YELLOW}+ Restored: ${svc} → ${key}${NC}"
-                # Append the missing env line right after the service's environment section
-                # Simple approach: find the last env line in the service and append after it
-                local result=""
-                local in_svc=false in_env=false inserted=false
-                while IFS= read -r nl; do
-                    result="${result}${nl}"$'\n'
-                    if [[ "$nl" =~ ^[[:space:]]*${svc}: ]]; then
-                        in_svc=true
-                    elif $in_svc && [[ "$nl" =~ ^[[:space:]]*environment: ]]; then
-                        in_env=true
-                    elif $in_svc && $in_env && [[ "$nl" =~ ^[[:space:]]*- ]]; then
-                        : # still in env section, keep going
-                    elif $in_svc && $in_env && [[ ! "$nl" =~ ^[[:space:]]*- ]] && [[ "$nl" =~ ^[[:space:]]*[a-z] ]]; then
-                        # Leaving env section - insert missing var before this line
-                        if ! $inserted; then
-                            result="${result}${old_line}"$'\n'
-                            inserted=true
-                        fi
-                        in_env=false
-                        in_svc=false
-                    fi
-                done < "$new_compose"
-                # If env section was at end of file
-                if $in_env && ! $inserted; then
-                    result="${result}${old_line}"$'\n'
-                fi
-                echo -n "$result" > "$new_compose"
-                missing=true
-            fi
-        fi
-    done <<< "$old_keys"
-
-    if [ "$missing" = false ]; then
-        echo -e "${GREEN}All environment variables already present in new file.${NC}"
-    fi
-}
-
-# --- Step 1: Backup existing docker-compose.yml ---
+# --- Step 1: Migrate old env vars to .env if needed ---
 echo ""
-echo -e "${BLUE}[1/6] Backing up current configuration...${NC}"
+echo -e "${BLUE}[1/5] Checking .env configuration...${NC}"
 
-COMPOSE_BACKUP=""
-if [ -f "docker-compose.yml" ]; then
-    COMPOSE_BACKUP=$(mktemp)
-    cp docker-compose.yml "$COMPOSE_BACKUP"
-    ENV_COUNT=$(extract_env_keys docker-compose.yml | wc -l)
-    echo -e "${GREEN}Backed up docker-compose.yml ($ENV_COUNT env vars)${NC}"
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        echo -e "${GREEN}Created .env from .env.example${NC}"
+    else
+        # Download .env.example and create .env
+        wget -qO .env.example "$BASE_URL/.env.example" 2>/dev/null || true
+        if [ -f ".env.example" ]; then
+            cp .env.example .env
+            echo -e "${GREEN}Downloaded and created .env from .env.example${NC}"
+        else
+            # Create minimal .env
+            cat > .env << 'ENVEOF'
+ADMIN_USER=admin
+ADMIN_PASSWORD=admin123
+AUTH_SECRET=change_me_to_a_random_string
+ADGUARD_USER=admin
+ADGUARD_PASS=admin123
+TECHNITIUM_USER=admin
+TECHNITIUM_PASSWORD=admin123
+ENVEOF
+            echo -e "${YELLOW}Created minimal .env with default values.${NC}"
+        fi
+    fi
+
+    # Migrate hardcoded values from old docker-compose.yml if it still has them
+    if [ -f "docker-compose.yml" ] && grep -q "ADGUARD_USER=admin" docker-compose.yml 2>/dev/null; then
+        echo -e "${YELLOW}Old docker-compose.yml has hardcoded values. They will be used after the next step downloads the new compose file.${NC}"
+    fi
 else
-    echo -e "${YELLOW}No existing docker-compose.yml found.${NC}"
+    echo -e "${GREEN}.env file exists. Your configuration is safe.${NC}"
 fi
 
 # --- Step 2: Pull latest files ---
 echo ""
-echo -e "${BLUE}[2/6] Downloading latest configuration...${NC}"
+echo -e "${BLUE}[2/5] Downloading latest configuration...${NC}"
 
 if [ "$IS_GIT" = true ]; then
     echo "Pulling updates via git..."
-    git stash 2>/dev/null || true  # Stash local changes (like custom env vars)
+    git stash 2>/dev/null || true
     git fetch origin
     LOCAL=$(git rev-parse HEAD)
     REMOTE=$(git rev-parse origin/main)
 
     if [ "$LOCAL" = "$REMOTE" ]; then
         echo -e "${GREEN}Already up to date (commit $LOCAL).${NC}"
-        git stash pop 2>/dev/null || true  # Restore local changes
+        git stash pop 2>/dev/null || true
     else
         echo -e "${YELLOW}Updates available!${NC}"
         echo "  Local:  $LOCAL"
         echo "  Remote: $REMOTE"
         git pull origin main
-        git stash pop 2>/dev/null || true  # Restore local changes on top
+        git stash pop 2>/dev/null || true
         echo -e "${GREEN}Git pull successful.${NC}"
     fi
 else
@@ -216,44 +141,25 @@ else
     chmod +x nginx/start.sh
 
     echo -e "${GREEN}Files downloaded successfully.${NC}"
-
-    # --- Restore env vars for standalone installations ---
-    if [ -n "$COMPOSE_BACKUP" ] && [ -f "$COMPOSE_BACKUP" ]; then
-        restore_env_vars "$COMPOSE_BACKUP" docker-compose.yml
-    fi
 fi
-
-# Clean up temp file
-rm -f "$COMPOSE_BACKUP"
 
 # --- Step 3: Check for breaking changes ---
 echo ""
-echo -e "${BLUE}[3/6] Checking for configuration changes...${NC}"
+echo -e "${BLUE}[3/5] Checking for configuration changes...${NC}"
 
-# Check if new environment variables were added
-if grep -q "DNS_SERVER_WEB_SERVICE_LOCAL_ADDRESSES" docker-compose.yml 2>/dev/null; then
-    # Check if Technitium webservice.config exists (env vars only read on first start)
-    TECHNITIUM_DATA="./data/technitium"
-
-    if [ -f "$TECHNITIUM_DATA/webservice.config" ]; then
-        echo -e "${YELLOW}Technitium webservice.config exists.${NC}"
-        echo "  Environment variables are only read on first start."
-        echo "  Deleting webservice.config so the new DNS_SERVER_WEB_SERVICE_LOCAL_ADDRESSES takes effect..."
-        rm -f "$TECHNITIUM_DATA/webservice.config"
-        echo -e "${GREEN}Deleted webservice.config. It will be recreated on next start.${NC}"
-    fi
+# Check if Technitium webservice.config exists (env vars only read on first start)
+TECHNITIUM_DATA="./data/technitium"
+if [ -f "$TECHNITIUM_DATA/webservice.config" ]; then
+    echo -e "${YELLOW}Technitium webservice.config exists.${NC}"
+    echo "  Environment variables are only read on first start."
+    echo "  Deleting webservice.config so the new env vars take effect..."
+    rm -f "$TECHNITIUM_DATA/webservice.config"
+    echo -e "${GREEN}Deleted webservice.config. It will be recreated on next start.${NC}"
 fi
 
-# --- Step 4: Pull latest Docker images ---
+# --- Step 4: Pull latest Docker images and restart ---
 echo ""
-echo -e "${BLUE}[4/6] Pulling latest Docker images...${NC}"
-docker compose pull 2>/dev/null || docker-compose pull 2>/dev/null || {
-    echo -e "${YELLOW}Could not pull images. They will be updated on next build.${NC}"
-}
-
-# --- Step 5: Restart services ---
-echo ""
-echo -e "${BLUE}[5/6] Restarting services...${NC}"
+echo -e "${BLUE}[4/5] Pulling latest Docker images and restarting services...${NC}"
 
 # Detect which compose command to use
 if command -v docker &> /dev/null; then
@@ -265,19 +171,22 @@ else
     exit 1
 fi
 
+$COMPOSE_CMD pull 2>/dev/null || {
+    echo -e "${YELLOW}Could not pull images. They will be updated on next build.${NC}"
+}
+
 echo "Recreating containers with updated config..."
 $COMPOSE_CMD up -d --force-recreate nginx technitium
 
 echo "Ensuring all services are running..."
 $COMPOSE_CMD up -d
 
-# --- Step 6: Health check ---
+# --- Step 5: Health check ---
 echo ""
-echo -e "${BLUE}[6/6] Health check...${NC}"
+echo -e "${BLUE}[5/5] Health check...${NC}"
 
 sleep 3
 
-# Check container status
 FAILED=false
 for container in dns-dashboard dns-proxy dns-adguard dns-technitium; do
     STATUS=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || echo "not found")
@@ -305,3 +214,5 @@ echo ""
 echo "Dashboard:  http://$IP_ADDR:8080/"
 echo "AdGuard:    http://$IP_ADDR:8080/adguard/"
 echo "Technitium: http://$IP_ADDR:8080/technitium/"
+echo ""
+echo -e "${BLUE}Config: Edit .env to change passwords and settings.${NC}"
