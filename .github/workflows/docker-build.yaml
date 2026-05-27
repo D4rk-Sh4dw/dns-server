@@ -3,13 +3,40 @@ name: Build and Push Docker Images
 on:
   push:
     branches: ["main"]
+    paths:
+      - "frontend/**"
+      - "nginx/**"
+      - ".github/workflows/docker-build.yaml"
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}
 
 jobs:
+  # Check which services have changes before building
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      nginx: ${{ steps.filter.outputs.nginx }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/docker-build.yaml'
+            nginx:
+              - 'nginx/**'
+              - '.github/workflows/docker-build.yaml'
+
   build-and-push:
+    needs: detect-changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,6 +48,9 @@ jobs:
             image_name: dns-dashboard
           - service: nginx
             image_name: dns-proxy
+
+    # Skip if this service has no changes
+    if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
 
     steps:
       - name: Checkout repository

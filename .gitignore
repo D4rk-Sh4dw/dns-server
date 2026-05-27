@@ -1,0 +1,31 @@
+# --- Runtime data (never commit) ---
+data/
+*.log
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Docker ---
+# No volumes or runtime data
+
+# --- Node (root level) ---
+node_modules/
+
+# --- Environment files ---
+.env
+.env.*
+!.env.example
+
+# --- Build artifacts ---
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/node_modules/
+archive/control-plane/control-plane
+archive/data-plane/target/
