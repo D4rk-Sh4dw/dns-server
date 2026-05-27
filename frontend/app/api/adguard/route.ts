@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server';
 import * as adguard from '@/lib/adguard';
 
+// AdGuard API returns top_* arrays as [{key: value}] objects.
+// Normalize them to [{name, count}] format for the frontend.
+function normalizeTopStats(arr: any[]): { name: string; count: number }[] {
+    if (!Array.isArray(arr)) return [];
+    return arr
+        .filter(item => item && typeof item === 'object')
+        .map(item => {
+            const keys = Object.keys(item);
+            if (keys.length === 0) return null;
+            const name = keys[0];
+            const count = Number(item[name]);
+            return { name, count };
+        })
+        .filter((item): item is { name: string; count: number } => item !== null);
+}
+
 export async function GET() {
     try {
         const [status, stats, safeSearch, blockedServices, clients] = await Promise.all([
@@ -30,16 +46,19 @@ export async function GET() {
             }
         }
 
-        // Debug: Log the stats structure to verify upstream data
-        console.log('AdGuard stats keys:', Object.keys(stats || {}));
-        console.log('top_upstrems_avg_time:', JSON.stringify(stats?.top_upstrems_avg_time)?.substring(0, 200));
-        console.log('top_upstreams_avg_time:', JSON.stringify(stats?.top_upstreams_avg_time)?.substring(0, 200));
+        // Normalize upstream data from AdGuard's {key: value} format to {name, count} format
+        // AdGuard API may use either "top_upstreams_avg_time" or the typo "top_upstrems_avg_time"
+        const upstreamAvgTime = stats.top_upstreams_avg_time || stats.top_upstrems_avg_time;
+        const upstreamResponses = stats.top_upstreams_responses || stats.top_upstrems_responses;
 
         return NextResponse.json({
             status,
             stats: {
                 ...(stats.stats || {}),
                 ...stats,
+                // Override with normalized upstream data
+                top_upstreams_avg_time: normalizeTopStats(upstreamAvgTime),
+                top_upstreams_responses: normalizeTopStats(upstreamResponses),
             },
             safeSearch,
             blockedServices,

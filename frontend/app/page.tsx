@@ -21,11 +21,9 @@ interface AdGuardStats {
   top_queried_domains: { [key: string]: number }[];
   top_blocked_domains: { [key: string]: number }[];
   top_clients: { [key: string]: number }[];
+  // Normalized from AdGuard's {key: value} format on the server side
   top_upstreams_avg_time?: { name: string; count: number }[];
   top_upstreams_responses?: { name: string; count: number }[];
-  // AdGuard API typo variants (missing 'a' in upstreams)
-  top_upstrems_avg_time?: { name: string; count: number }[];
-  top_upstrems_responses?: { name: string; count: number }[];
 }
 
 interface DashboardData {
@@ -194,7 +192,7 @@ export default function Home() {
           />
 
           {/* Upstream Response Times */}
-          <UpstreamLatency upstreams={stats?.top_upstreams_avg_time || stats?.top_upstrems_avg_time} upstreamResponses={stats?.top_upstreams_responses || stats?.top_upstrems_responses} />
+          <UpstreamLatency upstreams={stats?.top_upstreams_avg_time} upstreamResponses={stats?.top_upstreams_responses} />
 
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-lg font-medium text-white mb-4">{t('dashboard.infra_status')}</h3>
