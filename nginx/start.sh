@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# Defined variables to substitute to avoid breaking $host
+# Defined variables to substitute to avoid breaking $host and other Nginx vars
 VARS='$ADGUARD_USER $ADGUARD_PASS $TECHNITIUM_USER $TECHNITIUM_PASSWORD'
 
 echo "Starting Nginx with envsubst..."
@@ -14,4 +14,16 @@ if grep -q '\${ADGUARD_USER}' /etc/nginx/conf.d/default.conf; then
 fi
 
 echo "Configuration generated successfully."
+
+# Validate Nginx config before starting
+echo "Validating Nginx configuration..."
+nginx -t 2>&1 || {
+    echo "ERROR: Nginx configuration is invalid!"
+    echo "--- Generated config ---"
+    cat /etc/nginx/conf.d/default.conf
+    echo "--- End of config ---"
+    exit 1
+}
+
+echo "Nginx configuration is valid."
 exec nginx -g 'daemon off;'

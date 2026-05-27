@@ -12,7 +12,7 @@ server {
     # Dashboard (Main App)
     location / {
         set $dashboard_upstream http://dns-dashboard:3000;
-        proxy_pass $dashboard_upstream/;
+        proxy_pass $dashboard_upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -26,7 +26,7 @@ server {
         error_page 401 = @auth_error;
 
         set $adguard_upstream http://dns-adguard:3000;
-        proxy_pass $adguard_upstream/;
+        proxy_pass $adguard_upstream;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -93,7 +93,7 @@ server {
         # Use variable so Nginx resolves DNS at runtime, not at startup
         # This prevents "host not found in upstream" errors when Technitium isn't ready yet
         set $technitium_upstream http://dns-technitium:5380;
-        proxy_pass $technitium_upstream/;
+        proxy_pass $technitium_upstream;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
