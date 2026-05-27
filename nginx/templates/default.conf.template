@@ -1,12 +1,18 @@
 server {
     listen 80;
-    server_name localhost;
+    server_name _;
     absolute_redirect off;
     client_max_body_size 500M;
 
+    # Use Docker's internal DNS resolver to avoid startup failures
+    # when upstream containers aren't ready yet
+    resolver 127.0.0.11 valid=30s ipv6=off;
+    resolver_timeout 5s;
+
     # Dashboard (Main App)
     location / {
-        proxy_pass http://dns-dashboard:3000/;
+        set $dashboard_upstream http://dns-dashboard:3000;
+        proxy_pass $dashboard_upstream/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -19,7 +25,8 @@ server {
         auth_request /auth-validate;
         error_page 401 = @auth_error;
 
-        proxy_pass http://dns-adguard:3000/;
+        set $adguard_upstream http://dns-adguard:3000;
+        proxy_pass $adguard_upstream/;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -83,7 +90,10 @@ server {
         auth_request /auth-validate;
         error_page 401 = @auth_error;
 
-        proxy_pass http://dns-technitium:5380/;
+        # Use variable so Nginx resolves DNS at runtime, not at startup
+        # This prevents "host not found in upstream" errors when Technitium isn't ready yet
+        set $technitium_upstream http://dns-technitium:5380;
+        proxy_pass $technitium_upstream/;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -106,7 +116,7 @@ server {
         proxy_redirect / /technitium/;
 
         # Rewrite content to support subpath - include JSON for API responses
-        sub_filter_types text/css text/javascript application/javascript application/json text/html;
+        sub_filter_types text/css text/javascript application/javascript application/json;
         
         # Rewrite absolute URLs with internal Docker addresses (most likely cause of "connection refused")
         sub_filter 'http://dns-technitium:5380/' '/technitium/';
@@ -165,7 +175,8 @@ server {
     # Internal location for authentication validation
     location = /auth-validate {
         internal;
-        proxy_pass http://dns-dashboard:3000/api/auth/validate;
+        set $auth_upstream http://dns-dashboard:3000;
+        proxy_pass $auth_upstream/api/auth/validate;
         proxy_pass_request_body off;
         proxy_set_header Content-Length "";
         proxy_set_header X-Original-URI $request_uri;
