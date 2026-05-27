@@ -176,7 +176,7 @@ $COMPOSE_CMD pull 2>/dev/null || {
 }
 
 echo "Recreating containers with updated config..."
-$COMPOSE_CMD up -d --force-recreate nginx technitium
+$COMPOSE_CMD up -d --force-recreate
 
 echo "Ensuring all services are running..."
 $COMPOSE_CMD up -d
@@ -185,7 +185,7 @@ $COMPOSE_CMD up -d
 echo ""
 echo -e "${BLUE}[5/5] Health check...${NC}"
 
-sleep 3
+sleep 5
 
 FAILED=false
 for container in dns-dashboard dns-proxy dns-adguard dns-technitium; do
@@ -194,6 +194,8 @@ for container in dns-dashboard dns-proxy dns-adguard dns-technitium; do
         echo -e "  ${GREEN}✓${NC} $container: $STATUS"
     else
         echo -e "  ${RED}✗${NC} $container: $STATUS"
+        echo -e "  ${YELLOW}  Last logs:${NC}"
+        docker logs --tail 10 "$container" 2>&1 | sed 's/^/    /'
         FAILED=true
     fi
 done
