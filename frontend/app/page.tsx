@@ -188,6 +188,9 @@ export default function Home() {
             linkTo="/logs"
           />
 
+          {/* Upstream Response Times */}
+          <UpstreamLatency upstreams={stats?.top_upstreams_avg_time} upstreamResponses={stats?.top_upstreams_responses} />
+
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-lg font-medium text-white mb-4">{t('dashboard.infra_status')}</h3>
             <div className="space-y-4">
@@ -416,6 +419,91 @@ function ServiceStatus({ name, status, version, isOperational }: any) {
         }`}>
         {status}
       </span>
+    </div>
+  );
+}
+
+function UpstreamLatency({ upstreams, upstreamResponses }: { upstreams?: { name: string; count: number }[]; upstreamResponses?: { name: string; count: number }[] }) {
+  const { t } = useTranslation();
+
+  if (!upstreams || upstreams.length === 0) {
+    return (
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[200px] flex flex-col">
+        <h3 className="text-lg font-medium text-white mb-4">{t('dashboard.upstream_response_times')}</h3>
+        <div className="flex-1 flex items-center justify-center text-gray-500 text-sm italic">{t('dashboard.no_records')}</div>
+      </div>
+    );
+  }
+
+  // Build a response count map for quick lookup
+  const responseMap = new Map<string, number>();
+  if (upstreamResponses) {
+    for (const item of upstreamResponses) {
+      responseMap.set(item.name, item.count);
+    }
+  }
+
+  // Format upstream name for display (remove protocol prefix)
+  const formatUpstream = (name: string) => {
+    return name
+      .replace(/^https?:\/\//, '')
+      .replace(/^tls:\/\//, '')
+      .replace(/^quic:\/\//, '')
+      .replace(/^h3:\/\//, '')
+      .replace(/:443$/, '')
+      .replace(/:853$/, '')
+      .replace(/:53$/, '');
+  };
+
+  // Color based on latency
+  const getLatencyColor = (ms: number) => {
+    if (ms < 20) return 'text-green-400';
+    if (ms < 50) return 'text-yellow-400';
+    if (ms < 100) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const getBarColor = (ms: number) => {
+    if (ms < 20) return 'bg-green-500';
+    if (ms < 50) return 'bg-yellow-500';
+    if (ms < 100) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+
+  const maxTime = Math.max(...upstreams.map(u => u.count), 0.001);
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm">
+      <h3 className="text-lg font-medium text-white mb-4">{t('dashboard.upstream_response_times')}</h3>
+      <div className="space-y-3">
+        {upstreams.slice(0, 8).map((upstream, i) => {
+          const ms = upstream.count * 1000; // AdGuard returns seconds, convert to ms
+          const queries = responseMap.get(upstream.name) || 0;
+          return (
+            <div key={i} className="space-y-1">
+              <div className="flex justify-between text-sm items-center">
+                <span className="text-gray-300 font-mono truncate max-w-[180px]" title={upstream.name}>
+                  {formatUpstream(upstream.name)}
+                </span>
+                <div className="flex items-center gap-3">
+                  {queries > 0 && (
+                    <span className="text-xs text-gray-500">{queries.toLocaleString()} {t('dashboard.upstream_queries')}</span>
+                  )}
+                  <span className={`font-medium ${getLatencyColor(ms)}`}>
+                    {ms < 1 ? `${(ms).toFixed(2)} ${t('dashboard.ms')}` : `${ms.toFixed(1)} ${t('dashboard.ms')}`}
+                  </span>
+                </div>
+              </div>
+              <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full opacity-60 ${getBarColor(ms)}`}
+                  style={{ width: `${Math.min((ms / maxTime) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -66,6 +66,11 @@ export type TranslationKeys =
     | 'dashboard.dashboard_api'
     | 'dashboard.no_records'
     | 'dashboard.unknown'
+    | 'dashboard.upstream_response_times'
+    | 'dashboard.upstream_server'
+    | 'dashboard.upstream_avg_time'
+    | 'dashboard.upstream_queries'
+    | 'dashboard.ms'
     // Filtering
     | 'filtering.title'
     | 'filtering.subtitle'
@@ -494,6 +499,11 @@ export const translations: Record<Language, Record<string, string>> = {
         'dashboard.dashboard_api': 'Dashboard API',
         'dashboard.no_records': 'No records found',
         'dashboard.unknown': 'Unknown',
+        'dashboard.upstream_response_times': 'Upstream Response Times',
+        'dashboard.upstream_server': 'Server',
+        'dashboard.upstream_avg_time': 'Avg Time',
+        'dashboard.upstream_queries': 'Queries',
+        'dashboard.ms': 'ms',
         // Filtering
         'filtering.title': 'Filtering & Access Control',
         'filtering.subtitle': 'Manage global lists, per-client rules, and DNS forwarding.',
@@ -927,6 +937,11 @@ export const translations: Record<Language, Record<string, string>> = {
         'dashboard.dashboard_api': 'Dashboard API',
         'dashboard.no_records': 'Keine Einträge gefunden',
         'dashboard.unknown': 'Unbekannt',
+        'dashboard.upstream_response_times': 'Upstream-Antwortzeiten',
+        'dashboard.upstream_server': 'Server',
+        'dashboard.upstream_avg_time': 'Durchschn. Zeit',
+        'dashboard.upstream_queries': 'Anfragen',
+        'dashboard.ms': 'ms',
         // Filtering
         'filtering.title': 'Filterung & Zugriffskontrolle',
         'filtering.subtitle': 'Verwalten Sie globale Listen, Client-Regeln und DNS-Weiterleitung.',
