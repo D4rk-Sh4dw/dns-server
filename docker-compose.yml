@@ -89,7 +89,7 @@ services:
       - DNS_SERVER_FORWARDERS=1.1.1.1,8.8.8.8
       - DNS_SERVER_RECURSION=Allow
       - DNS_SERVER_ENABLE_BLOCKING=false
-      - DNS_SERVER_WEB_SERVICE_LOCAL_ADDRESSES=0.0.0.0,::
+      - DNS_SERVER_WEB_SERVICE_LOCAL_ADDRESSES="0.0.0.0,::"
     volumes:
       - ./data/technitium:/etc/dns
     networks:
