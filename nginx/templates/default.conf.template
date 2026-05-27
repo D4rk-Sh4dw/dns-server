@@ -50,35 +50,38 @@ server {
         sub_filter 'src="/' 'src="/adguard/';
         sub_filter 'action="/' 'action="/adguard/';
         
-        # Inject Autologin Script for AdGuard (Robust JS Injection)
+        # Inject Autologin Script for AdGuard
+        # Must disable compression so sub_filter can modify HTML
+        proxy_set_header Accept-Encoding "";
+        sub_filter_types text/html;
         sub_filter '</body>' '<script>
         (function() {
             var attempts = 0;
-            var maxAttempts = 20; 
+            var maxAttempts = 30;
             var interval = setInterval(function() {
                 attempts++;
                 var u = document.querySelector("input[type=text], input[name=username], #username");
                 var p = document.querySelector("input[type=password], input[name=password], #password");
-                var b = document.querySelector("button[type=submit], button.btn-primary");
+                var b = document.querySelector("button[type=submit], button.btn-primary, input[type=submit], #login-btn, .btn-primary");
                 
                 if (u && p && b) {
-                     // Check empty
-                     if (u.value === "" || p.value === "") {
-                        var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                        if (nativeInputValueSetter) {
-                            nativeInputValueSetter.call(u, "${ADGUARD_USER}");
-                            nativeInputValueSetter.call(p, "${ADGUARD_PASS}");
-                        } else {
-                            u.value = "${ADGUARD_USER}";
-                            p.value = "${ADGUARD_PASS}";
-                        }
-                        ["input", "change", "blur"].forEach(function(evt) {
-                            u.dispatchEvent(new Event(evt, { bubbles: true }));
-                            p.dispatchEvent(new Event(evt, { bubbles: true }));
-                        });
-                        setTimeout(function() { b.click(); }, 300);
-                        clearInterval(interval);
-                     }
+                    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                    if (nativeInputValueSetter) {
+                        nativeInputValueSetter.call(u, "${ADGUARD_USER}");
+                        nativeInputValueSetter.call(p, "${ADGUARD_PASS}");
+                    } else {
+                        u.value = "${ADGUARD_USER}";
+                        p.value = "${ADGUARD_PASS}";
+                    }
+                    ["input", "change", "blur"].forEach(function(evt) {
+                        u.dispatchEvent(new Event(evt, { bubbles: true }));
+                        p.dispatchEvent(new Event(evt, { bubbles: true }));
+                    });
+                    setTimeout(function() {
+                        b.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+                        if (b.form) b.form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+                    }, 500);
+                    clearInterval(interval);
                 }
                 if (attempts >= maxAttempts) clearInterval(interval);
             }, 500);
@@ -137,32 +140,32 @@ server {
         sub_filter '</body>' '<script>
         (function() {
             var attempts = 0;
-            var maxAttempts = 20;
+            var maxAttempts = 30;
             var interval = setInterval(function() {
                 attempts++;
                 var u = document.querySelector("input[type=text], input[name=user], #user");
                 var p = document.querySelector("input[type=password], input[name=pass], #pass");
-                var b = document.querySelector("button[type=submit], #login-btn, .btn-primary");
+                if (p && !u) { u = p.previousElementSibling || p.parentElement.previousElementSibling.querySelector("input"); }
+                var b = document.querySelector("button[type=submit], #login-btn, .btn-primary, input[type=submit]");
                 
-            if (p && !u) { u = p.previousElementSibling || p.parentElement.previousElementSibling.querySelector("input"); }
-
                 if (u && p && b) {
-                    if (u.value === "" || p.value === "") {
-                        var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                        if (nativeInputValueSetter) {
-                            nativeInputValueSetter.call(u, "${TECHNITIUM_USER}");
-                            nativeInputValueSetter.call(p, "${TECHNITIUM_PASSWORD}");
-                        } else {
-                            u.value = "${TECHNITIUM_USER}";
-                            p.value = "${TECHNITIUM_PASSWORD}";
-                        }
-                        ["input", "change", "blur"].forEach(function(evt) {
-                            u.dispatchEvent(new Event(evt, { bubbles: true }));
-                            p.dispatchEvent(new Event(evt, { bubbles: true }));
-                        });
-                        setTimeout(function() { b.click(); }, 300);
-                        clearInterval(interval);
+                    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                    if (nativeInputValueSetter) {
+                        nativeInputValueSetter.call(u, "${TECHNITIUM_USER}");
+                        nativeInputValueSetter.call(p, "${TECHNITIUM_PASSWORD}");
+                    } else {
+                        u.value = "${TECHNITIUM_USER}";
+                        p.value = "${TECHNITIUM_PASSWORD}";
                     }
+                    ["input", "change", "blur"].forEach(function(evt) {
+                        u.dispatchEvent(new Event(evt, { bubbles: true }));
+                        p.dispatchEvent(new Event(evt, { bubbles: true }));
+                    });
+                    setTimeout(function() {
+                        b.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+                        if (b.form) b.form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+                    }, 500);
+                    clearInterval(interval);
                 }
                 if (attempts >= maxAttempts) clearInterval(interval);
             }, 500);
