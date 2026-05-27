@@ -64,7 +64,13 @@ bash install/update.sh
 Or run it directly from GitHub without cloning:
 
 ```bash
-bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/update.sh)"
+cd /opt/dns-server && bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/update.sh)"
+```
+
+Or specify the directory explicitly:
+
+```bash
+INSTALL_DIR=/opt/dns-server bash -c "$(wget -qLO - https://raw.githubusercontent.com/D4rk-Sh4dw/dns-server/main/install/update.sh)"
 ```
 
 > [!NOTE]

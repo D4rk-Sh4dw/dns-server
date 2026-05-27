@@ -21,17 +21,39 @@ NC='\033[0m'
 echo -e "${BLUE}=== DNS Dashboard Update ===${NC}"
 
 # --- Detect installation directory ---
-# If run from within the project dir, use that. Otherwise default to INSTALL_DIR.
-if [ -f "./docker-compose.yml" ] && [ -f "./install/update.sh" ]; then
+# 1. Check if running from within the project dir (./install/update.sh)
+# 2. Check if running inline via wget and cwd has docker-compose.yml
+# 3. Check default INSTALL_DIR
+# 4. Search common locations
+
+if [ -f "./docker-compose.yml" ]; then
     INSTALL_DIR="$(pwd)"
     echo -e "${GREEN}Detected project directory: $INSTALL_DIR${NC}"
-elif [ -d "$INSTALL_DIR" ]; then
+elif [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/docker-compose.yml" ]; then
     echo -e "${GREEN}Using default directory: $INSTALL_DIR${NC}"
 else
-    echo -e "${RED}Error: Could not find installation directory.${NC}"
-    echo "Either run this script from the project directory or set INSTALL_DIR."
-    echo "Usage: INSTALL_DIR=/path/to/dns-server bash update.sh"
-    exit 1
+    # Search common installation paths
+    FOUND_DIR=""
+    for candidate in "/opt/dns-server" "$HOME/dns-server" "$HOME/dns-server/dns-server" "./dns-server"; do
+        if [ -f "$candidate/docker-compose.yml" ]; then
+            FOUND_DIR="$candidate"
+            break
+        fi
+    done
+
+    if [ -n "$FOUND_DIR" ]; then
+        INSTALL_DIR="$FOUND_DIR"
+        echo -e "${GREEN}Found installation at: $INSTALL_DIR${NC}"
+    else
+        echo -e "${RED}Error: Could not find installation directory.${NC}"
+        echo "Either run this script from the project directory or set INSTALL_DIR."
+        echo "Usage: INSTALL_DIR=/path/to/dns-server bash update.sh"
+        echo ""
+        echo "Example (standalone):"
+        echo "  cd /opt/dns-server && bash install/update.sh"
+        echo "  INSTALL_DIR=/opt/dns-server bash install/update.sh"
+        exit 1
+    fi
 fi
 
 cd "$INSTALL_DIR"
