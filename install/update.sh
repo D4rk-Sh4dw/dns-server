@@ -148,13 +148,13 @@ echo ""
 echo -e "${BLUE}[3/5] Checking for configuration changes...${NC}"
 
 # Check if Technitium webservice.config exists (env vars only read on first start)
+# Always delete it to ensure clean state - Technitium recreates it on startup
 TECHNITIUM_DATA="./data/technitium"
 if [ -f "$TECHNITIUM_DATA/webservice.config" ]; then
     echo -e "${YELLOW}Technitium webservice.config exists.${NC}"
-    echo "  Environment variables are only read on first start."
-    echo "  Deleting webservice.config so the new env vars take effect..."
+    echo "  Deleting it to ensure clean startup with default settings..."
     rm -f "$TECHNITIUM_DATA/webservice.config"
-    echo -e "${GREEN}Deleted webservice.config. It will be recreated on next start.${NC}"
+    echo -e "${GREEN}Deleted webservice.config. Technitium will recreate it on startup.${NC}"
 fi
 
 # --- Step 4: Pull latest Docker images and restart ---
