@@ -10,6 +10,7 @@ import {
   ArrowDownRight,
   RefreshCw
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n-context';
 
 interface AdGuardStats {
@@ -163,12 +164,15 @@ export default function Home() {
               data={stats?.top_queried_domains}
               icon={Globe}
               color="text-blue-400"
+              linkTo="/logs"
             />
             <TopTable
               title={t('dashboard.top_blocked')}
               data={stats?.top_blocked_domains}
               icon={Shield}
               color="text-red-400"
+              linkTo="/logs"
+              statusFilter="blocked"
             />
           </div>
         </div>
@@ -181,6 +185,7 @@ export default function Home() {
             icon={Activity}
             color="text-purple-400"
             clientNames={data.adguard?.clientNames}
+            linkTo="/logs"
           />
 
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -214,8 +219,9 @@ export default function Home() {
   );
 }
 
-function TopTable({ title, data, icon: Icon, color, clientNames }: { title: string, data?: any[], icon: any, color: string, clientNames?: Record<string, string> }) {
+function TopTable({ title, data, icon: Icon, color, clientNames, linkTo, statusFilter }: { title: string, data?: any[], icon: any, color: string, clientNames?: Record<string, string>, linkTo?: string, statusFilter?: string }) {
   const { t } = useTranslation();
+  const router = useRouter();
 
   if (!data || data.length === 0) {
     return (
@@ -267,9 +273,29 @@ function TopTable({ title, data, icon: Icon, color, clientNames }: { title: stri
         {normalizedData.map((item, i) => (
           <div key={i} className="space-y-1.5">
             <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-300 font-mono truncate max-w-[200px]" title={item.originalKey || item.key}>
-                {item.key}
-              </span>
+              {linkTo ? (
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    if (item.originalKey) {
+                      // Resolved hostname: search by original IP
+                      params.set('search', item.originalKey);
+                    } else {
+                      params.set('search', item.key);
+                    }
+                    if (statusFilter) params.set('status', statusFilter);
+                    router.push(`${linkTo}?${params.toString()}`);
+                  }}
+                  className="text-gray-300 font-mono truncate max-w-[200px] text-left hover:text-blue-400 hover:underline transition-colors cursor-pointer"
+                  title={item.originalKey ? `${item.originalKey} → ${item.key}` : item.key}
+                >
+                  {item.key}
+                </button>
+              ) : (
+                <span className="text-gray-300 font-mono truncate max-w-[200px]" title={item.originalKey || item.key}>
+                  {item.key}
+                </span>
+              )}
               <span className="text-white font-medium">{item.value.toLocaleString()}</span>
             </div>
             <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">

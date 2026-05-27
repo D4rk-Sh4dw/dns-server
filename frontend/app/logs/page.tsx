@@ -4,6 +4,7 @@ import { useTranslation } from '@/lib/i18n-context';
 
 import { useEffect, useState, useMemo } from 'react';
 import { Search, RotateCw, Shield, AlertTriangle, Check, ArrowRight, Trash2, ChevronDown, ChevronUp, Ban, User, X } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 interface QueryLogItem {
     time: string;
@@ -53,10 +54,11 @@ const isBlocked = (log: QueryLogItem) => {
 
 export default function LogsPage() {
     const { t } = useTranslation();
+    const searchParams = useSearchParams();
     const [logs, setLogs] = useState<QueryLogItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [filter, setFilter] = useState(searchParams.get('search') || '');
+    const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
     const [olderThan, setOlderThan] = useState<string | undefined>(undefined);
     const [expandedLog, setExpandedLog] = useState<number | null>(null);
     const [clients, setClients] = useState<Client[]>([]);
