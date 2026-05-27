@@ -88,22 +88,37 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         
         # Rewrite cookies path
         proxy_cookie_path / /technitium/;
+        proxy_cookie_path /technitium/ /technitium/;
 
-        # Rewrite redirect headers
+        # Rewrite redirect headers - catch ALL possible internal URLs
+        proxy_redirect http://dns-technitium:5380/ /technitium/;
+        proxy_redirect http://172.25.0.101:5380/ /technitium/;
         proxy_redirect http://$http_host/ /technitium/;
         proxy_redirect https://$http_host/ /technitium/;
         proxy_redirect http://$host/ /technitium/;
         proxy_redirect https://$host/ /technitium/;
-        proxy_cookie_path / /technitium/;
+        proxy_redirect / /technitium/;
 
-        # Rewrite content to support subpath
-        sub_filter_types text/css text/javascript application/javascript;
+        # Rewrite content to support subpath - include JSON for API responses
+        sub_filter_types text/css text/javascript application/javascript application/json text/html;
+        
+        # Rewrite absolute URLs with internal Docker addresses (most likely cause of "connection refused")
+        sub_filter 'http://dns-technitium:5380/' '/technitium/';
+        sub_filter 'http://172.25.0.101:5380/' '/technitium/';
+        sub_filter 'http://10.1.0.11:5380/' '/technitium/';
+        
+        # Rewrite relative URLs
         sub_filter 'href="/' 'href="/technitium/';
         sub_filter 'src="/' 'src="/technitium/';
         sub_filter 'action="/' 'action="/technitium/';
+        sub_filter 'url("/' 'url("/technitium/';
+        sub_filter 'Url="/' 'Url="/technitium/';
 
         # Technitium specific API rewrites
         sub_filter '/api/' '/technitium/api/';
@@ -119,7 +134,7 @@ server {
                 var p = document.querySelector("input[type=password], input[name=pass], #pass");
                 var b = document.querySelector("button[type=submit], #login-btn, .btn-primary");
                 
-                if (p && !u) { u = p.previousElementSibling || p.parentElement.previousElementSibling.querySelector("input"); }
+            if (p && !u) { u = p.previousElementSibling || p.parentElement.previousElementSibling.querySelector("input"); }
 
                 if (u && p && b) {
                     if (u.value === "" || p.value === "") {
