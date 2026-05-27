@@ -56,7 +56,8 @@ server {
         sub_filter_types text/html;
         sub_filter '</body>' '<script>
         (function() {
-            if (document.cookie.indexOf("session=") !== -1) return;
+            if (sessionStorage.getItem("_autologin_done")) return;
+            sessionStorage.setItem("_autologin_done", "1");
             var attempts = 0;
             var maxAttempts = 30;
             var interval = setInterval(function() {
@@ -129,7 +130,8 @@ server {
         sub_filter_types text/html;
         sub_filter '</body>' '<script>
         (function() {
-            if (localStorage.getItem("token")) return;
+            if (sessionStorage.getItem("_autologin_done")) return;
+            sessionStorage.setItem("_autologin_done", "1");
             var attempts = 0;
             var maxAttempts = 30;
             var interval = setInterval(function() {
