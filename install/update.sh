@@ -143,23 +143,9 @@ else
     echo -e "${GREEN}Files downloaded successfully.${NC}"
 fi
 
-# --- Step 3: Check for breaking changes ---
+# --- Step 3: Stop containers and clean up config ---
 echo ""
-echo -e "${BLUE}[3/5] Checking for configuration changes...${NC}"
-
-# Check if Technitium webservice.config exists (env vars only read on first start)
-# Always delete it to ensure clean state - Technitium recreates it on startup
-TECHNITIUM_DATA="./data/technitium"
-if [ -f "$TECHNITIUM_DATA/webservice.config" ]; then
-    echo -e "${YELLOW}Technitium webservice.config exists.${NC}"
-    echo "  Deleting it to ensure clean startup with default settings..."
-    rm -f "$TECHNITIUM_DATA/webservice.config"
-    echo -e "${GREEN}Deleted webservice.config. Technitium will recreate it on startup.${NC}"
-fi
-
-# --- Step 4: Pull latest Docker images and restart ---
-echo ""
-echo -e "${BLUE}[4/5] Pulling latest Docker images and restarting services...${NC}"
+echo -e "${BLUE}[3/5] Stopping containers and cleaning up...${NC}"
 
 # Detect which compose command to use
 if command -v docker &> /dev/null; then
@@ -170,6 +156,22 @@ else
     echo -e "${RED}Error: Neither 'docker compose' nor 'docker-compose' found.${NC}"
     exit 1
 fi
+
+# Stop Technitium first so it stops recreating webservice.config
+echo "Stopping Technitium container..."
+$COMPOSE_CMD stop technitium 2>/dev/null || docker stop dns-technitium 2>/dev/null || true
+
+# Delete webservice.config while container is stopped
+TECHNITIUM_DATA="./data/technitium"
+if [ -f "$TECHNITIUM_DATA/webservice.config" ]; then
+    echo -e "${YELLOW}Deleting webservice.config for clean startup...${NC}"
+    rm -f "$TECHNITIUM_DATA/webservice.config"
+    echo -e "${GREEN}Deleted. Technitium will recreate it with correct defaults.${NC}"
+fi
+
+# --- Step 4: Pull latest Docker images and restart ---
+echo ""
+echo -e "${BLUE}[4/5] Pulling latest Docker images and restarting services...${NC}"
 
 $COMPOSE_CMD pull 2>/dev/null || {
     echo -e "${YELLOW}Could not pull images. They will be updated on next build.${NC}"
