@@ -162,13 +162,13 @@ echo "Stopping Technitium container..."
 $COMPOSE_CMD stop technitium 2>/dev/null || docker stop dns-technitium 2>/dev/null || true
 
 # Delete webservice.config so Technitium reads env vars on next start
-# Without this file, Technitium uses its hardcoded defaults which include '::' (crashes on Alpine)
+# Without this file, Technitium uses hardcoded defaults (includes '::' → crash on Alpine)
 # With this file deleted AND DNS_SERVER_WEB_SERVICE_LOCAL_ADDRESSES=0.0.0.0 in compose, it works
 TECHNITIUM_DATA="./data/technitium"
 if [ -f "$TECHNITIUM_DATA/webservice.config" ]; then
-    echo -e "${YELLOW}Deleting webservice.config so env vars take effect on next start...${NC}"
+    echo -e "${YELLOW}Deleting webservice.config so env var DNS_SERVER_WEB_SERVICE_LOCAL_ADDRESSES=0.0.0.0 takes effect...${NC}"
     rm -f "$TECHNITIUM_DATA/webservice.config"
-    echo -e "${GREEN}Deleted. Technitium will read DNS_SERVER_WEB_SERVICE_LOCAL_ADDRESSES from compose.${NC}"
+    echo -e "${GREEN}Deleted. Technitium will read env vars on next start.${NC}"
 fi
 
 # --- Step 4: Pull latest Docker images and restart ---
