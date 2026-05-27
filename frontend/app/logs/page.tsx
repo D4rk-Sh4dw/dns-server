@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@/lib/i18n-context';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { Search, RotateCw, Shield, AlertTriangle, Check, ArrowRight, Trash2, ChevronDown, ChevronUp, Ban, User, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
@@ -52,7 +52,15 @@ const isBlocked = (log: QueryLogItem) => {
     return false;
 };
 
-export default function LogsPage() {
+export default function LogsPageWrapper() {
+    return (
+        <Suspense fallback={<div className="p-8 text-gray-400">Loading logs...</div>}>
+            <LogsPage />
+        </Suspense>
+    );
+}
+
+function LogsPage() {
     const { t } = useTranslation();
     const searchParams = useSearchParams();
     const [logs, setLogs] = useState<QueryLogItem[]>([]);
