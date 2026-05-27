@@ -180,6 +180,7 @@ export default function Home() {
             data={stats?.top_clients}
             icon={Activity}
             color="text-purple-400"
+            clientNames={data.adguard?.clientNames}
           />
 
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -213,7 +214,7 @@ export default function Home() {
   );
 }
 
-function TopTable({ title, data, icon: Icon, color }: { title: string, data?: any[], icon: any, color: string }) {
+function TopTable({ title, data, icon: Icon, color, clientNames }: { title: string, data?: any[], icon: any, color: string, clientNames?: Record<string, string> }) {
   const { t } = useTranslation();
 
   if (!data || data.length === 0) {
@@ -230,20 +231,26 @@ function TopTable({ title, data, icon: Icon, color }: { title: string, data?: an
   // 2. [{ "domain": "domain.com", "count": 100 }]
   // 3. [{ "host": "1.2.3.4", "count": 100 }] (for clients)
   const normalizedData = data.slice(0, 10).map(item => {
-    if (typeof item !== 'object' || item === null) return { key: t('dashboard.unknown'), value: 0 };
+    if (typeof item !== 'object' || item === null) return { key: t('dashboard.unknown'), value: 0, originalKey: '' };
 
     // Check for nested properties (Format 2 and 3)
     if ('domain' in item && 'count' in item) {
-      return { key: String(item.domain), value: Number(item.count) };
+      const key = String(item.domain);
+      return { key, value: Number(item.count), originalKey: key };
     }
     if ('host' in item && 'count' in item) {
-      return { key: String(item.host), value: Number(item.count) };
+      const key = String(item.host);
+      // Resolve IP to hostname if clientNames is available
+      const resolved = clientNames?.[key];
+      return { key: resolved || key, value: Number(item.count), originalKey: resolved ? key : '' };
     }
 
     // Fallback to Format 1
     const key = Object.keys(item)[0];
     const value = item[key];
-    return { key, value: Number(value) || 0 };
+    // Try to resolve IP to hostname for Format 1 (top_clients uses {IP: count})
+    const resolved = clientNames?.[key];
+    return { key: resolved || key, value: Number(value) || 0, originalKey: resolved ? key : '' };
   });
 
   if (normalizedData.length === 0) return null; // Should not happen if data check is above
@@ -260,7 +267,7 @@ function TopTable({ title, data, icon: Icon, color }: { title: string, data?: an
         {normalizedData.map((item, i) => (
           <div key={i} className="space-y-1.5">
             <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-300 font-mono truncate max-w-[200px]" title={item.key}>
+              <span className="text-gray-300 font-mono truncate max-w-[200px]" title={item.originalKey || item.key}>
                 {item.key}
               </span>
               <span className="text-white font-medium">{item.value.toLocaleString()}</span>
