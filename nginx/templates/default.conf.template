@@ -50,7 +50,7 @@ server {
         sub_filter 'src="/' 'src="/adguard/';
         sub_filter 'action="/' 'action="/adguard/';
         
-        # Inject Autologin Script for AdGuard
+        # Inject Autologin Script for AdGuard (API-based)
         # Must disable compression so sub_filter can modify HTML
         proxy_set_header Accept-Encoding "";
         sub_filter_types text/html;
@@ -62,26 +62,15 @@ server {
                 attempts++;
                 var u = document.querySelector("input[type=text], input[name=username], #username");
                 var p = document.querySelector("input[type=password], input[name=password], #password");
-                var b = document.querySelector("button[type=submit], button.btn-primary, input[type=submit], #login-btn, .btn-primary");
-                
-                if (u && p && b) {
-                    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                    if (nativeInputValueSetter) {
-                        nativeInputValueSetter.call(u, "${ADGUARD_USER}");
-                        nativeInputValueSetter.call(p, "${ADGUARD_PASS}");
-                    } else {
-                        u.value = "${ADGUARD_USER}";
-                        p.value = "${ADGUARD_PASS}";
-                    }
-                    ["input", "change", "blur"].forEach(function(evt) {
-                        u.dispatchEvent(new Event(evt, { bubbles: true }));
-                        p.dispatchEvent(new Event(evt, { bubbles: true }));
-                    });
-                    setTimeout(function() {
-                        b.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-                        if (b.form) b.form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-                    }, 500);
+                if (u && p) {
                     clearInterval(interval);
+                    fetch("/adguard/control/login", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({name: "${ADGUARD_USER}", password: "${ADGUARD_PASS}"})
+                    }).then(function(r) {
+                        if (r.ok) window.location.reload();
+                    });
                 }
                 if (attempts >= maxAttempts) clearInterval(interval);
             }, 500);
@@ -133,7 +122,7 @@ server {
         proxy_redirect https://$host/ /technitium/;
         proxy_redirect / /technitium/;
 
-        # Inject Autologin Script for Technitium
+        # Inject Autologin Script for Technitium (API-based)
         # Must disable compression so sub_filter can modify HTML
         proxy_set_header Accept-Encoding "";
         sub_filter_types text/html;
@@ -143,29 +132,25 @@ server {
             var maxAttempts = 30;
             var interval = setInterval(function() {
                 attempts++;
-                var u = document.querySelector("input[type=text], input[name=user], #user");
-                var p = document.querySelector("input[type=password], input[name=pass], #pass");
-                if (p && !u) { u = p.previousElementSibling || p.parentElement.previousElementSibling.querySelector("input"); }
-                var b = document.querySelector("button[type=submit], #login-btn, .btn-primary, input[type=submit]");
-                
-                if (u && p && b) {
-                    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                    if (nativeInputValueSetter) {
-                        nativeInputValueSetter.call(u, "${TECHNITIUM_USER}");
-                        nativeInputValueSetter.call(p, "${TECHNITIUM_PASSWORD}");
-                    } else {
-                        u.value = "${TECHNITIUM_USER}";
-                        p.value = "${TECHNITIUM_PASSWORD}";
-                    }
-                    ["input", "change", "blur"].forEach(function(evt) {
-                        u.dispatchEvent(new Event(evt, { bubbles: true }));
-                        p.dispatchEvent(new Event(evt, { bubbles: true }));
-                    });
-                    setTimeout(function() {
-                        b.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-                        if (b.form) b.form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-                    }, 500);
+                var u = document.querySelector("input[type=text], input[name=user], #user, #txtUser");
+                var p = document.querySelector("input[type=password], input[name=pass], #pass, #txtPass");
+                if (u && p) {
                     clearInterval(interval);
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", "/technitium/api/user/login", true);
+                    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            try {
+                                var resp = JSON.parse(xhr.responseText);
+                                if (resp.token) {
+                                    localStorage.setItem("token", resp.token);
+                                    window.location.reload();
+                                }
+                            } catch(e) {}
+                        }
+                    };
+                    xhr.send("user=" + encodeURIComponent("${TECHNITIUM_USER}") + "&pass=" + encodeURIComponent("${TECHNITIUM_PASSWORD}") + "&includeInfo=true");
                 }
                 if (attempts >= maxAttempts) clearInterval(interval);
             }, 500);
