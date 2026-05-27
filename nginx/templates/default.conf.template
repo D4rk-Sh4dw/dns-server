@@ -4,15 +4,14 @@ server {
     absolute_redirect off;
     client_max_body_size 500M;
 
-    # Use Docker's internal DNS resolver to avoid startup failures
-    # when upstream containers aren't ready yet
+    # Use Docker's internal DNS resolver for runtime DNS resolution
     resolver 127.0.0.11 valid=30s ipv6=off;
     resolver_timeout 5s;
 
     # Dashboard (Main App)
     location / {
         set $dashboard_upstream http://dns-dashboard:3000;
-        proxy_pass $dashboard_upstream;
+        proxy_pass $dashboard_upstream/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -24,10 +23,10 @@ server {
         # Validate authentication via Dashboard session
         auth_request /auth-validate;
         error_page 401 = @auth_error;
+        error_page 500 502 503 504 = @auth_error;
 
-        # rewrite strips /adguard/ prefix, variable enables runtime DNS resolution
-        rewrite ^/adguard/(.*) /$1 break;
         set $adguard_upstream http://dns-adguard:3000;
+        rewrite ^/adguard/(.*) /$1 break;
         proxy_pass $adguard_upstream;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -91,12 +90,11 @@ server {
         # Validate authentication via Dashboard session
         auth_request /auth-validate;
         error_page 401 = @auth_error;
+        error_page 500 502 503 504 = @auth_error;
 
-        # Use variable so Nginx resolves DNS at runtime, not at startup
-        # This prevents "host not found in upstream" errors when Technitium isn't ready yet
-        # rewrite strips the /technitium/ prefix before proxying
-        rewrite ^/technitium/(.*) /$1 break;
+        # Use variable for runtime DNS resolution (Technitium may not be ready at Nginx startup)
         set $technitium_upstream http://dns-technitium:5380;
+        rewrite ^/technitium/(.*) /$1 break;
         proxy_pass $technitium_upstream;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
