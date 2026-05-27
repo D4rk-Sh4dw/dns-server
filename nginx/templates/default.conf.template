@@ -11,7 +11,8 @@ server {
 
     # Dashboard (Main App)
     location / {
-        proxy_pass http://dns-dashboard:3000/;
+        set $dashboard_upstream http://dns-dashboard:3000;
+        proxy_pass $dashboard_upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -24,7 +25,10 @@ server {
         auth_request /auth-validate;
         error_page 401 = @auth_error;
 
-        proxy_pass http://dns-adguard:3000/;
+        # rewrite strips /adguard/ prefix, variable enables runtime DNS resolution
+        rewrite ^/adguard/(.*) /$1 break;
+        set $adguard_upstream http://dns-adguard:3000;
+        proxy_pass $adguard_upstream;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -175,7 +179,8 @@ server {
     # Internal location for authentication validation
     location = /auth-validate {
         internal;
-        proxy_pass http://dns-dashboard:3000/api/auth/validate;
+        set $auth_upstream http://dns-dashboard:3000;
+        proxy_pass $auth_upstream/api/auth/validate;
         proxy_pass_request_body off;
         proxy_set_header Content-Length "";
         proxy_set_header X-Original-URI $request_uri;
