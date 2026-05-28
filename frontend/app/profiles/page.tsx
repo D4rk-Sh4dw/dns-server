@@ -474,7 +474,7 @@ export default function ProfilesPage() {
                                             value={formData.schedule?.timeZone || 'UTC'}
                                             onChange={e => setFormData({
                                                 ...formData,
-                                                schedule: { ...(formData.schedule || {}), timeZone: e.target.value },
+                                                schedule: { ...(formData.schedule || {}), timeZone: e.target.value } as any,
                                             })}
                                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"
                                         >
@@ -490,7 +490,7 @@ export default function ProfilesPage() {
                                             value={formData.schedule?.start || '08:00'}
                                             onChange={e => setFormData({
                                                 ...formData,
-                                                schedule: { ...(formData.schedule || {}), start: e.target.value },
+                                                schedule: { ...(formData.schedule || {}), start: e.target.value } as any,
                                             })}
                                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
                                         />
@@ -502,7 +502,7 @@ export default function ProfilesPage() {
                                             value={formData.schedule?.end || '17:00'}
                                             onChange={e => setFormData({
                                                 ...formData,
-                                                schedule: { ...(formData.schedule || {}), end: e.target.value },
+                                                schedule: { ...(formData.schedule || {}), end: e.target.value } as any,
                                             })}
                                             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
                                         />
