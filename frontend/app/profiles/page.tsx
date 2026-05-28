@@ -39,6 +39,10 @@ interface Profile {
         start: string;
         end: string;
     };
+    filterLists?: {
+        enable?: number[];
+        disable?: number[];
+    };
     isActiveNow?: boolean;
 }
 
