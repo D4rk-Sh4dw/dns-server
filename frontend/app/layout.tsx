@@ -3,7 +3,7 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers, LogOut, Cloud } from 'lucide-react'
+import { LayoutDashboard, Shield, Globe, Settings, Menu, FileText, X, Users, Wifi, Network, Layers, LogOut, Cloud, Clock, Activity, Database } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-context'
@@ -112,8 +112,13 @@ function SidebarContent({ pathname }: { pathname: string }) {
       <NavItem href="/filtering" icon={Shield} label={t('nav.filtering')} active={pathname === '/filtering'} />
       <NavItem href="/forwarding" icon={Network} label={t('nav.forwarding')} active={pathname === '/forwarding'} />
       <NavItem href="/services" icon={Menu} label={t('nav.service_blocking')} active={pathname === '/services'} />
+      <NavItem href="/profiles" icon={Clock} label={t('nav.profiles')} active={pathname === '/profiles'} />
       <NavItem href="/clients" icon={Users} label={t('nav.client_management')} active={pathname === '/clients'} />
       <NavItem href="/logs" icon={FileText} label={t('nav.query_log')} active={pathname === '/logs'} />
+      <NavItem href="/stream" icon={Activity} label="Live Stream" active={pathname === '/stream'} />
+      <NavItem href="/cache" icon={Database} label="Cache Analytics" active={pathname === '/cache'} />
+      <NavItem href="/firewall" icon={Shield} label="DNS Firewall" active={pathname === '/firewall'} />
+      <NavItem href="/topology" icon={Network} label="Topology" active={pathname === '/topology'} />
 
 
       <div className="pt-4 pb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">

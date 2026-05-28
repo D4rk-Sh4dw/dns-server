@@ -8,7 +8,13 @@ export async function GET(request: Request) {
     try {
         if (getServices) {
             const services = await adguard.getAllBlockedServices();
-            return NextResponse.json(services);
+            // Normalize to { available: [...] } format
+            const normalized = Array.isArray(services)
+                ? services.map((s: any) =>
+                    typeof s === 'string' ? { id: s, name: s } : { id: s.id || s, name: s.name || s.id || s }
+                )
+                : [];
+            return NextResponse.json({ available: normalized });
         }
         const data = await adguard.getClients();
         return NextResponse.json(data);

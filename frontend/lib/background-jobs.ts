@@ -1,6 +1,7 @@
 // Background jobs that run on the server
 import fs from 'fs/promises';
 import { setProtectionEnabled, setPauseState } from './adguard';
+import { checkAndApplyScheduledProfiles } from './profiles';
 
 const PAUSE_FILE = '/tmp/pause_state.json';
 
@@ -29,7 +30,19 @@ async function checkAndReenableProtection() {
     }
 }
 
+async function checkProfiles() {
+    try {
+        const activated = await checkAndApplyScheduledProfiles();
+        if (activated) {
+            console.log(`[Background Job] Profile scheduler activated: ${activated}`);
+        }
+    } catch (error) {
+        console.error('[Background Job] Error checking profiles:', error);
+    }
+}
+
 let timerJobInterval: NodeJS.Timeout | null = null;
+let profileJobInterval: NodeJS.Timeout | null = null;
 let isInitialized = false;
 
 export function initBackgroundJobs() {
@@ -40,21 +53,28 @@ export function initBackgroundJobs() {
 
     isInitialized = true;
     console.log('[Background Jobs] Starting protection timer job (checks every 30 seconds)');
+    console.log('[Background Jobs] Starting profile scheduler (checks every 60 seconds)');
 
     // Check immediately on startup
     checkAndReenableProtection();
+    checkProfiles();
 
-    // Then check every 30 seconds
+    // Then check periodically
     timerJobInterval = setInterval(checkAndReenableProtection, 30 * 1000);
+    profileJobInterval = setInterval(checkProfiles, 60 * 1000);
 }
 
 export function stopBackgroundJobs() {
     if (timerJobInterval) {
         clearInterval(timerJobInterval);
         timerJobInterval = null;
-        isInitialized = false;
-        console.log('[Background Jobs] Stopped');
     }
+    if (profileJobInterval) {
+        clearInterval(profileJobInterval);
+        profileJobInterval = null;
+    }
+    isInitialized = false;
+    console.log('[Background Jobs] Stopped');
 }
 
 // Auto-initialize on module load in Node.js environment

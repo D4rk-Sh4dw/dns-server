@@ -7,6 +7,7 @@ export type TranslationKeys =
     | 'nav.filtering'
     | 'nav.forwarding'
     | 'nav.service_blocking'
+    | 'nav.profiles'
     | 'nav.client_management'
     | 'nav.query_log'
     | 'nav.technitium_controls'
@@ -339,6 +340,47 @@ export type TranslationKeys =
     | 'zones.failed_delete'
     | 'zones.technitium_docker'
     | 'zones.technitium_docker'
+    // Profiles
+    | 'profiles.title'
+    | 'profiles.subtitle'
+    | 'profiles.active_now'
+    | 'profiles.inactive'
+    | 'profiles.activate'
+    | 'profiles.deactivate'
+    | 'profiles.edit'
+    | 'profiles.delete'
+    | 'profiles.create_profile'
+    | 'profiles.name'
+    | 'profiles.description'
+    | 'profiles.icon'
+    | 'profiles.color'
+    | 'profiles.blocked_services'
+    | 'profiles.schedule'
+    | 'profiles.time_zone'
+    | 'profiles.start_time'
+    | 'profiles.end_time'
+    | 'profiles.days'
+    | 'profiles.mon'
+    | 'profiles.tue'
+    | 'profiles.wed'
+    | 'profiles.thu'
+    | 'profiles.fri'
+    | 'profiles.sat'
+    | 'profiles.sun'
+    | 'profiles.save'
+    | 'profiles.cancel'
+    | 'profiles.no_profiles'
+    | 'profiles.create_first'
+    | 'profiles.delete_confirm'
+    | 'profiles.applied'
+    | 'profiles.apply_error'
+    | 'profiles.deactivated'
+    | 'profiles.deactivate_error'
+    | 'profiles.profile_children'
+    | 'profiles.profile_work'
+    | 'profiles.profile_weekend'
+    | 'profiles.profile_night'
+    | 'profiles.profile_custom'
     // DHCP
     | 'dhcp.title'
     | 'dhcp.subtitle'
@@ -440,6 +482,7 @@ export const translations: Record<Language, Record<string, string>> = {
         'nav.filtering': 'Filtering & Blocklists',
         'nav.forwarding': 'Forwarding / Zones',
         'nav.service_blocking': 'Service Blocking',
+        'nav.profiles': 'DNS Profiles',
         'nav.client_management': 'Client Management',
         'nav.query_log': 'Query Log',
         'nav.technitium_controls': 'Technitium Controls',
@@ -859,6 +902,48 @@ export const translations: Record<Language, Record<string, string>> = {
         'zones.failed_delete': 'Failed to delete zone',
         'zones.technitium_docker': 'Technitium (docker)',
 
+        // Profiles
+        'profiles.title': 'DNS Profiles',
+        'profiles.subtitle': 'Time-based blocking profiles for different scenarios.',
+        'profiles.active_now': 'Active Now',
+        'profiles.inactive': 'Inactive',
+        'profiles.activate': 'Activate',
+        'profiles.deactivate': 'Deactivate',
+        'profiles.edit': 'Edit',
+        'profiles.delete': 'Delete',
+        'profiles.create_profile': 'Create Profile',
+        'profiles.name': 'Profile Name',
+        'profiles.description': 'Description',
+        'profiles.icon': 'Icon',
+        'profiles.color': 'Color',
+        'profiles.blocked_services': 'Blocked Services',
+        'profiles.schedule': 'Schedule',
+        'profiles.time_zone': 'Time Zone',
+        'profiles.start_time': 'Start Time',
+        'profiles.end_time': 'End Time',
+        'profiles.days': 'Days',
+        'profiles.mon': 'Mon',
+        'profiles.tue': 'Tue',
+        'profiles.wed': 'Wed',
+        'profiles.thu': 'Thu',
+        'profiles.fri': 'Fri',
+        'profiles.sat': 'Sat',
+        'profiles.sun': 'Sun',
+        'profiles.save': 'Save Profile',
+        'profiles.cancel': 'Cancel',
+        'profiles.no_profiles': 'No profiles configured.',
+        'profiles.create_first': 'Create your first profile to get started.',
+        'profiles.delete_confirm': 'Are you sure you want to delete profile "{0}"?',
+        'profiles.applied': 'Profile applied successfully!',
+        'profiles.apply_error': 'Failed to apply profile.',
+        'profiles.deactivated': 'Profile deactivated.',
+        'profiles.deactivate_error': 'Failed to deactivate profile.',
+        'profiles.profile_children': 'Children',
+        'profiles.profile_work': 'Work',
+        'profiles.profile_weekend': 'Weekend',
+        'profiles.profile_night': 'Night',
+        'profiles.profile_custom': 'Custom',
+
         // Common
         'common.save_changes': 'Save Changes',
         'common.error': 'An error occurred. Please try again.',
@@ -878,6 +963,7 @@ export const translations: Record<Language, Record<string, string>> = {
         'nav.filtering': 'Filter & Blocklisten',
         'nav.forwarding': 'Weiterleitung / Zonen',
         'nav.service_blocking': 'Dienste blockieren',
+        'nav.profiles': 'DNS-Profile',
         'nav.client_management': 'Client-Verwaltung',
         'nav.query_log': 'Abfrageprotokoll',
         'nav.technitium_controls': 'Technitium Steuerung',
@@ -1296,6 +1382,48 @@ export const translations: Record<Language, Record<string, string>> = {
         'zones.failed_create': 'Zone konnte nicht erstellt werden',
         'zones.failed_delete': 'Zone konnte nicht gelöscht werden',
         'zones.technitium_docker': 'Technitium (docker)',
+
+        // Profiles
+        'profiles.title': 'DNS-Profile',
+        'profiles.subtitle': 'Zeitbasierte Blockierungsprofile für verschiedene Szenarien.',
+        'profiles.active_now': 'Aktiv',
+        'profiles.inactive': 'Inaktiv',
+        'profiles.activate': 'Aktivieren',
+        'profiles.deactivate': 'Deaktivieren',
+        'profiles.edit': 'Bearbeiten',
+        'profiles.delete': 'Löschen',
+        'profiles.create_profile': 'Profil erstellen',
+        'profiles.name': 'Profilname',
+        'profiles.description': 'Beschreibung',
+        'profiles.icon': 'Icon',
+        'profiles.color': 'Farbe',
+        'profiles.blocked_services': 'Blockierte Dienste',
+        'profiles.schedule': 'Zeitplan',
+        'profiles.time_zone': 'Zeitzone',
+        'profiles.start_time': 'Startzeit',
+        'profiles.end_time': 'Endzeit',
+        'profiles.days': 'Tage',
+        'profiles.mon': 'Mo',
+        'profiles.tue': 'Di',
+        'profiles.wed': 'Mi',
+        'profiles.thu': 'Do',
+        'profiles.fri': 'Fr',
+        'profiles.sat': 'Sa',
+        'profiles.sun': 'So',
+        'profiles.save': 'Profil speichern',
+        'profiles.cancel': 'Abbrechen',
+        'profiles.no_profiles': 'Keine Profile konfiguriert.',
+        'profiles.create_first': 'Erstellen Sie Ihr erstes Profil, um zu starten.',
+        'profiles.delete_confirm': 'Möchten Sie das Profil "{0}" wirklich löschen?',
+        'profiles.applied': 'Profil erfolgreich angewendet!',
+        'profiles.apply_error': 'Profil konnte nicht angewendet werden.',
+        'profiles.deactivated': 'Profil deaktiviert.',
+        'profiles.deactivate_error': 'Profil konnte nicht deaktiviert werden.',
+        'profiles.profile_children': 'Kinder',
+        'profiles.profile_work': 'Arbeit',
+        'profiles.profile_weekend': 'Wochenende',
+        'profiles.profile_night': 'Nacht',
+        'profiles.profile_custom': 'Benutzerdefiniert',
 
         // Common
         'common.save_changes': 'Save Changes',

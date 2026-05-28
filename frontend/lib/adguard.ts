@@ -519,6 +519,30 @@ export async function removeStaticLease(lease: { mac: string; ip: string; hostna
     });
 }
 
+// ==================== DNS Rewrites ====================
+export async function getRewrites() {
+    return adguardFetch('/control/rewrite/list');
+}
+
+export async function addRewrite(domain: string, answer: string, type: string = 'A') {
+    return adguardFetch('/control/rewrite/add', {
+        method: 'POST',
+        body: JSON.stringify({ domain, answer, type }),
+    });
+}
+
+export async function deleteRewrite(domain: string, answer: string, type: string = 'A') {
+    return adguardFetch('/control/rewrite/delete', {
+        method: 'POST',
+        body: JSON.stringify({ domain, answer, type }),
+    });
+}
+
+// ==================== Host Check / Simulation ====================
+export async function checkHost(domain: string) {
+    return adguardFetch(`/control/filtering/check_host?domain=${encodeURIComponent(domain)}`);
+}
+
 // ==================== Cache Management ====================
 export async function clearCache() {
     return adguardFetch('/control/cache_clear', {
