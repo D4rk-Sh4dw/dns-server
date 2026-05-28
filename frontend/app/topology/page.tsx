@@ -74,7 +74,7 @@ function SubnetTopology({ devices, stats, onSelectDevice, getDeviceIcon }: Subne
         if (!acc[subnet]) acc[subnet] = [];
         acc[subnet].push(device);
         return acc;
-    }, {} as Record<string, Device[]&gt;);
+    }, {} as Record<string, Device[]>);
 
     const subnets = Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]));
 
