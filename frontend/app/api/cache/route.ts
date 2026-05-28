@@ -189,7 +189,7 @@ function generateRecommendations(
     }
 
     // Analyze TTL distribution
-    const total = Object.values(ttlDistribution).reduce((a: number, b: number) => a + b, 0);
+    const total = Object.values(ttlDistribution).reduce((a, b) => (a as number) + (b as number), 0);
     if (total > 0) {
         const shortTtl = ttlDistribution.lt60s + ttlDistribution['1to5min'];
         const shortPct = Math.round((shortTtl / total) * 100);
