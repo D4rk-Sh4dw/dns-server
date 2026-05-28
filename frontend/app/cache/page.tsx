@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import {
     Database, Zap, Clock, Globe, Search, RefreshCw,
     AlertTriangle, CheckCircle, Info, X, ChevronDown, ChevronUp,
-    HardDrive, TrendingUp, Server
+    HardDrive, TrendingUp, Server, Settings
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -90,6 +90,20 @@ export default function CachePage() {
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);
+
+    const updateConfig = async (updates: any) => {
+        try {
+            const res = await fetch('/api/cache', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'updateConfig', ...updates }),
+            });
+            if (!res.ok) throw new Error('Failed to update');
+            await fetchData();
+        } catch (err) {
+            setError('Failed to update cache config');
+        }
+    };
 
     if (loading && !data) {
         return (
@@ -192,6 +206,62 @@ export default function CachePage() {
                                 {data.adguard ? `${data.adguard.ttlMin}s - ${data.adguard.ttlMax}s` : 'N/A'}
                             </p>
                             <p className="text-xs text-gray-500 mt-1">Min / Max configured</p>
+                        </div>
+                    </div>
+
+                    {/* Cache Config Editor */}
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                        <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                            <Settings size={16} className="text-purple-400" />
+                            Cache Configuration
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label className="text-xs text-gray-500 mb-1 block">Cache Size (bytes)</label>
+                                <input
+                                    type="number"
+                                    defaultValue={data.adguard?.size || 4194304}
+                                    onBlur={e => updateConfig({ cache_size: parseInt(e.target.value) })}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-500 mb-1 block">TTL Min (seconds)</label>
+                                <input
+                                    type="number"
+                                    defaultValue={data.adguard?.ttlMin || 0}
+                                    onBlur={e => updateConfig({ cache_ttl_min: parseInt(e.target.value) })}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-500 mb-1 block">TTL Max (seconds)</label>
+                                <input
+                                    type="number"
+                                    defaultValue={data.adguard?.ttlMax || 0}
+                                    onBlur={e => updateConfig({ cache_ttl_max: parseInt(e.target.value) })}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div className="flex items-end">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        defaultChecked={data.adguard?.optimistic || false}
+                                        onChange={e => updateConfig({ cache_optimistic: e.target.checked })}
+                                        className="rounded bg-gray-800 border-gray-700 text-blue-500 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm text-gray-300">Optimistic caching</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                            <button
+                                onClick={() => updateConfig({ action: 'clear' })}
+                                className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-sm transition-colors"
+                            >
+                                Clear Cache
+                            </button>
                         </div>
                     </div>
 

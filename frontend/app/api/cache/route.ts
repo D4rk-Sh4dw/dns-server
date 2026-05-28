@@ -92,6 +92,41 @@ export async function GET(request: Request) {
     }
 }
 
+// POST /api/cache - Update AdGuard cache config or clear cache
+export async function POST(request: Request) {
+    try {
+        const body = await request.json();
+        const { action } = body;
+
+        if (action === 'updateConfig') {
+            const { cache_size, cache_ttl_min, cache_ttl_max, cache_optimistic } = body;
+            const current = await adguard.getDnsConfig();
+            
+            await adguard.updateDnsConfig({
+                cache_size: cache_size !== undefined ? cache_size : current.cache_size,
+                cache_ttl_min: cache_ttl_min !== undefined ? cache_ttl_min : current.cache_ttl_min,
+                cache_ttl_max: cache_ttl_max !== undefined ? cache_ttl_max : current.cache_ttl_max,
+                cache_optimistic: cache_optimistic !== undefined ? cache_optimistic : current.cache_optimistic,
+            });
+            
+            return NextResponse.json({ success: true });
+        }
+
+        if (action === 'clear') {
+            await adguard.clearCache();
+            return NextResponse.json({ success: true });
+        }
+
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    } catch (error) {
+        console.error('Cache POST error:', error);
+        return NextResponse.json(
+            { error: error instanceof Error ? error.message : 'Operation failed' },
+            { status: 500 }
+        );
+    }
+}
+
 function analyzeTtlDistribution(entries: any[]) {
     const buckets = {
         'lt60s': 0,      // < 1 minute

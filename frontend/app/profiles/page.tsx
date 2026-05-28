@@ -77,6 +77,10 @@ export default function ProfilesPage() {
     const [serviceFilter, setServiceFilter] = useState('');
     const [expandedServices, setExpandedServices] = useState(false);
 
+    const [availableFilters, setAvailableFilters] = useState<Array<{ id: number; name: string; url: string; enabled: boolean }>>([]);
+    const [filterFilter, setFilterFilter] = useState('');
+    const [expandedFilters, setExpandedFilters] = useState(false);
+
     const fetchData = async () => {
         setLoading(true);
         setError(null);
@@ -112,6 +116,22 @@ export default function ProfilesPage() {
 
             if (activeData.profileId !== undefined) {
                 setActiveProfileId(activeData.profileId);
+            }
+
+            // Fetch available filter lists
+            try {
+                const filterRes = await fetch('/api/adguard/filtering');
+                const filterData = await filterRes.json();
+                if (filterData.filters && Array.isArray(filterData.filters)) {
+                    setAvailableFilters(filterData.filters.map((f: any) => ({
+                        id: f.id,
+                        name: f.name,
+                        url: f.url,
+                        enabled: f.enabled,
+                    })));
+                }
+            } catch {
+                // Filter list fetch failed, ignore
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load profiles');
@@ -572,6 +592,64 @@ export default function ProfilesPage() {
                                     >
                                         {expandedServices ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                         {expandedServices ? 'Show less' : `Show all (${filteredServices.length})`}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Filter Lists */}
+                            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-white font-medium flex items-center gap-2">
+                                        <Globe size={16} className="text-blue-400" />
+                                        Filter Lists ({(formData.filterLists?.enable || []).length} enabled)
+                                    </h3>
+                                    <input
+                                        type="text"
+                                        value={filterFilter}
+                                        onChange={e => setFilterFilter(e.target.value)}
+                                        placeholder="Filter..."
+                                        className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-sm text-white w-40"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {(expandedFilters ? availableFilters : availableFilters.slice(0, 8))
+                                        .filter(f => f.name.toLowerCase().includes(filterFilter.toLowerCase()))
+                                        .map(filter => {
+                                            const isEnabled = (formData.filterLists?.enable || []).includes(filter.id);
+                                            return (
+                                                <button
+                                                    key={filter.id}
+                                                    onClick={() => {
+                                                        const current = formData.filterLists?.enable || [];
+                                                        const updated = current.includes(filter.id)
+                                                            ? current.filter(id => id !== filter.id)
+                                                            : [...current, filter.id];
+                                                        setFormData({
+                                                            ...formData,
+                                                            filterLists: { ...(formData.filterLists || {}), enable: updated },
+                                                        });
+                                                    }}
+                                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left ${
+                                                        isEnabled
+                                                            ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400'
+                                                            : 'bg-gray-800 border border-gray-700 text-gray-400 hover:bg-gray-700'
+                                                    }`}
+                                                >
+                                                    {isEnabled ? <Check size={14} /> : <div className="w-3.5" />}
+                                                    <span className="truncate">{filter.name}</span>
+                                                </button>
+                                            );
+                                        })}
+                                </div>
+
+                                {availableFilters.length > 8 && (
+                                    <button
+                                        onClick={() => setExpandedFilters(!expandedFilters)}
+                                        className="flex items-center gap-1 text-blue-400 text-sm hover:text-blue-300"
+                                    >
+                                        {expandedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        {expandedFilters ? 'Show less' : `Show all (${availableFilters.length})`}
                                     </button>
                                 )}
                             </div>

@@ -5,9 +5,10 @@ import * as adguard from '@/lib/adguard';
 // Returns all DNS rules: conditional forwarding + rewrites
 export async function GET() {
     try {
-        const [dnsInfo, rewrites] = await Promise.all([
+        const [dnsInfo, rewrites, clients] = await Promise.all([
             adguard.getDnsConfig(),
             adguard.getRewrites().catch(() => []),
+            adguard.getClients().catch(() => []),
         ]);
 
         // Parse conditional forwarding rules from upstream_dns
@@ -41,9 +42,21 @@ export async function GET() {
             recordType: r.type || 'A',
         }));
 
+        // Parse client-specific upstreams
+        const clientRules = (clients || [])
+            .filter((c: any) => c.upstreams && c.upstreams.length > 0)
+            .map((c: any, idx: number) => ({
+                id: `client_${idx}`,
+                type: 'client',
+                clientName: c.name,
+                clientIds: c.ids || [],
+                servers: c.upstreams,
+            }));
+
         return NextResponse.json({
             forwardRules,
             rewriteRules,
+            clientRules,
             upstreams,
         });
     } catch (error) {

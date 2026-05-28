@@ -69,8 +69,11 @@ export async function GET(request: Request) {
 function isBlocked(q: any): boolean {
     const s = (q.status || '').toLowerCase();
     const r = (q.reason || '').toLowerCase();
-    if (s.includes('blocked') || s.includes('safe') || s.includes('parental')) return true;
-    if (r.includes('blacklist') || r.includes('blockedservice') || r.includes('filtered')) return true;
+    // Only true block reasons - NOT "NotFilteredNotFound" etc.
+    if (s.includes('blocked') || s.includes('parental')) return true;
+    if (r.includes('blacklist') || r.includes('blockedservice')) return true;
+    // "Filtered" alone is NOT blocked - only specific filtered reasons
+    if (r === 'filteredblacklist' || r === 'filteredsafesearch' || r === 'filteredparental') return true;
     return false;
 }
 

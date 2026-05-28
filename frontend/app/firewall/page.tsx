@@ -25,9 +25,18 @@ interface RewriteRule {
     recordType: string;
 }
 
+interface ClientRule {
+    id: string;
+    type: 'client';
+    clientName: string;
+    clientIds: string[];
+    servers: string[];
+}
+
 interface FirewallData {
     forwardRules: ForwardRule[];
     rewriteRules: RewriteRule[];
+    clientRules: ClientRule[];
     upstreams: string[];
 }
 
@@ -300,6 +309,46 @@ export default function FirewallPage() {
                             <Globe size={24} className="mx-auto mb-2 text-gray-700" />
                             <p>No conditional forwarding rules configured.</p>
                             <p className="text-sm mt-1">Add a rule to forward specific domains to custom DNS servers.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Client Upstream Rules */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+                    <div className="flex items-center gap-2">
+                        <Server size={16} className="text-orange-400" />
+                        <h2 className="text-white font-medium">Client Upstream Rules</h2>
+                        <span className="text-xs text-gray-500">({data?.clientRules.length || 0} rules)</span>
+                    </div>
+                </div>
+
+                <div className="divide-y divide-gray-800">
+                    {data?.clientRules.map((rule) => (
+                        <div key={rule.id} className="px-4 py-3 flex items-center gap-3 hover:bg-gray-800/30">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded text-xs font-medium">
+                                        {rule.clientName}
+                                    </span>
+                                    <span className="text-gray-500 text-xs">({rule.clientIds.join(', ')})</span>
+                                    <span className="text-gray-500 text-xs">→</span>
+                                    {rule.servers.map(s => (
+                                        <span key={s} className="px-2 py-0.5 bg-gray-800 text-gray-300 rounded text-xs">
+                                            {s}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {(!data || data.clientRules.length === 0) && (
+                        <div className="px-4 py-8 text-center text-gray-500">
+                            <Server size={24} className="mx-auto mb-2 text-gray-700" />
+                            <p>No client-specific upstream rules configured.</p>
+                            <p className="text-sm mt-1">Configure per-client upstreams in AdGuard Home Clients settings.</p>
                         </div>
                     )}
                 </div>

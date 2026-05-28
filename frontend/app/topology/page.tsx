@@ -54,6 +54,80 @@ const SOURCE_COLORS: Record<string, string> = {
     'both': 'text-pink-400 bg-pink-500/10',
 };
 
+function getSubnet(ip?: string): string {
+    if (!ip) return 'Unknown';
+    const parts = ip.split('.');
+    if (parts.length !== 4) return 'Unknown';
+    return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+}
+
+interface SubnetTopologyProps {
+    devices: Device[];
+    stats: TopologyData['stats'];
+    onSelectDevice: (device: Device) => void;
+    getDeviceIcon: (device: Device) => React.ReactNode;
+}
+
+function SubnetTopology({ devices, stats, onSelectDevice, getDeviceIcon }: SubnetTopologyProps) {
+    const grouped = devices.reduce((acc, device) => {
+        const subnet = getSubnet(device.ip);
+        if (!acc[subnet]) acc[subnet] = [];
+        acc[subnet].push(device);
+        return acc;
+    }, {} as Record<string, Device[]&gt;);
+
+    const subnets = Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]));
+
+    return (
+        <div className="space-y-4">
+            {/* Central DNS Server */}
+            <div className="flex items-center justify-center py-4">
+                <div className="flex flex-col items-center">
+                    <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <Server size={24} className="text-white" />
+                    </div>
+                    <span className="text-white text-xs mt-2 font-medium">DNS Server</span>
+                    <span className="text-gray-500 text-xs">{stats.totalQueries.toLocaleString()} queries</span>
+                </div>
+            </div>
+
+            {/* Subnet Groups */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {subnets.map(([subnet, subnetDevices]) => (
+                    <div key={subnet} className="bg-gray-950 border border-gray-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-800">
+                            <Globe size={14} className="text-blue-400" />
+                            <span className="text-white text-sm font-medium">{subnet}</span>
+                            <span className="text-gray-500 text-xs ml-auto">{subnetDevices.length} devices</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {subnetDevices.map(device => {
+                                const isBlocked = device.blockedServices && device.blockedServices.length > 0;
+                                return (
+                                    <button
+                                        key={device.id}
+                                        onClick={() => onSelectDevice(device)}
+                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors hover:scale-105 ${
+                                            isBlocked
+                                                ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+                                                : device.status === 'online'
+                                                    ? 'bg-green-500/10 border border-green-500/30 text-green-400'
+                                                    : 'bg-gray-800 border border-gray-700 text-gray-400'
+                                        }`}
+                                    >
+                                        <span className="flex-shrink-0">{getDeviceIcon(device)}</span>
+                                        <span className="truncate max-w-[100px]">{device.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function TopologyPage() {
     const { t } = useTranslation();
     const [data, setData] = useState<TopologyData | null>(null);
@@ -63,6 +137,8 @@ export default function TopologyPage() {
     const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
     const [filterSource, setFilterSource] = useState<string | 'all'>('all');
     const [filterStatus, setFilterStatus] = useState<string | 'all'>('all');
+
+    const [groupBySubnet, setGroupBySubnet] = useState(true);
 
     const fetchData = async () => {
         setLoading(true);
@@ -168,66 +244,29 @@ export default function TopologyPage() {
                         </div>
                     </div>
 
-                    {/* Simple Graph Visualization */}
+                    {/* Subnet Grouped Visualization */}
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                        <h2 className="text-white font-medium mb-4 flex items-center gap-2">
-                            <Router size={16} className="text-blue-400" />
-                            DNS Client Graph
-                        </h2>
-                        <div className="relative h-64 bg-gray-950 rounded-lg overflow-hidden">
-                            {/* Central DNS Server Node */}
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                <div className="flex flex-col items-center">
-                                    <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                        <Server size={28} className="text-white" />
-                                    </div>
-                                    <span className="text-white text-xs mt-2 font-medium">DNS Server</span>
-                                    <span className="text-gray-500 text-xs">{data.stats.totalQueries.toLocaleString()} queries</span>
-                                </div>
-                            </div>
-
-                            {/* Peripheral Device Nodes */}
-                            {filteredDevices.slice(0, 12).map((device, idx) => {
-                                const angle = (idx / Math.min(filteredDevices.length, 12)) * 2 * Math.PI - Math.PI / 2;
-                                const radius = 100;
-                                const x = Math.cos(angle) * radius;
-                                const y = Math.sin(angle) * radius;
-                                const isBlocked = device.blockedServices && device.blockedServices.length > 0;
-
-                                return (
-                                    <div
-                                        key={device.id}
-                                        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-                                        style={{
-                                            transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-                                        }}
-                                        onClick={() => setSelectedDevice(device)}
-                                    >
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
-                                            isBlocked
-                                                ? 'bg-red-500/20 border-2 border-red-500/50'
-                                                : device.status === 'online'
-                                                    ? 'bg-green-500/20 border-2 border-green-500/50'
-                                                    : 'bg-gray-700 border-2 border-gray-600'
-                                        }`}
-                                        >
-                                            <span className={isBlocked ? 'text-red-400' : device.status === 'online' ? 'text-green-400' : 'text-gray-400'}>
-                                                {getDeviceIcon(device)}
-                                            </span>
-                                        </div>
-                                        <span className="text-gray-400 text-[10px] mt-1 block text-center whitespace-nowrap max-w-[80px] truncate">
-                                            {device.name}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-
-                            {filteredDevices.length > 12 && (
-                                <div className="absolute bottom-2 right-2 text-gray-500 text-xs">
-                                    +{filteredDevices.length - 12} more devices
-                                </div>
-                            )}
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-white font-medium flex items-center gap-2">
+                                <Router size={16} className="text-blue-400" />
+                                Network Topology
+                            </h2>
+                            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={groupBySubnet}
+                                    onChange={e => setGroupBySubnet(e.target.checked)}
+                                    className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                                />
+                                Group by subnet
+                            </label>
                         </div>
+                        <SubnetTopology
+                            devices={filteredDevices}
+                            stats={data.stats}
+                            onSelectDevice={setSelectedDevice}
+                            getDeviceIcon={getDeviceIcon}
+                        />
                     </div>
 
                     {/* Filters */}

@@ -11,6 +11,8 @@ import {
     getClients,
     updateClient,
     getAllBlockedServices,
+    getFiltering,
+    toggleFilterList,
 } from './adguard';
 
 const PROFILES_FILE = '/app/data_mount/profiles.json';
@@ -246,7 +248,33 @@ export async function applyProfile(profileId: string): Promise<void> {
         }
     }
 
-    // 3. Mark as active
+    // 3. Apply filter list adjustments if any
+    if (profile.filterLists) {
+        const filtering = await getFiltering();
+        const allFilters = filtering.filters || [];
+        
+        // Disable specified filters
+        if (profile.filterLists.disable) {
+            for (const filterId of profile.filterLists.disable) {
+                const filter = allFilters.find((f: any) => f.id === filterId || f.url === filterId);
+                if (filter && filter.enabled !== false) {
+                    await toggleFilterList(filter.url, false);
+                }
+            }
+        }
+        
+        // Enable specified filters
+        if (profile.filterLists.enable) {
+            for (const filterId of profile.filterLists.enable) {
+                const filter = allFilters.find((f: any) => f.id === filterId || f.url === filterId);
+                if (filter && filter.enabled !== true) {
+                    await toggleFilterList(filter.url, true);
+                }
+            }
+        }
+    }
+
+    // 4. Mark as active
     await setActiveProfile(profileId);
 }
 
