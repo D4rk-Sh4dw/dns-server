@@ -1,11 +1,29 @@
 import { NextResponse } from 'next/server';
 import * as adguard from '@/lib/adguard';
 import * as technitium from '@/lib/technitium';
+import { getDHCPLeases, OPNsenseConfig } from '@/lib/opnsense';
+import fs from 'fs/promises';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
+const OPNsense_CONFIG_FILE = '/app/config_mount/opnsense.json';
+
+async function getOPNsenseConfig(): Promise<OPNsenseConfig | null> {
+    try {
+        const data = await fs.readFile(OPNsense_CONFIG_FILE, 'utf-8');
+        const config = JSON.parse(data);
+        if (config.url && config.key && config.secret && config.backend) {
+            return config as OPNsenseConfig;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
 // GET /api/topology
-// Aggregates DHCP leases and client data from both backends
+// Aggregates DHCP leases and client data from all backends including OPNsense
 export async function GET() {
     try {
         // Fetch data from both backends in parallel
@@ -125,6 +143,45 @@ export async function GET() {
                     status: 'online',
                     type: 'discovered',
                 };
+            }
+        }
+
+        // OPNsense DHCP leases (if configured)
+        const opnsenseConfig = await getOPNsenseConfig();
+        if (opnsenseConfig) {
+            try {
+                const opnsenseLeases = await getDHCPLeases(opnsenseConfig);
+                for (const lease of opnsenseLeases) {
+                    const key = lease.mac || lease.address;
+                    if (!key) continue;
+                    const existing = devices[key];
+                    if (existing) {
+                        existing.source = existing.source?.startsWith('adguard') || existing.source?.startsWith('technitium')
+                            ? 'both'
+                            : 'opnsense';
+                        existing.name = lease.hostname || existing.name;
+                        existing.ip = lease.address || existing.ip;
+                        existing.mac = lease.mac || existing.mac;
+                        existing.hostname = lease.hostname || existing.hostname;
+                        existing.status = 'online';
+                        existing.type = lease.type || existing.type;
+                        existing.descr = lease.descr;
+                    } else {
+                        devices[key] = {
+                            id: key,
+                            name: lease.hostname || lease.address,
+                            ip: lease.address,
+                            mac: lease.mac,
+                            hostname: lease.hostname,
+                            source: 'opnsense',
+                            status: 'online',
+                            type: lease.type || 'dynamic',
+                            descr: lease.descr,
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn('OPNsense topology fetch failed:', e);
             }
         }
 

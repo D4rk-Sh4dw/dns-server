@@ -52,6 +52,7 @@ const SOURCE_COLORS: Record<string, string> = {
     'adguard-both': 'text-cyan-400 bg-cyan-500/10',
     'technitium-dhcp': 'text-orange-400 bg-orange-500/10',
     'both': 'text-pink-400 bg-pink-500/10',
+    'opnsense': 'text-amber-400 bg-amber-500/10',
 };
 
 function getSubnet(ip?: string): string {
@@ -66,9 +67,51 @@ interface SubnetTopologyProps {
     stats: TopologyData['stats'];
     onSelectDevice: (device: Device) => void;
     getDeviceIcon: (device: Device) => React.ReactNode;
+    groupBySubnet: boolean;
 }
 
-function SubnetTopology({ devices, stats, onSelectDevice, getDeviceIcon }: SubnetTopologyProps) {
+function SubnetTopology({ devices, stats, onSelectDevice, getDeviceIcon, groupBySubnet }: SubnetTopologyProps) {
+    if (!groupBySubnet) {
+        // Flat list view (not grouped by subnet)
+        return (
+            <div className="space-y-4">
+                {/* Central DNS Server */}
+                <div className="flex items-center justify-center py-4">
+                    <div className="flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <Server size={24} className="text-white" />
+                        </div>
+                        <span className="text-white text-xs mt-2 font-medium">DNS Server</span>
+                        <span className="text-gray-500 text-xs">{stats.totalQueries.toLocaleString()} queries</span>
+                    </div>
+                </div>
+
+                {/* Flat Device List */}
+                <div className="flex flex-wrap gap-2">
+                    {devices.map(device => {
+                        const isBlocked = device.blockedServices && device.blockedServices.length > 0;
+                        return (
+                            <button
+                                key={device.id}
+                                onClick={() => onSelectDevice(device)}
+                                className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors hover:scale-105 ${
+                                    isBlocked
+                                        ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+                                        : device.status === 'online'
+                                            ? 'bg-green-500/10 border border-green-500/30 text-green-400'
+                                            : 'bg-gray-800 border border-gray-700 text-gray-400'
+                                }`}
+                            >
+                                <span className="flex-shrink-0">{getDeviceIcon(device)}</span>
+                                <span className="truncate max-w-[100px]">{device.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
     const grouped = devices.reduce((acc, device) => {
         const subnet = getSubnet(device.ip);
         if (!acc[subnet]) acc[subnet] = [];
@@ -183,6 +226,7 @@ export default function TopologyPage() {
             'adguard-both': 'AdGuard Both',
             'technitium-dhcp': 'Technitium DHCP',
             'both': 'Both Sources',
+            'opnsense': 'OPNsense',
         };
         return labels[source] || source;
     };
@@ -266,6 +310,7 @@ export default function TopologyPage() {
                             stats={data.stats}
                             onSelectDevice={setSelectedDevice}
                             getDeviceIcon={getDeviceIcon}
+                            groupBySubnet={groupBySubnet}
                         />
                     </div>
 
@@ -297,6 +342,7 @@ export default function TopologyPage() {
                             <option value="adguard-static">AdGuard Static</option>
                             <option value="adguard-manual">AdGuard Manual</option>
                             <option value="technitium-dhcp">Technitium DHCP</option>
+                            <option value="opnsense">OPNsense</option>
                             <option value="both">Both Sources</option>
                         </select>
 

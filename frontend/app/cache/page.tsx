@@ -160,7 +160,7 @@ export default function CachePage() {
                         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
                             <div className="flex items-center gap-2 text-gray-400 mb-2">
                                 <HardDrive size={16} />
-                                <span className="text-sm">Cache Size</span>
+                                <span className="text-sm">AdGuard Cache</span>
                             </div>
                             <p className="text-2xl font-bold text-white">
                                 {data.adguard ? formatBytes(data.adguard.size) : 'N/A'}
@@ -174,7 +174,7 @@ export default function CachePage() {
                         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
                             <div className="flex items-center gap-2 text-gray-400 mb-2">
                                 <Database size={16} />
-                                <span className="text-sm">Cached Entries</span>
+                                <span className="text-sm">Technitium Entries</span>
                             </div>
                             <p className="text-2xl font-bold text-white">
                                 {data.technitium?.cachedEntries?.toLocaleString() || 'N/A'}

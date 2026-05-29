@@ -43,16 +43,12 @@ export async function GET(request: Request) {
         // Try to fetch Technitium cache list if available
         let cacheEntries: any[] = [];
         try {
-            // Technitium has /api/cache/list but it's not in our wrapper yet
-            // We'll try to call it directly
-            const token = await (technitium as any).getToken?.();
-            if (token) {
-                const config = (technitium as any).getTechnitiumConfig?.() || { url: process.env.TECHNITIUM_URL };
-                const cacheRes = await fetch(`${config.url}/api/cache/list?token=${token}&limit=${limit}`);
-                if (cacheRes.ok) {
-                    const cacheData = await cacheRes.json();
-                    cacheEntries = cacheData.response?.entries || cacheData.entries || [];
-                }
+            const token = await technitium.getToken();
+            const config = technitium.getTechnitiumConfig();
+            const cacheRes = await fetch(`${config.url}/api/cache/list?token=${token}&limit=${limit}`);
+            if (cacheRes.ok) {
+                const cacheData = await cacheRes.json();
+                cacheEntries = cacheData.response?.entries || cacheData.entries || [];
             }
         } catch {
             // Cache list not available, that's ok

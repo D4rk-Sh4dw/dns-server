@@ -2,7 +2,7 @@
 // Docs: https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md
 
 // Get env vars at runtime to avoid build-time issues
-function getTechnitiumConfig() {
+export function getTechnitiumConfig() {
     return {
         url: process.env.TECHNITIUM_URL || 'http://dns-technitium:5380',
         password: process.env.TECHNITIUM_PASSWORD,
@@ -22,7 +22,7 @@ let cachedToken: string | null = null;
 let tokenFetchedAt: number = 0;
 const TOKEN_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour - refresh proactively before expiry
 
-async function getToken(forceRefresh = false): Promise<string> {
+export async function getToken(forceRefresh = false): Promise<string> {
     validateCredentials();
 
     const tokenAge = Date.now() - tokenFetchedAt;

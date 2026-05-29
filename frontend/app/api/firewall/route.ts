@@ -5,14 +5,32 @@ import * as adguard from '@/lib/adguard';
 // Returns all DNS rules: conditional forwarding + rewrites
 export async function GET() {
     try {
-        const [dnsInfo, rewrites, clients] = await Promise.all([
-            adguard.getDnsConfig(),
-            adguard.getRewrites().catch(() => []),
-            adguard.getClients().catch(() => []),
-        ]);
+        // Fetch each independently so one failure doesn't break everything
+        let dnsInfo: any = null;
+        let rewrites: any[] = [];
+        let clients: any[] = [];
+
+        try {
+            dnsInfo = await adguard.getDnsConfig();
+        } catch (e) {
+            console.warn('Firewall API: AdGuard DNS config unavailable:', e);
+        }
+
+        try {
+            rewrites = await adguard.getRewrites();
+        } catch (e) {
+            console.warn('Firewall API: AdGuard rewrites unavailable:', e);
+        }
+
+        try {
+            const clientsData = await adguard.getClients();
+            clients = clientsData?.clients || [];
+        } catch (e) {
+            console.warn('Firewall API: AdGuard clients unavailable:', e);
+        }
 
         // Parse conditional forwarding rules from upstream_dns
-        const upstreams: string[] = dnsInfo.upstream_dns || [];
+        const upstreams: string[] = dnsInfo?.upstream_dns || [];
         const forwardRules = [];
 
         for (let i = 0; i < upstreams.length; i++) {

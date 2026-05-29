@@ -207,12 +207,20 @@ export async function applyProfile(profileId: string): Promise<void> {
     }
 
     // 1. Set blocked services with schedule
+    // AdGuard expects exactly 7 days: Mon, Tue, Wed, Thu, Fri, Sat, Sun
+    // Days not in schedule get start: 0, end: 0
+    const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
     const scheduleMs = {
         time_zone: profile.schedule.timeZone,
-        days: profile.schedule.days.map(day => ({
-            start: timeToMs(profile.schedule.start),
-            end: timeToMs(profile.schedule.end),
-        })),
+        days: DAY_ORDER.map(day => {
+            if (profile.schedule.days.includes(day)) {
+                return {
+                    start: timeToMs(profile.schedule.start),
+                    end: timeToMs(profile.schedule.end),
+                };
+            }
+            return { start: 0, end: 0 };
+        }),
     };
 
     await setBlockedServicesSchedule(scheduleMs);
