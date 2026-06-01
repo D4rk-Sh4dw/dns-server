@@ -5,14 +5,14 @@ import * as technitium from '@/lib/technitium';
 export const dynamic = 'force-dynamic';
 
 // GET /api/cache
-// Aggregates cache data from AdGuard and Technitium
+// Aggregates cache data primarily from Technitium, with AdGuard cache config
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || undefined;
     const limit = parseInt(searchParams.get('limit') || '100');
 
     try {
-        // Fetch data from both backends in parallel
+        // Fetch AdGuard cache config + Technitium stats in parallel
         const [dnsInfo, techStats] = await Promise.all([
             adguard.getDnsConfig().catch(() => null),
             technitium.getStats().catch(() => null),
@@ -27,37 +27,39 @@ export async function GET(request: Request) {
             optimistic: dnsInfo.cache_optimistic || false,
         } : null;
 
-        // Technitium stats
-        const technitiumCache = techStats ? {
-            totalCached: techStats.totalCached || 0,
-            cachedEntries: techStats.cachedEntries || 0,
-            totalQueries: techStats.totalQueries || 0,
-            totalBlocked: techStats.totalBlocked || 0,
+        // Technitium cache stats from dashboard
+        // NOTE: The dashboard stats endpoint returns a 'stats' object with totals
+        const techStatsData: any = (techStats as any)?.stats || techStats;
+        const technitiumCache = techStatsData ? {
+            totalCached: techStatsData.totalCached || 0,
+            cachedEntries: techStatsData.cachedEntries || 0,
+            totalQueries: techStatsData.totalQueries || 0,
+            totalBlocked: techStatsData.totalBlocked || 0,
+            zones: techStatsData.zones || 0,
         } : null;
 
-        // Calculate cache hit rate (estimated)
+        // Calculate cache hit rate
         const cacheHitRate = technitiumCache && technitiumCache.totalQueries > 0
             ? Math.round((technitiumCache.totalCached / technitiumCache.totalQueries) * 100)
             : 0;
 
-        // Try to fetch Technitium cache list if available
-        let cacheEntries: any[] = [];
-        try {
-            const token = await technitium.getToken();
-            const config = technitium.getTechnitiumConfig();
-            const cacheRes = await fetch(`${config.url}/api/cache/list?token=${token}&limit=${limit}`);
-            if (cacheRes.ok) {
-                const cacheData = await cacheRes.json();
-                cacheEntries = cacheData.response?.entries || cacheData.entries || [];
-            }
-        } catch {
-            // Cache list not available, that's ok
+        // PRIMARY SOURCE: Fetch actual cache entries from Technitium
+        // This returns real cached DNS records with domain, type, TTL, value
+        let cacheEntries: any[] = await technitium.getCacheList('', limit * 2);
+
+        // If we got nothing from Technitium (e.g. AdGuard-only setup), provide minimal entries
+        // for the UI to display the basic stats
+        if (cacheEntries.length === 0 && adguardCache) {
+            cacheEntries = [];
         }
 
         // Filter entries if search provided
         if (search && cacheEntries.length > 0) {
+            const searchLower = search.toLowerCase();
             cacheEntries = cacheEntries.filter((e: any) =>
-                JSON.stringify(e).toLowerCase().includes(search.toLowerCase())
+                (e.name || '').toLowerCase().includes(searchLower) ||
+                (e.domain || '').toLowerCase().includes(searchLower) ||
+                JSON.stringify(e).toLowerCase().includes(searchLower)
             );
         }
 
@@ -67,8 +69,22 @@ export async function GET(request: Request) {
         // Group by zone/domain for top zones
         const zoneStats = analyzeZoneStats(cacheEntries);
 
-        // Generate recommendations
-        const recommendations = generateRecommendations(adguardCache, ttlDistribution, zoneStats);
+        // Generate recommendations based on both data sources
+        const recommendations = generateRecommendations(adguardCache, technitiumCache, ttlDistribution, zoneStats);
+
+        // Normalize entries for UI consumption
+        const normalizedEntries = cacheEntries.slice(0, 50).map((e: any) => {
+            // Technitium format: { name, type, ttl: "283 (4 mins 43 sec)", rData: { value, ipAddress, cname, ... } }
+            const rData = e.rData || {};
+            const value = rData.ipAddress || rData.value || rData.cname || rData.nameServer || rData.ptrName || rData.exchange || rData.text || JSON.stringify(rData);
+            return {
+                name: e.name || '',
+                type: e.type || '',
+                ttl: e.ttl,
+                value: String(value),
+                expiry: e.expiry,
+            };
+        });
 
         return NextResponse.json({
             adguard: adguardCache,
@@ -76,8 +92,9 @@ export async function GET(request: Request) {
             cacheHitRate,
             ttlDistribution,
             zoneStats,
-            cacheEntries: cacheEntries.slice(0, 50), // Limit for UI
+            cacheEntries: normalizedEntries,
             recommendations,
+            source: 'technitium', // Indicates the primary cache data source
         });
     } catch (error) {
         console.error('Cache API error:', error);
@@ -194,29 +211,47 @@ function extractZone(domain: string): string {
 
 function generateRecommendations(
     adguardCache: any,
+    technitiumCache: any,
     ttlDistribution: any,
     zoneStats: any[]
 ): string[] {
     const recs: string[] = [];
 
-    if (!adguardCache) {
-        recs.push('Unable to read AdGuard cache configuration. Check API connectivity.');
+    // If we have Technitium data, focus recommendations on it
+    if (technitiumCache) {
+        // Cache hit rate
+        const totalQueries = technitiumCache.totalQueries || 0;
+        const totalCached = technitiumCache.totalCached || 0;
+        if (totalQueries > 0) {
+            const hitRate = Math.round((totalCached / totalQueries) * 100);
+            if (hitRate < 20) {
+                recs.push(`Cache hit rate is only ${hitRate}%. The cache may be too small or entries expire too quickly.`);
+            } else if (hitRate > 70) {
+                recs.push(`Excellent cache hit rate of ${hitRate}%!`);
+            }
+        }
+
+        // Cached entries count
+        if (technitiumCache.cachedEntries > 0) {
+            recs.push(`Technitium cache holds ${technitiumCache.cachedEntries.toLocaleString()} active entries.`);
+        } else {
+            recs.push('No cached entries yet. Let the server run for a while to populate the cache.');
+        }
+    }
+
+    // AdGuard-specific recommendations
+    if (adguardCache) {
+        if (adguardCache.size < 1000000) {
+            recs.push(`AdGuard cache size is ${(adguardCache.size / 1000000).toFixed(1)}MB. Consider increasing to 4MB+ for better performance.`);
+        }
+        if (!adguardCache.optimistic) {
+            recs.push('AdGuard optimistic caching is disabled. Enabling it can improve response times for stale entries.');
+        }
+    }
+
+    if (!adguardCache && !technitiumCache) {
+        recs.push('Unable to read cache configuration from either backend. Check API connectivity.');
         return recs;
-    }
-
-    // Check cache size
-    if (adguardCache.size < 1000000) {
-        recs.push(`Cache size is ${(adguardCache.size / 1000000).toFixed(1)}MB. Consider increasing to 4MB+ for better performance.`);
-    }
-
-    // Check optimistic caching
-    if (!adguardCache.optimistic) {
-        recs.push('Optimistic caching is disabled. Enabling it can improve response times for stale entries.');
-    }
-
-    // Check TTL bounds
-    if (adguardCache.ttlMin < 60) {
-        recs.push(`Minimum TTL is ${adguardCache.ttlMin}s. Values below 60s may cause excessive upstream queries.`);
     }
 
     // Analyze TTL distribution
@@ -225,7 +260,7 @@ function generateRecommendations(
         const shortTtl = ttlDistribution.lt60s + ttlDistribution['1to5min'];
         const shortPct = Math.round((shortTtl / total) * 100);
         if (shortPct > 30) {
-            recs.push(`${shortPct}% of cached entries have TTL < 5 minutes. Consider increasing cache_ttl_min to 300s.`);
+            recs.push(`${shortPct}% of cached entries have TTL < 5 minutes. Consider increasing minimum cache TTL to 300s.`);
         }
     }
 

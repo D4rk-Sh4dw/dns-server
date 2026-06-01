@@ -1,29 +1,15 @@
-// Profile Manager for Time-Based DNS Policies
+// Profile Manager for DNS Service Blocking
 // Stores profiles as JSON in /app/data_mount/profiles.json
-// Profiles combine blocked services, schedules, and optional client-specific settings
+// Profiles define which services to block - they are applied immediately via AdGuard
 
 import fs from 'fs/promises';
-import path from 'path';
 import {
     getBlockedServices,
     setBlockedServices,
-    setBlockedServicesSchedule,
-    getClients,
-    updateClient,
-    getAllBlockedServices,
-    getFiltering,
-    toggleFilterList,
 } from './adguard';
 
 const PROFILES_FILE = '/app/data_mount/profiles.json';
 const ACTIVE_PROFILE_FILE = '/app/data_mount/active_profile.json';
-
-export interface ProfileSchedule {
-    timeZone: string;
-    days: string[]; // ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-    start: string; // "HH:MM"
-    end: string; // "HH:MM"
-}
 
 export interface Profile {
     id: string;
@@ -32,19 +18,6 @@ export interface Profile {
     icon: string; // lucide icon name
     color: string; // tailwind color class
     blockedServices: string[];
-    schedule: ProfileSchedule;
-    // Optional: per-client overrides
-    clientOverrides?: Record<string, {
-        blockedServices?: string[];
-        filteringEnabled?: boolean;
-        safeSearchEnabled?: boolean;
-        upstreams?: string[];
-    }>;
-    // Optional: filter list adjustments
-    filterLists?: {
-        enable?: number[]; // filter IDs to enable
-        disable?: number[]; // filter IDs to disable
-    };
     createdAt: string;
     updatedAt: string;
 }
@@ -54,7 +27,7 @@ export const DEFAULT_PROFILES: Profile[] = [
     {
         id: 'children',
         name: 'Kinder',
-        description: 'Social Media, Gaming und Streaming blockiert. Bildung erlaubt.',
+        description: 'Social Media, Gaming und Streaming blockiert.',
         icon: 'Baby',
         color: 'text-pink-400',
         blockedServices: [
@@ -63,12 +36,6 @@ export const DEFAULT_PROFILES: Profile[] = [
             'steam', 'roblox', 'minecraft', 'epic_games', 'psn', 'xbox_live',
             'discord', 'whatsapp', 'telegram'
         ],
-        schedule: {
-            timeZone: 'Europe/Berlin',
-            days: ['mon', 'tue', 'wed', 'thu', 'fri'],
-            start: '07:00',
-            end: '19:00',
-        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     },
@@ -84,52 +51,33 @@ export const DEFAULT_PROFILES: Profile[] = [
             'steam', 'roblox', 'minecraft', 'epic_games', 'psn', 'xbox_live',
             'discord'
         ],
-        schedule: {
-            timeZone: 'Europe/Berlin',
-            days: ['mon', 'tue', 'wed', 'thu', 'fri'],
-            start: '08:00',
-            end: '17:00',
-        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     },
     {
-        id: 'weekend',
-        name: 'Wochenende',
-        description: 'Gaming erlaubt, Social Media limitiert.',
-        icon: 'Gamepad2',
+        id: 'social_only',
+        name: 'Nur Social Media blockiert',
+        description: 'Nur Social-Media-Dienste blockiert, alles andere erlaubt.',
+        icon: 'Shield',
         color: 'text-green-400',
         blockedServices: [
-            'facebook', 'instagram', 'twitter', 'tiktok', 'snapchat',
-            'youtube', 'netflix', 'twitch'
+            'facebook', 'instagram', 'twitter', 'tiktok', 'snapchat', 'reddit'
         ],
-        schedule: {
-            timeZone: 'Europe/Berlin',
-            days: ['sat', 'sun'],
-            start: '10:00',
-            end: '22:00',
-        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     },
     {
-        id: 'night',
-        name: 'Nacht',
-        description: 'Alles außer Messaging und Notfälle blockiert.',
+        id: 'all_blocked',
+        name: 'Alles blockiert',
+        description: 'Alle bekannten Dienste blockiert.',
         icon: 'Moon',
         color: 'text-indigo-400',
         blockedServices: [
             'facebook', 'instagram', 'twitter', 'tiktok', 'snapchat', 'reddit',
             'youtube', 'netflix', 'twitch', 'disney_plus', 'prime_video',
             'steam', 'roblox', 'minecraft', 'epic_games', 'psn', 'xbox_live',
-            'amazon', 'ebay', 'spotify'
+            'discord', 'whatsapp', 'telegram', 'amazon', 'ebay', 'spotify'
         ],
-        schedule: {
-            timeZone: 'Europe/Berlin',
-            days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
-            start: '22:00',
-            end: '06:00',
-        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     },
@@ -139,9 +87,12 @@ export const DEFAULT_PROFILES: Profile[] = [
 async function ensureProfilesFile(): Promise<Profile[]> {
     try {
         const data = await fs.readFile(PROFILES_FILE, 'utf-8');
-        return JSON.parse(data);
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+            return parsed;
+        }
+        throw new Error('Invalid profile data');
     } catch {
-        // File doesn't exist, create with defaults
         await fs.writeFile(PROFILES_FILE, JSON.stringify(DEFAULT_PROFILES, null, 2));
         return DEFAULT_PROFILES;
     }
@@ -168,7 +119,7 @@ export async function saveProfile(profile: Profile): Promise<Profile> {
     if (idx >= 0) {
         profiles[idx] = profile;
     } else {
-        profile.createdAt = new Date().toISOString();
+        profile.createdAt = profile.createdAt || new Date().toISOString();
         profiles.push(profile);
     }
 
@@ -199,198 +150,26 @@ export async function setActiveProfile(profileId: string | null): Promise<void> 
     await fs.writeFile(ACTIVE_PROFILE_FILE, JSON.stringify(data, null, 2));
 }
 
-// Apply a profile to AdGuard
+// Apply a profile to AdGuard (simple - no schedule, just sets blocked services)
 export async function applyProfile(profileId: string): Promise<void> {
     const profile = await getProfile(profileId);
     if (!profile) {
         throw new Error(`Profile ${profileId} not found`);
     }
 
-    // 1. Set blocked services with schedule
-    // AdGuard expects exactly 7 days: Mon, Tue, Wed, Thu, Fri, Sat, Sun
-    // Days not in schedule get start: 0, end: 0
-    const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    const scheduleMs = {
-        time_zone: profile.schedule.timeZone,
-        days: DAY_ORDER.map(day => {
-            if (profile.schedule.days.includes(day)) {
-                return {
-                    start: timeToMs(profile.schedule.start),
-                    end: timeToMs(profile.schedule.end),
-                };
-            }
-            return { start: 0, end: 0 };
-        }),
-    };
-
-    await setBlockedServicesSchedule(scheduleMs);
+    // Simply set the blocked services - no schedule complexity
     await setBlockedServices(profile.blockedServices);
-
-    // 2. Apply client overrides if any
-    if (profile.clientOverrides) {
-        const clients = await getClients();
-        for (const [clientName, override] of Object.entries(profile.clientOverrides)) {
-            const client = clients.clients?.find((c: any) => c.name === clientName);
-            if (client) {
-                const updated = {
-                    ...client,
-                    ...(override.blockedServices !== undefined && {
-                        use_global_blocked_services: false,
-                        blocked_services: override.blockedServices,
-                    }),
-                    ...(override.filteringEnabled !== undefined && {
-                        use_global_settings: false,
-                        filtering_enabled: override.filteringEnabled,
-                    }),
-                    ...(override.safeSearchEnabled !== undefined && {
-                        use_global_settings: false,
-                        safesearch_enabled: override.safeSearchEnabled,
-                    }),
-                    ...(override.upstreams !== undefined && {
-                        use_global_settings: false,
-                        upstreams: override.upstreams,
-                    }),
-                };
-                await updateClient(clientName, updated);
-            }
-        }
-    }
-
-    // 3. Apply filter list adjustments if any
-    if (profile.filterLists) {
-        const filtering = await getFiltering();
-        const allFilters = filtering.filters || [];
-        
-        // Disable specified filters
-        if (profile.filterLists.disable) {
-            for (const filterId of profile.filterLists.disable) {
-                const filter = allFilters.find((f: any) => f.id === filterId || f.url === filterId);
-                if (filter && filter.enabled !== false) {
-                    await toggleFilterList(filter.url, false);
-                }
-            }
-        }
-        
-        // Enable specified filters
-        if (profile.filterLists.enable) {
-            for (const filterId of profile.filterLists.enable) {
-                const filter = allFilters.find((f: any) => f.id === filterId || f.url === filterId);
-                if (filter && filter.enabled !== true) {
-                    await toggleFilterList(filter.url, true);
-                }
-            }
-        }
-    }
-
-    // 4. Mark as active
     await setActiveProfile(profileId);
 }
 
-// Deactivate current profile (restore defaults)
+// Deactivate current profile (unblock all services)
 export async function deactivateProfile(): Promise<void> {
-    // Clear blocked services schedule and unblock all services
-    await setBlockedServicesSchedule({
-        time_zone: 'Local',
-        days: [],
-    });
     await setBlockedServices([]);
-
-    // Reset client overrides (restore global settings)
-    const clients = await getClients();
-    for (const client of (clients.clients || [])) {
-        if (!client.use_global_settings) {
-            await updateClient(client.name, {
-                ...client,
-                use_global_settings: true,
-                use_global_blocked_services: true,
-            });
-        }
-    }
-
     await setActiveProfile(null);
 }
 
-// Check if a profile should be active based on current time
-export function isProfileActiveNow(profile: Profile): boolean {
-    const now = new Date();
-    const tz = profile.schedule.timeZone;
-
-    // Get current day/time in profile's timezone
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz,
-        weekday: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    });
-    const parts = formatter.formatToParts(now);
-    const day = parts.find(p => p.type === 'weekday')?.value.toLowerCase() || '';
-    const hour = parts.find(p => p.type === 'hour')?.value || '00';
-    const minute = parts.find(p => p.type === 'minute')?.value || '00';
-    const currentTime = `${hour}:${minute}`;
-
-    // Map weekday names to our format
-    const dayMap: Record<string, string> = {
-        'mon': 'mon', 'tue': 'tue', 'wed': 'wed', 'thu': 'thu',
-        'fri': 'fri', 'sat': 'sat', 'sun': 'sun',
-        'monday': 'mon', 'tuesday': 'tue', 'wednesday': 'wed', 'thursday': 'thu',
-        'friday': 'fri', 'saturday': 'sat', 'sunday': 'sun',
-    };
-    const mappedDay = dayMap[day] || day;
-
-    // Check if today is in schedule
-    if (!profile.schedule.days.includes(mappedDay)) {
-        return false;
-    }
-
-    // Check time range (handles overnight ranges like 22:00-06:00)
-    const start = profile.schedule.start;
-    const end = profile.schedule.end;
-
-    if (start <= end) {
-        // Normal range (e.g., 08:00-17:00)
-        return currentTime >= start && currentTime <= end;
-    } else {
-        // Overnight range (e.g., 22:00-06:00)
-        return currentTime >= start || currentTime <= end;
-    }
-}
-
-// Check all profiles and apply the one that should be active
-export async function checkAndApplyScheduledProfiles(): Promise<string | null> {
-    const profiles = await getProfiles();
-    const active = await getActiveProfile();
-
-    // Find profile that should be active now
-    let targetProfile: Profile | null = null;
-    for (const profile of profiles) {
-        if (isProfileActiveNow(profile)) {
-            targetProfile = profile;
-            break;
-        }
-    }
-
-    if (targetProfile) {
-        // Only apply if different from currently active
-        if (active.profileId !== targetProfile.id) {
-            console.log(`[Profile Scheduler] Activating profile: ${targetProfile.name}`);
-            await applyProfile(targetProfile.id);
-            return targetProfile.id;
-        }
-    } else {
-        // No profile should be active - deactivate if something is active
-        if (active.profileId) {
-            console.log('[Profile Scheduler] No profile scheduled, deactivating current profile');
-            await deactivateProfile();
-            return null;
-        }
-    }
-
-    return active.profileId;
-}
-
-// Helper: Convert "HH:MM" to milliseconds since midnight
-function timeToMs(timeStr: string): number {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return (hours * 3600000) + (minutes * 60000);
+// Legacy: Check if a profile should be active based on current time
+// Kept for backward compatibility - now always returns false
+export function isProfileActiveNow(_profile: Profile): boolean {
+    return false;
 }

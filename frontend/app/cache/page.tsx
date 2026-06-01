@@ -25,6 +25,7 @@ interface CacheData {
         cachedEntries: number;
         totalQueries: number;
         totalBlocked: number;
+        zones?: number;
     } | null;
     cacheHitRate: number;
     ttlDistribution: Record<string, number>;
@@ -35,6 +36,7 @@ interface CacheData {
     }>;
     cacheEntries: Array<any>;
     recommendations: string[];
+    source?: string;
 }
 
 const TTL_COLORS: Record<string, string> = {
@@ -134,7 +136,9 @@ export default function CachePage() {
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">DNS Cache Analytics</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Cache performance, TTL distribution, and optimization recommendations.</p>
+                    <p className="text-gray-400 text-sm md:text-base">
+                        Cache data from <span className="text-orange-400 font-medium">Technitium</span> with AdGuard cache configuration.
+                    </p>
                 </div>
                 <div className="flex gap-2">
                     <button

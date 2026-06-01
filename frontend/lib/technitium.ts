@@ -315,6 +315,22 @@ export async function getSummary() {
     return technitiumFetch('/api/dashboard/summary');
 }
 
+// Cache list - returns actual cache entries (records) from Technitium
+// NOTE: Technitium uses 'domain' param (not 'limit') and returns 'records' (not 'entries')
+export async function getCacheList(domain: string = '', limit: number = 100): Promise<any[]> {
+    try {
+        const params: Record<string, string> = {};
+        if (domain) params.domain = domain;
+        const data: any = await technitiumFetch('/api/cache/list', params);
+        const records = data?.records || [];
+        // Cap the number of records returned
+        return Array.isArray(records) ? records.slice(0, limit) : [];
+    } catch (e) {
+        console.warn('Failed to fetch Technitium cache list:', e);
+        return [];
+    }
+}
+
 // --- DHCP Management ---
 
 export interface DHCPScope {
