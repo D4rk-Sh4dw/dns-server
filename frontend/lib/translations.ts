@@ -7,7 +7,6 @@ export type TranslationKeys =
     | 'nav.filtering'
     | 'nav.forwarding'
     | 'nav.service_blocking'
-    | 'nav.profiles'
     | 'nav.client_management'
     | 'nav.query_log'
     | 'nav.technitium_controls'
@@ -340,47 +339,6 @@ export type TranslationKeys =
     | 'zones.failed_delete'
     | 'zones.technitium_docker'
     | 'zones.technitium_docker'
-    // Profiles
-    | 'profiles.title'
-    | 'profiles.subtitle'
-    | 'profiles.active_now'
-    | 'profiles.inactive'
-    | 'profiles.activate'
-    | 'profiles.deactivate'
-    | 'profiles.edit'
-    | 'profiles.delete'
-    | 'profiles.create_profile'
-    | 'profiles.name'
-    | 'profiles.description'
-    | 'profiles.icon'
-    | 'profiles.color'
-    | 'profiles.blocked_services'
-    | 'profiles.schedule'
-    | 'profiles.time_zone'
-    | 'profiles.start_time'
-    | 'profiles.end_time'
-    | 'profiles.days'
-    | 'profiles.mon'
-    | 'profiles.tue'
-    | 'profiles.wed'
-    | 'profiles.thu'
-    | 'profiles.fri'
-    | 'profiles.sat'
-    | 'profiles.sun'
-    | 'profiles.save'
-    | 'profiles.cancel'
-    | 'profiles.no_profiles'
-    | 'profiles.create_first'
-    | 'profiles.delete_confirm'
-    | 'profiles.applied'
-    | 'profiles.apply_error'
-    | 'profiles.deactivated'
-    | 'profiles.deactivate_error'
-    | 'profiles.profile_children'
-    | 'profiles.profile_work'
-    | 'profiles.profile_weekend'
-    | 'profiles.profile_night'
-    | 'profiles.profile_custom'
     // DHCP
     | 'dhcp.title'
     | 'dhcp.subtitle'
@@ -482,7 +440,6 @@ export const translations: Record<Language, Record<string, string>> = {
         'nav.filtering': 'Filtering & Blocklists',
         'nav.forwarding': 'Forwarding / Zones',
         'nav.service_blocking': 'Service Blocking',
-        'nav.profiles': 'DNS Profiles',
         'nav.client_management': 'Client Management',
         'nav.query_log': 'Query Log',
         'nav.technitium_controls': 'Technitium Controls',
@@ -903,8 +860,6 @@ export const translations: Record<Language, Record<string, string>> = {
         'zones.technitium_docker': 'Technitium (docker)',
 
         // Profiles
-        'profiles.title': 'DNS Profiles',
-        'profiles.subtitle': 'Time-based blocking profiles for different scenarios.',
         'profiles.active_now': 'Active Now',
         'profiles.inactive': 'Inactive',
         'profiles.activate': 'Activate',
@@ -963,7 +918,6 @@ export const translations: Record<Language, Record<string, string>> = {
         'nav.filtering': 'Filter & Blocklisten',
         'nav.forwarding': 'Weiterleitung / Zonen',
         'nav.service_blocking': 'Dienste blockieren',
-        'nav.profiles': 'DNS-Profile',
         'nav.client_management': 'Client-Verwaltung',
         'nav.query_log': 'Abfrageprotokoll',
         'nav.technitium_controls': 'Technitium Steuerung',
@@ -1384,8 +1338,6 @@ export const translations: Record<Language, Record<string, string>> = {
         'zones.technitium_docker': 'Technitium (docker)',
 
         // Profiles
-        'profiles.title': 'DNS-Profile',
-        'profiles.subtitle': 'Zeitbasierte Blockierungsprofile für verschiedene Szenarien.',
         'profiles.active_now': 'Aktiv',
         'profiles.inactive': 'Inaktiv',
         'profiles.activate': 'Aktivieren',
