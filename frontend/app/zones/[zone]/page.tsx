@@ -35,7 +35,21 @@ export default function ZoneDetailPage() {
     const [records, setRecords] = useState<DnsRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [newRecord, setNewRecord] = useState({
+    interface NewRecordState {
+        name: string;
+        type: string;
+        value: string;
+        ttl: number;
+        priority: number;
+        weight: number;
+        port: number;
+        pushToCloudflare: boolean;
+        cloudflareValue: string;
+        cloudflareDynDns: boolean;
+        cloudflareDynDnsInterval: number;
+    }
+
+    const [newRecord, setNewRecord] = useState<NewRecordState>({
         name: '',
         type: 'A',
         value: '',
@@ -46,6 +60,8 @@ export default function ZoneDetailPage() {
         // Cloudflare sync fields
         pushToCloudflare: false,
         cloudflareValue: '', // Separate value for Cloudflare (IP, hostname, TXT, etc.)
+        cloudflareDynDns: false, // Use dynamic public IP for A/AAAA records
+        cloudflareDynDnsInterval: 5, // Check interval in minutes
     });
 
     useEffect(() => {
@@ -62,6 +78,8 @@ export default function ZoneDetailPage() {
     const [cfConfig, setCfConfig] = useState<{ email?: string; apiToken?: string; apiKey?: string; authType?: 'token' | 'key' } | null>(null);
     const [cfRecords, setCfRecords] = useState<any[]>([]);
     const [cfLoading, setCfLoading] = useState(false);
+    const [dynDnsRecords, setDynDnsRecords] = useState<any[]>([]);
+    const [dynDnsLoading, setDynDnsLoading] = useState(false);
 
     // Load CF config from server (with localStorage fallback)
     useEffect(() => {
@@ -117,8 +135,23 @@ export default function ZoneDetailPage() {
         }
     };
 
+    const fetchDynDnsRecords = async () => {
+        setDynDnsLoading(true);
+        try {
+            const res = await fetch('/api/system/dyndns');
+            const data = await res.json();
+            setDynDnsRecords(Array.isArray(data.records) ? data.records : []);
+        } catch (e) {
+            console.error('Failed to fetch DynDNS records:', e);
+            setDynDnsRecords([]);
+        } finally {
+            setDynDnsLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (cfConfig) fetchCfRecords();
+        fetchDynDnsRecords();
     }, [cfConfig, zone]);
 
     // Check if a record is synced to Cloudflare
@@ -128,6 +161,15 @@ export default function ZoneDetailPage() {
             const rShort = r.name === zone || r.name === `${zone}.` ? '@' : r.name.replace(`.${zone}`, '');
             return rShort === shortName && r.type === record.type;
         });
+    };
+
+    const getDynDnsRecord = (record: DnsRecord): any => {
+        const shortName = record.name === zone || record.name === `${zone}.` ? '@' : record.name.replace(`.${zone}`, '');
+        return dynDnsRecords.find(r => r.zone === zone && r.name === shortName && r.type === record.type);
+    };
+
+    const isRecordDynDns = (record: DnsRecord): boolean => {
+        return !!getDynDnsRecord(record);
     };
 
     const getRecordValue = (record: DnsRecord): string => {
@@ -221,39 +263,78 @@ export default function ZoneDetailPage() {
             }
 
             // Push to Cloudflare if enabled (for all record types)
-            if (newRecord.pushToCloudflare && newRecord.cloudflareValue) {
+            if (newRecord.pushToCloudflare) {
                 try {
                     const cfConfig = localStorage.getItem('cloudflare_config');
                     if (cfConfig) {
                         const cf = JSON.parse(cfConfig);
                         if (cf.apiToken || cf.apiKey) {
-                            // Get zone ID from Cloudflare
-                            const zoneRes = await fetch('/api/cloudflare/zones', {
-                                method: 'GET',
-                                headers: { 
-                                    'Content-Type': 'application/json',
-                                },
-                            });
-                            const cfZones = await zoneRes.json();
-                            const cfZone = cfZones.find((z: any) => z.name === zone);
-                            
-                            if (cfZone) {
-                                // Create the record in Cloudflare
-                                await fetch('/api/cloudflare/records', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        action: 'create',
-                                        zoneId: cfZone.id,
-                                        type: newRecord.type,
-                                        name: newRecord.name === '@' || !newRecord.name ? zone : `${newRecord.name}.${zone}`,
-                                        content: newRecord.cloudflareValue,
-                                        ttl: newRecord.ttl,
-                                        email: cf.authType === 'key' ? cf.email : undefined,
-                                        apiToken: cf.authType === 'token' ? cf.apiToken : undefined,
-                                        apiKey: cf.authType === 'key' ? cf.apiKey : undefined,
-                                    }),
+                            const recordName = newRecord.name === '@' || !newRecord.name ? zone : `${newRecord.name}.${zone}`;
+
+                            if ((newRecord.type === 'A' || newRecord.type === 'AAAA') && newRecord.cloudflareDynDns) {
+                                // Register or update DynDNS entry: public IP will be detected and synced periodically
+                                const existingDyn = isEditing && originalRecord
+                                    ? getDynDnsRecord(originalRecord)
+                                    : null;
+
+                                if (existingDyn) {
+                                    await fetch('/api/system/dyndns', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            action: 'update',
+                                            id: existingDyn.id,
+                                            updates: {
+                                                intervalMinutes: newRecord.cloudflareDynDnsInterval,
+                                                enabled: true,
+                                            },
+                                        }),
+                                    });
+                                } else {
+                                    await fetch('/api/system/dyndns', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            action: 'create',
+                                            zone,
+                                            name: newRecord.name === '@' || !newRecord.name ? '@' : newRecord.name,
+                                            type: newRecord.type,
+                                            intervalMinutes: newRecord.cloudflareDynDnsInterval,
+                                            email: cf.authType === 'key' ? cf.email : undefined,
+                                            apiToken: cf.authType === 'token' ? cf.apiToken : undefined,
+                                            apiKey: cf.authType === 'key' ? cf.apiKey : undefined,
+                                            authType: cf.authType,
+                                        }),
+                                    });
+                                }
+                            } else if (newRecord.cloudflareValue) {
+                                // Static Cloudflare record
+                                const zoneRes = await fetch('/api/cloudflare/zones', {
+                                    method: 'GET',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
                                 });
+                                const cfZones = await zoneRes.json();
+                                const cfZone = cfZones.find((z: any) => z.name === zone);
+
+                                if (cfZone) {
+                                    await fetch('/api/cloudflare/records', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            action: 'create',
+                                            zoneId: cfZone.id,
+                                            type: newRecord.type,
+                                            name: recordName,
+                                            content: newRecord.cloudflareValue,
+                                            ttl: newRecord.ttl,
+                                            email: cf.authType === 'key' ? cf.email : undefined,
+                                            apiToken: cf.authType === 'token' ? cf.apiToken : undefined,
+                                            apiKey: cf.authType === 'key' ? cf.apiKey : undefined,
+                                        }),
+                                    });
+                                }
                             }
                         }
                     }
@@ -262,11 +343,13 @@ export default function ZoneDetailPage() {
                 }
             }
 
-            setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0, pushToCloudflare: false, cloudflareValue: '' });
+            setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0, pushToCloudflare: false, cloudflareValue: '', cloudflareDynDns: false, cloudflareDynDnsInterval: 5 });
             setShowAddModal(false);
             setIsEditing(false);
             setOriginalRecord(null);
             await fetchRecords();
+            await fetchDynDnsRecords();
+            await fetchCfRecords();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         }
@@ -292,6 +375,8 @@ export default function ZoneDetailPage() {
             return rShort === shortName && r.type === record.type;
         });
 
+        const dynRec = dynDnsRecords.find(r => r.zone === zone && r.name === shortName && r.type === record.type);
+
         setNewRecord({
             name: shortName,
             type: record.type,
@@ -300,8 +385,10 @@ export default function ZoneDetailPage() {
             priority: rd.preference || rd.priority || 10,
             weight: rd.weight || 0,
             port: rd.port || 0,
-            pushToCloudflare: !!cfRec,
-            cloudflareValue: cfRec?.content || ''
+            pushToCloudflare: !!cfRec || !!dynRec,
+            cloudflareValue: cfRec?.content || '',
+            cloudflareDynDns: !!dynRec,
+            cloudflareDynDnsInterval: dynRec?.intervalMinutes || 5,
         });
 
         setShowAddModal(true);
@@ -338,7 +425,24 @@ export default function ZoneDetailPage() {
             }),
         });
 
-        if (!skipConfirm) await fetchRecords();
+        // Also remove DynDNS registration if present
+        const dynRec = getDynDnsRecord(record);
+        if (dynRec) {
+            try {
+                await fetch('/api/system/dyndns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', id: dynRec.id }),
+                });
+            } catch (e) {
+                console.error('Failed to delete DynDNS registration:', e);
+            }
+        }
+
+        if (!skipConfirm) {
+            await fetchRecords();
+            await fetchDynDnsRecords();
+        }
     };
 
 
@@ -430,7 +534,11 @@ export default function ZoneDetailPage() {
                                 </td>
                                 <td className="px-6 py-4 text-gray-500 text-sm">{record.ttl}s</td>
                                 <td className="px-6 py-4 text-center">
-                                    {isRecordSynced(record) ? (
+                                    {isRecordDynDns(record) ? (
+                                        <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400" title={`DynDNS - last IP: ${getDynDnsRecord(record)?.lastIp || 'unknown'}`}>
+                                            <Cloud size={12} /> DynDNS
+                                        </span>
+                                    ) : isRecordSynced(record) ? (
                                         <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-orange-500/20 text-orange-400">
                                             <Cloud size={12} /> Synced
                                         </span>
@@ -599,38 +707,73 @@ export default function ZoneDetailPage() {
 
                             {newRecord.pushToCloudflare && (
                                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">
-                                            {newRecord.type === 'A' ? 'Public IPv4' : 
-                                             newRecord.type === 'AAAA' ? 'Public IPv6' :
-                                             newRecord.type === 'CNAME' || newRecord.type === 'NS' ? 'Target Hostname' :
-                                             newRecord.type === 'MX' ? 'Mail Server' :
-                                             newRecord.type === 'TXT' ? 'TXT Value' :
-                                             newRecord.type === 'SRV' ? 'Target Hostname' :
-                                             newRecord.type === 'CAA' ? 'CAA Value' :
-                                             newRecord.type === 'PTR' ? 'PTR Target' : 'Value'} for Cloudflare
+                                    {(newRecord.type === 'A' || newRecord.type === 'AAAA') && (
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={newRecord.cloudflareDynDns}
+                                                onChange={(e) => setNewRecord(prev => ({ ...prev, cloudflareDynDns: e.target.checked }))}
+                                                className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-purple-500 focus:ring-purple-500"
+                                            />
+                                            <div className="flex items-center gap-2">
+                                                <RefreshCw size={16} className="text-purple-400" />
+                                                <span className="text-white font-medium">Use DynDNS (auto-detect public {newRecord.type === 'A' ? 'IPv4' : 'IPv6'})</span>
+                                            </div>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={newRecord.cloudflareValue}
-                                            onChange={(e) => setNewRecord(prev => ({ ...prev, cloudflareValue: e.target.value }))}
-                                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
-                                            placeholder={
-                                                newRecord.type === 'A' ? 'e.g. 203.0.113.10' :
-                                                newRecord.type === 'AAAA' ? 'e.g. 2001:db8::1' :
-                                                newRecord.type === 'CNAME' ? 'e.g. target.example.com' :
-                                                newRecord.type === 'MX' ? 'e.g. mail.example.com' :
-                                                newRecord.type === 'TXT' ? 'e.g. v=spf1 include:_spf.google.com ~all' :
-                                                newRecord.type === 'NS' ? 'e.g. ns1.cloudflare.com' :
-                                                newRecord.type === 'SRV' ? 'e.g. target.example.com' :
-                                                newRecord.type === 'CAA' ? 'e.g. 0 issue "letsencrypt.org"' :
-                                                newRecord.type === 'PTR' ? 'e.g. hostname.example.com' : ''
-                                            }
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            This value will be used for the record in Cloudflare (different from Technitium internal value).
-                                        </p>
-                                    </div>
+                                    )}
+
+                                    {newRecord.cloudflareDynDns && (newRecord.type === 'A' || newRecord.type === 'AAAA') ? (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1">Check interval</label>
+                                            <select
+                                                value={newRecord.cloudflareDynDnsInterval}
+                                                onChange={(e) => setNewRecord(prev => ({ ...prev, cloudflareDynDnsInterval: parseInt(e.target.value, 10) }))}
+                                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                                            >
+                                                <option value={1}>Every 1 minute</option>
+                                                <option value={5}>Every 5 minutes</option>
+                                                <option value={15}>Every 15 minutes</option>
+                                                <option value={30}>Every 30 minutes</option>
+                                                <option value={60}>Every hour</option>
+                                            </select>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                The public IP will be checked in this interval and the Cloudflare record will be updated automatically when it changes.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1">
+                                                {newRecord.type === 'A' ? 'Public IPv4' :
+                                                 newRecord.type === 'AAAA' ? 'Public IPv6' :
+                                                 newRecord.type === 'CNAME' || newRecord.type === 'NS' ? 'Target Hostname' :
+                                                 newRecord.type === 'MX' ? 'Mail Server' :
+                                                 newRecord.type === 'TXT' ? 'TXT Value' :
+                                                 newRecord.type === 'SRV' ? 'Target Hostname' :
+                                                 newRecord.type === 'CAA' ? 'CAA Value' :
+                                                 newRecord.type === 'PTR' ? 'PTR Target' : 'Value'} for Cloudflare
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newRecord.cloudflareValue}
+                                                onChange={(e) => setNewRecord(prev => ({ ...prev, cloudflareValue: e.target.value }))}
+                                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                                                placeholder={
+                                                    newRecord.type === 'A' ? 'e.g. 203.0.113.10' :
+                                                    newRecord.type === 'AAAA' ? 'e.g. 2001:db8::1' :
+                                                    newRecord.type === 'CNAME' ? 'e.g. target.example.com' :
+                                                    newRecord.type === 'MX' ? 'e.g. mail.example.com' :
+                                                    newRecord.type === 'TXT' ? 'e.g. v=spf1 include:_spf.google.com ~all' :
+                                                    newRecord.type === 'NS' ? 'e.g. ns1.cloudflare.com' :
+                                                    newRecord.type === 'SRV' ? 'e.g. target.example.com' :
+                                                    newRecord.type === 'CAA' ? 'e.g. 0 issue "letsencrypt.org"' :
+                                                    newRecord.type === 'PTR' ? 'e.g. hostname.example.com' : ''
+                                                }
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                This value will be used for the record in Cloudflare (different from Technitium internal value).
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -640,7 +783,7 @@ export default function ZoneDetailPage() {
                                     setShowAddModal(false);
                                     setIsEditing(false);
                                     setOriginalRecord(null);
-                                    setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0, pushToCloudflare: false, cloudflareValue: '' });
+                                    setNewRecord({ name: '', type: 'A', value: '', ttl: 3600, priority: 10, weight: 0, port: 0, pushToCloudflare: false, cloudflareValue: '', cloudflareDynDns: false, cloudflareDynDnsInterval: 5 });
                                 }}
                                 className="px-4 py-2 text-gray-400 hover:text-white"
                             >
