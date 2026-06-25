@@ -948,7 +948,6 @@ function DnsCacheSettings() {
                     {saving ? 'Saving...' : 'Save Cache Settings'}
                 </button>
             </div>
-            </div>
-        </PageLayout>
+        </div>
     );
 }
