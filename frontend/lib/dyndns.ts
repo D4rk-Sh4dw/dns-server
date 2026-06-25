@@ -40,12 +40,108 @@ async function ensureDataDir() {
     await fs.mkdir(dir, { recursive: true });
 }
 
+function extractFirstJsonValue(raw: string): string | null {
+    const trimmed = raw.trimStart();
+    if (!trimmed) return null;
+
+    const firstChar = trimmed[0];
+    if (firstChar !== '{' && firstChar !== '[') return null;
+
+    const start = raw.length - trimmed.length;
+    const expectedClosers: string[] = [];
+    let inString = false;
+    let escaping = false;
+
+    for (let i = start; i < raw.length; i++) {
+        const ch = raw[i];
+
+        if (inString) {
+            if (escaping) {
+                escaping = false;
+                continue;
+            }
+            if (ch === '\\') {
+                escaping = true;
+                continue;
+            }
+            if (ch === '"') {
+                inString = false;
+            }
+            continue;
+        }
+
+        if (ch === '"') {
+            inString = true;
+            continue;
+        }
+
+        if (ch === '{') {
+            expectedClosers.push('}');
+            continue;
+        }
+
+        if (ch === '[') {
+            expectedClosers.push(']');
+            continue;
+        }
+
+        if (ch === '}' || ch === ']') {
+            const expected = expectedClosers.pop();
+            if (expected !== ch) {
+                return null;
+            }
+            if (expectedClosers.length === 0) {
+                return raw.slice(start, i + 1);
+            }
+        }
+    }
+
+    return null;
+}
+
+function parseDynDnsRecords(raw: string): DynDnsRecord[] | null {
+    const parseRecords = (parsed: unknown): DynDnsRecord[] | null => {
+        if (Array.isArray(parsed)) {
+            return parsed as DynDnsRecord[];
+        }
+        if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { records?: unknown }).records)) {
+            return (parsed as { records: DynDnsRecord[] }).records;
+        }
+        return [];
+    };
+
+    try {
+        return parseRecords(JSON.parse(raw));
+    } catch {
+        const recoveredJson = extractFirstJsonValue(raw);
+        if (!recoveredJson) return null;
+        try {
+            return parseRecords(JSON.parse(recoveredJson));
+        } catch {
+            return null;
+        }
+    }
+}
+
 export async function loadDynDnsRecords(): Promise<DynDnsRecord[]> {
     const filePath = getDataPath();
     try {
         const raw = await fs.readFile(filePath, 'utf-8');
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed.records) ? parsed.records : [];
+        const records = parseDynDnsRecords(raw);
+        if (records === null) {
+            throw new SyntaxError('Could not parse DynDNS records file');
+        }
+
+        // If trailing garbage existed, rewrite clean JSON once so future reads stay stable.
+        if (records !== null && raw.trim().length > 0) {
+            const recoveredJson = extractFirstJsonValue(raw);
+            if (recoveredJson && recoveredJson.trim().length !== raw.trim().length) {
+                console.warn('[DynDNS] Recovered malformed records file and rewriting sanitized JSON');
+                await saveDynDnsRecords(records);
+            }
+        }
+
+        return records;
     } catch (err: any) {
         if (err.code === 'ENOENT') return [];
         console.error('[DynDNS] Failed to load records:', err);

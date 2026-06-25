@@ -6,6 +6,20 @@ import path from 'path';
 
 const PAUSE_FILE = '/tmp/pause_state.json';
 
+class AdGuardApiError extends Error {
+    status: number;
+    statusText: string;
+    body: string;
+
+    constructor(status: number, statusText: string, body: string) {
+        super(`AdGuard API error: ${status} ${statusText} - ${body}`);
+        this.name = 'AdGuardApiError';
+        this.status = status;
+        this.statusText = statusText;
+        this.body = body;
+    }
+}
+
 // Get env vars at runtime to avoid build-time issues
 function getAdGuardConfig() {
     return {
@@ -49,7 +63,7 @@ async function adguardFetch(endpoint: string, options: RequestInit = {}) {
 
     if (!response.ok) {
         const text = await response.text();
-        throw new Error(`AdGuard API error: ${response.status} ${response.statusText} - ${text}`);
+        throw new AdGuardApiError(response.status, response.statusText, text);
     }
 
     const contentType = response.headers.get('content-type');
@@ -80,7 +94,15 @@ export async function clearQueryLog() {
 }
 
 export async function getFiltering() {
-    return adguardFetch('/control/filtering/status');
+    try {
+        return await adguardFetch('/control/filtering/status');
+    } catch (error) {
+        if (error instanceof AdGuardApiError && error.status === 404) {
+            // Older/newer AdGuard builds expose this at /control/filtering
+            return adguardFetch('/control/filtering');
+        }
+        throw error;
+    }
 }
 
 // Toggles global SafeSearch or individual engines

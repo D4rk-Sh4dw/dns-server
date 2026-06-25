@@ -65,17 +65,37 @@ async function checkDynDnsRecords() {
     }
 }
 
-let timerJobInterval: NodeJS.Timeout | null = null;
-let dyndnsJobInterval: NodeJS.Timeout | null = null;
-let isInitialized = false;
+type BackgroundJobsState = {
+    timerJobInterval: NodeJS.Timeout | null;
+    dyndnsJobInterval: NodeJS.Timeout | null;
+    isInitialized: boolean;
+};
+
+function getBackgroundJobsState(): BackgroundJobsState {
+    const scopedGlobal = globalThis as typeof globalThis & {
+        __dnsBackgroundJobsState?: BackgroundJobsState;
+    };
+
+    if (!scopedGlobal.__dnsBackgroundJobsState) {
+        scopedGlobal.__dnsBackgroundJobsState = {
+            timerJobInterval: null,
+            dyndnsJobInterval: null,
+            isInitialized: false,
+        };
+    }
+
+    return scopedGlobal.__dnsBackgroundJobsState;
+}
 
 export function initBackgroundJobs() {
+    const state = getBackgroundJobsState();
+
     // Prevent multiple instances
-    if (isInitialized) {
+    if (state.isInitialized) {
         return;
     }
 
-    isInitialized = true;
+    state.isInitialized = true;
     console.log('[Background Jobs] Starting protection timer job (checks every 30 seconds)');
     console.log('[Background Jobs] Starting DynDNS job (checks every 60 seconds)');
 
@@ -84,20 +104,22 @@ export function initBackgroundJobs() {
     checkDynDnsRecords();
 
     // Then check periodically
-    timerJobInterval = setInterval(checkAndReenableProtection, 30 * 1000);
-    dyndnsJobInterval = setInterval(checkDynDnsRecords, 60 * 1000);
+    state.timerJobInterval = setInterval(checkAndReenableProtection, 30 * 1000);
+    state.dyndnsJobInterval = setInterval(checkDynDnsRecords, 60 * 1000);
 }
 
 export function stopBackgroundJobs() {
-    if (timerJobInterval) {
-        clearInterval(timerJobInterval);
-        timerJobInterval = null;
+    const state = getBackgroundJobsState();
+
+    if (state.timerJobInterval) {
+        clearInterval(state.timerJobInterval);
+        state.timerJobInterval = null;
     }
-    if (dyndnsJobInterval) {
-        clearInterval(dyndnsJobInterval);
-        dyndnsJobInterval = null;
+    if (state.dyndnsJobInterval) {
+        clearInterval(state.dyndnsJobInterval);
+        state.dyndnsJobInterval = null;
     }
-    isInitialized = false;
+    state.isInitialized = false;
     console.log('[Background Jobs] Stopped');
 }
 
