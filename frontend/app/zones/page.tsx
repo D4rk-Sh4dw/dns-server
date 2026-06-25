@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Plus, RefreshCw, ChevronRight, Trash2, Check, AlertCircle, Server, Globe, Search, Cloud } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n-context';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface Zone {
     name: string;
@@ -208,65 +209,77 @@ export default function ZonesPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('zones.title')}</h1>
-                    <p className="text-gray-400 text-sm md:text-base">
-                        {t('zones.subtitle')}
-                    </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search size={16} className="text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-                        </div>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={t('zones.search_placeholder')}
-                            className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 transition-all w-full sm:w-64"
-                        />
-                    </div>
-                    <button
-                        onClick={async () => {
-                            if (!confirm(t('zones.cache_clear_confirm'))) return;
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Globe className="text-blue-400" size={22} />}
+                    title={t('zones.title')}
+                    subtitle={t('zones.subtitle')}
+                    actions={
+                        <>
+                            <div className="relative group hidden sm:block">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search size={16} className="text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder={t('zones.search_placeholder')}
+                                    className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 transition-all sm:w-64"
+                                />
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    if (!confirm(t('zones.cache_clear_confirm'))) return;
+                                    setLoading(true);
+                                    try {
+                                        const res = await fetch('/api/adguard/cache/clear', { method: 'POST' });
+                                        if (!res.ok) throw new Error('Failed to clear cache');
+                                        alert(t('zones.cache_cleared'));
+                                    } catch (e) {
+                                        alert(t('zones.cache_clear_error'));
+                                    }
+                                    setLoading(false);
+                                    fetchZones();
+                                }}
+                                className="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 hover:text-yellow-400 border border-yellow-500/20 transition-colors flex justify-center items-center gap-2 px-3"
+                                title={t('zones.reset_cache')}
+                            >
+                                <RefreshCw size={18} />
+                                <span className="hidden lg:inline text-sm font-medium">{t('zones.reset_cache')}</span>
+                            </button>
+                            <button
+                                onClick={fetchZones}
+                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
+                                title={t('zones.refresh')}
+                            >
+                                <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                            </button>
+                            <button
+                                onClick={() => setShowCreateModal(true)}
+                                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
+                            >
+                                <Plus size={18} />
+                                {t('zones.add_zone')}
+                            </button>
+                        </>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
-                            setLoading(true);
-                            try {
-                                const res = await fetch('/api/adguard/cache/clear', { method: 'POST' });
-                                if (!res.ok) throw new Error('Failed to clear cache');
-                                alert(t('zones.cache_cleared'));
-                            } catch (e) {
-                                alert(t('zones.cache_clear_error'));
-                            }
-                            setLoading(false);
-                            // Refresh zones data as well
-                            fetchZones();
-                        }}
-                        className="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 hover:text-yellow-400 border border-yellow-500/20 transition-colors flex justify-center items-center gap-2 px-3"
-                        title={t('zones.reset_cache')}
-                    >
-                        <RefreshCw size={18} />
-                        <span className="hidden sm:inline text-sm font-medium">{t('zones.reset_cache')}</span>
-                    </button>
-
-                    <button
-                        onClick={fetchZones}
-                        className="flex-1 sm:flex-none p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
-                        title={t('zones.refresh')}
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex-[3] sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
-                    >
-                        <Plus size={18} />
-                        {t('zones.add_zone')}
-                    </button>
-                </div>
+            {/* Mobile search */}
+            <div className="sm:hidden relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t('zones.search_placeholder')}
+                    className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg pl-10 pr-4 p-2.5"
+                />
             </div>
 
             {error && (
@@ -663,6 +676,7 @@ export default function ZonesPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }

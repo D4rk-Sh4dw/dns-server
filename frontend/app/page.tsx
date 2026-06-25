@@ -8,10 +8,12 @@ import {
   Wifi,
   ArrowUpRight,
   ArrowDownRight,
-  RefreshCw
+  RefreshCw,
+  LayoutDashboard
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n-context';
+import PageLayout, { PageHeader } from './components/PageLayout';
 
 interface AdGuardStats {
   num_dns_queries: number;
@@ -90,19 +92,24 @@ export default function Home() {
   const stats = data.adguard?.stats;
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">{t('dashboard.title')}</h1>
-          <p className="text-gray-400">{t('dashboard.subtitle')}</p>
-        </div>
-        <button
-          onClick={fetchData}
-          className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors border border-gray-700"
-        >
-          <RefreshCw size={20} className={data.loading ? 'animate-spin' : ''} />
-        </button>
-      </div>
+    <PageLayout
+      header={
+        <PageHeader
+          icon={<LayoutDashboard className="text-blue-400" size={22} />}
+          title={t('dashboard.title')}
+          subtitle={t('dashboard.subtitle')}
+          actions={
+            <button
+              onClick={fetchData}
+              className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors border border-gray-700"
+            >
+              <RefreshCw size={20} className={data.loading ? 'animate-spin' : ''} />
+            </button>
+          }
+        />
+      }
+    >
+      <div className="space-y-8">
 
       {data.error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400">
@@ -222,6 +229,7 @@ export default function Home() {
         </div>
       </div>
     </div>
+    </PageLayout>
   );
 }
 

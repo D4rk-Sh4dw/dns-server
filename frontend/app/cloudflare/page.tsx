@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Cloud, RefreshCw, Trash2, Plus, Edit2, AlertCircle, Check, Search, ArrowLeft, ExternalLink } from 'lucide-react';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface CloudflareConfig {
     email?: string;
@@ -266,44 +267,57 @@ export default function CloudflarePage() {
 
     if (!config || (!config.apiToken && !config.apiKey)) {
         return (
-            <div className="p-8 max-w-3xl mx-auto">
-                <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-6 text-yellow-200 flex items-start gap-3">
-                    <AlertCircle className="flex-shrink-0 mt-1" />
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2">Cloudflare not configured</h3>
-                        <p>
-                            Please configure your Cloudflare API credentials in{' '}
-                            <a href="/settings" className="underline text-yellow-100">Settings</a> first.
-                        </p>
+            <PageLayout
+                header={
+                    <PageHeader
+                        icon={<Cloud className="text-orange-400" size={22} />}
+                        title="Cloudflare DNS"
+                    />
+                }
+            >
+                <div className="max-w-3xl mx-auto">
+                    <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-6 text-yellow-200 flex items-start gap-3">
+                        <AlertCircle className="flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="font-semibold text-lg mb-2">Cloudflare not configured</h3>
+                            <p>
+                                Please configure your Cloudflare API credentials in{' '}
+                                <a href="/settings" className="underline text-yellow-100">Settings</a> first.
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </PageLayout>
         );
     }
 
     return (
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-                <div className="flex items-center gap-3">
-                    <Cloud className="text-orange-400" size={28} />
-                    <h1 className="text-2xl font-bold text-white">Cloudflare DNS</h1>
-                </div>
-                <button
-                    onClick={() => (selectedZone ? fetchRecords(selectedZone) : fetchZones())}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm"
-                >
-                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                    Refresh
-                </button>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Cloud className="text-orange-400" size={22} />}
+                    title="Cloudflare DNS"
+                    actions={
+                        <button
+                            onClick={() => (selectedZone ? fetchRecords(selectedZone) : fetchZones())}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm"
+                        >
+                            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                            Refresh
+                        </button>
+                    }
+                />
+            }
+        >
+            <div className="max-w-7xl mx-auto space-y-6">
 
             {error && (
-                <div className="mb-4 p-3 bg-red-900/40 border border-red-700 rounded-lg text-red-200 flex items-center gap-2">
+                <div className="p-3 bg-red-900/40 border border-red-700 rounded-lg text-red-200 flex items-center gap-2">
                     <AlertCircle size={18} /> {error}
                 </div>
             )}
             {success && (
-                <div className="mb-4 p-3 bg-green-900/40 border border-green-700 rounded-lg text-green-200 flex items-center gap-2">
+                <div className="p-3 bg-green-900/40 border border-green-700 rounded-lg text-green-200 flex items-center gap-2">
                     <Check size={18} /> {success}
                 </div>
             )}
@@ -538,6 +552,7 @@ export default function CloudflarePage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }

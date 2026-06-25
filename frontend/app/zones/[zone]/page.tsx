@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle, Edit2, Search, Cloud } from 'lucide-react';
+import { ArrowLeft, Plus, RefreshCw, Trash2, Check, AlertCircle, Edit2, Search, Cloud, Globe } from 'lucide-react';
 import Link from 'next/link';
+import PageLayout, { PageHeader } from '../../components/PageLayout';
 
 interface DnsRecord {
     name: string;
@@ -342,45 +343,59 @@ export default function ZoneDetailPage() {
 
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <Link href="/zones" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white">
-                        <ArrowLeft size={20} />
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white truncate max-w-[200px] sm:max-w-none">{zone}</h1>
-                        <p className="text-gray-400 text-sm">Manage DNS records</p>
-                    </div>
-                </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Globe className="text-blue-400" size={22} />}
+                    title={zone}
+                    subtitle="Manage DNS records"
+                    actions={
+                        <>
+                            <Link href="/zones" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white" title="Back to zones">
+                                <ArrowLeft size={20} />
+                            </Link>
+                            <div className="relative group hidden sm:block">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search size={16} className="text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search records, IPs..."
+                                    className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 transition-all sm:w-64"
+                                />
+                            </div>
+                            <button
+                                onClick={fetchRecords}
+                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
+                            >
+                                <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                            </button>
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
+                            >
+                                <Plus size={18} />
+                                Add Record
+                            </button>
+                        </>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search size={16} className="text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-                        </div>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search records, IPs..."
-                            className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 transition-all w-full sm:w-64"
-                        />
-                    </div>
-                    <button
-                        onClick={fetchRecords}
-                        className="flex-1 sm:flex-none p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex justify-center items-center"
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="flex-[3] sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
-                    >
-                        <Plus size={18} />
-                        Add Record
-                    </button>
-                </div>
+            {/* Mobile search */}
+            <div className="sm:hidden relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search records, IPs..."
+                    className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg pl-10 pr-4 p-2.5"
+                />
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
@@ -642,6 +657,7 @@ export default function ZoneDetailPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }

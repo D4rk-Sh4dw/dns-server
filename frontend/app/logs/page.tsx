@@ -3,8 +3,9 @@
 import { useTranslation } from '@/lib/i18n-context';
 
 import { useEffect, useState, useMemo, Suspense } from 'react';
-import { Search, RotateCw, Shield, AlertTriangle, Check, ArrowRight, Trash2, ChevronDown, ChevronUp, Ban, User, X } from 'lucide-react';
+import { Search, RotateCw, Shield, AlertTriangle, Check, ArrowRight, Trash2, ChevronDown, ChevronUp, Ban, User, X, FileText } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface QueryLogItem {
     time: string;
@@ -198,29 +199,34 @@ function LogsPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('logs.title')}</h1>
-                    <p className="text-gray-400 text-sm md:text-base">{t('logs.subtitle')}</p>
-                </div>
-                <div className="flex gap-2 self-end sm:self-auto">
-                    <button
-                        onClick={handleClearLogs}
-                        className="p-2 rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 transition-colors"
-                        title={t('logs.clear_logs')}
-                    >
-                        <Trash2 size={20} />
-                    </button>
-                    <button
-                        onClick={() => fetchLogs(true)}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                        title={t('filtering.refresh_lists')}
-                    >
-                        <RotateCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<FileText className="text-blue-400" size={22} />}
+                    title={t('logs.title')}
+                    subtitle={t('logs.subtitle')}
+                    actions={
+                        <>
+                            <button
+                                onClick={handleClearLogs}
+                                className="p-2 rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 transition-colors"
+                                title={t('logs.clear_logs')}
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                            <button
+                                onClick={() => fetchLogs(true)}
+                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                                title={t('filtering.refresh_lists')}
+                            >
+                                <RotateCw size={20} className={loading ? 'animate-spin' : ''} />
+                            </button>
+                        </>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
 
             {/* Filters */}
@@ -298,7 +304,8 @@ function LogsPage() {
                     </div>
                 )}
             </div>
-        </div >
+            </div>
+        </PageLayout>
     );
 }
 

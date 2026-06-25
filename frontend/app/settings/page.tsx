@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, RefreshCw, CheckCircle, XCircle, Shield, Server, Database, Wifi, Upload, Cloud } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, XCircle, Shield, Server, Database, Wifi, Upload, Cloud, Settings as SettingsIcon } from 'lucide-react';
 
 import { useTranslation } from '@/lib/i18n-context';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 export default function SettingsPage() {
     const { t } = useTranslation();
@@ -45,11 +46,16 @@ export default function SettingsPage() {
     }, []);
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight text-white">{t('settings.title')}</h1>
-                <p className="text-gray-400">{t('settings.subtitle')}</p>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<SettingsIcon className="text-blue-400" size={22} />}
+                    title={t('settings.title')}
+                    subtitle={t('settings.subtitle')}
+                />
+            }
+        >
+            <div className="space-y-8 max-w-7xl mx-auto">
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* System Status Card */}
@@ -941,6 +947,7 @@ function DnsCacheSettings() {
                     {saving ? 'Saving...' : 'Save Cache Settings'}
                 </button>
             </div>
-        </div>
+            </div>
+        </PageLayout>
     );
 }

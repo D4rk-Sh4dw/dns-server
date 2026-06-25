@@ -7,6 +7,7 @@ import {
     Shield, ShieldCheck, ShieldAlert, ArrowRightLeft,
     X, Activity, Clock, Globe, Server, ChevronDown, ChevronUp
 } from 'lucide-react';
+import PageLayout, { PageHeader } from './components/PageLayout';
 
 interface StreamQuery {
     time: string;
@@ -171,35 +172,40 @@ export default function StreamPage() {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-black">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-800 bg-gray-950">
-                <div className="flex items-center gap-3">
-                    <Activity className="text-blue-400" size={20} />
-                    <div>
-                        <h1 className="text-lg font-semibold text-white">Live Query Stream</h1>
-                        <p className="text-gray-400 text-xs">Real-time DNS queries <span className="text-gray-600">•</span> {queries.length} entries <span className="text-gray-600">•</span> {queriesPerSec} q/s</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className={`p-2 rounded-lg transition-colors ${
-                            isPlaying ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
-                        }`}
-                        title={isPlaying ? 'Pause' : 'Play'}
-                    >
-                        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                    </button>
-                    <button
-                        onClick={fetchStream}
-                        disabled={loading}
-                        className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
-                    >
-                        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
+        <PageLayout
+            flush
+            noHeaderBorder
+            header={
+                <PageHeader
+                    dense
+                    icon={<Activity className="text-blue-400" size={20} />}
+                    title="Live Query Stream"
+                    subtitle={<>
+                        Real-time DNS queries <span className="text-gray-600">•</span> {queries.length} entries <span className="text-gray-600">•</span> {queriesPerSec} q/s
+                    </>}
+                    actions={
+                        <>
+                            <button
+                                onClick={() => setIsPlaying(!isPlaying)}
+                                className={`p-2 rounded-lg transition-colors ${
+                                    isPlaying ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+                                }`}
+                                title={isPlaying ? 'Pause' : 'Play'}
+                            >
+                                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                            </button>
+                            <button
+                                onClick={fetchStream}
+                                disabled={loading}
+                                className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                            >
+                                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                            </button>
+                        </>
+                    }
+                />
+            }
+        >
 
             {/* Stats Bar */}
             <div className="grid grid-cols-3 border-b border-gray-800">
@@ -271,7 +277,7 @@ export default function StreamPage() {
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="flex-1 overflow-y-auto"
+                className="overflow-y-auto"
             >
                 <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-gray-950 z-10">
@@ -366,6 +372,6 @@ export default function StreamPage() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </PageLayout>
     );
 }

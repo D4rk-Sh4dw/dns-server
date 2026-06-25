@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Network, RefreshCw, Cpu, Activity, Plus, Trash2, Search, Info, ShieldAlert } from 'lucide-react';
+import { Network, RefreshCw, Cpu, Activity, Plus, Trash2, Search, Info, ShieldAlert, Wifi } from 'lucide-react';
 import TechnitiumScopeModal from '@/app/components/TechnitiumScopeModal';
 import { Settings, Play, Pause } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n-context';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface Lease {
     mac: string;
@@ -242,30 +243,35 @@ export default function DhcpPage() {
     );
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('dhcp.title')}</h1>
-                    <p className="text-gray-400 text-sm md:text-base">{t('dhcp.subtitle')}</p>
-                </div>
-                <div className="flex gap-2 self-end sm:self-auto">
-                    <button
-                        onClick={fetchData}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                    {provider === 'technitium' && (
-                        <button
-                            onClick={() => { setEditingScope(null); setShowScopeModal(true); }}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        >
-                            <Plus size={18} />
-                            {t('dhcp.create_scope')}
-                        </button>
-                    )}
-                </div>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Wifi className="text-blue-400" size={22} />}
+                    title={t('dhcp.title')}
+                    subtitle={t('dhcp.subtitle')}
+                    actions={
+                        <>
+                            <button
+                                onClick={fetchData}
+                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            >
+                                <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                            </button>
+                            {provider === 'technitium' && (
+                                <button
+                                    onClick={() => { setEditingScope(null); setShowScopeModal(true); }}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                    <Plus size={18} />
+                                    {t('dhcp.create_scope')}
+                                </button>
+                            )}
+                        </>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
             {/* Technitium Scope List (if provider is Technitium) */}
             {provider === 'technitium' && status?.scopes && (
@@ -632,6 +638,7 @@ export default function DhcpPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }

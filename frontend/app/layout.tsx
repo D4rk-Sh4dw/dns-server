@@ -75,7 +75,7 @@ export default function RootLayout({
           )}
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto bg-black min-h-0">
+          <main className="flex-1 min-h-0 overflow-hidden bg-black flex flex-col">
             {children}
           </main>
         </Providers>

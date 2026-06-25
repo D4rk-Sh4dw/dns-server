@@ -8,6 +8,7 @@ import {
     ShieldCheck, Baby, Search, Check, X,
     Laptop, Tablet, Smartphone, Tv, Cpu, Info, Globe
 } from 'lucide-react';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface AdGuardClient {
     name: string;
@@ -186,20 +187,25 @@ export default function ClientsPage() {
     );
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('clients.title')}</h1>
-                    <p className="text-gray-400 text-sm md:text-base">{t('clients.subtitle')}</p>
-                </div>
-                <button
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-500/50 shadow-lg shadow-blue-900/20"
-                >
-                    <Plus size={18} />
-                    {t('clients.add_client')}
-                </button>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Users className="text-blue-400" size={22} />}
+                    title={t('clients.title')}
+                    subtitle={t('clients.subtitle')}
+                    actions={
+                        <button
+                            onClick={() => { resetForm(); setShowModal(true); }}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-500/50 shadow-lg shadow-blue-900/20"
+                        >
+                            <Plus size={18} />
+                            {t('clients.add_client')}
+                        </button>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4">
@@ -716,7 +722,8 @@ export default function ClientsPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }
 

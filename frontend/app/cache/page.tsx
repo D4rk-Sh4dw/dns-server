@@ -11,6 +11,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     Cell
 } from 'recharts';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface CacheData {
     adguard: {
@@ -131,25 +132,25 @@ export default function CachePage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">DNS Cache Analytics</h1>
-                    <p className="text-gray-400 text-sm md:text-base">
-                        Cache data from <span className="text-orange-400 font-medium">Technitium</span> with AdGuard cache configuration.
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={fetchData}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                        disabled={loading}
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Database className="text-blue-400" size={22} />}
+                    title="DNS Cache Analytics"
+                    subtitle={<>Cache data from <span className="text-orange-400 font-medium">Technitium</span> with AdGuard cache configuration.</>}
+                    actions={
+                        <button
+                            onClick={fetchData}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            disabled={loading}
+                        >
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
             {error && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 flex items-center gap-2">
@@ -420,6 +421,7 @@ export default function CachePage() {
                     </div>
                 </>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }

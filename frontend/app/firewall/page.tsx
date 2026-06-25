@@ -7,6 +7,7 @@ import {
     RefreshCw, ChevronUp, ChevronDown, Server, Check, X, AlertTriangle,
     ArrowUp, ArrowDown, Save
 } from 'lucide-react';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface ForwardRule {
     id: string;
@@ -210,30 +211,34 @@ export default function FirewallPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">DNS Firewall Rules</h1>
-                    <p className="text-gray-400 text-sm md:text-base">Manage conditional forwarding and DNS rewrites.</p>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setShowSimulateModal(true)}
-                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                    >
-                        <Play size={14} />
-                        Simulate
-                    </button>
-                    <button
-                        onClick={fetchData}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                        disabled={loading}
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Shield className="text-blue-400" size={22} />}
+                    title="DNS Firewall Rules"
+                    subtitle="Manage conditional forwarding and DNS rewrites."
+                    actions={
+                        <>
+                            <button
+                                onClick={() => setShowSimulateModal(true)}
+                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                            >
+                                <Play size={14} />
+                                Simulate
+                            </button>
+                            <button
+                                onClick={fetchData}
+                                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                                disabled={loading}
+                            >
+                                <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                            </button>
+                        </>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
             {error && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 flex items-center gap-2">
@@ -578,6 +583,7 @@ export default function FirewallPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }

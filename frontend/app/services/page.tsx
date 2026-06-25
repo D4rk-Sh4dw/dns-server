@@ -3,8 +3,9 @@
 import { useTranslation } from '@/lib/i18n-context';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, Clock, Save, ShieldOff } from 'lucide-react';
+import { RefreshCw, Clock, Save, ShieldOff, Menu } from 'lucide-react';
 import { POPULAR_SERVICES, ServiceDefinition } from '../../config/services';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 function Switch({ checked }: { checked: boolean }) {
     return (
@@ -148,19 +149,24 @@ export default function ServicesPage() {
     );
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('services.title')}</h1>
-                    <p className="text-gray-400 text-sm md:text-base">{t('services.subtitle')}</p>
-                </div>
-                <button
-                    onClick={fetchData}
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors self-end sm:self-auto"
-                >
-                    <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                </button>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Menu className="text-blue-400" size={22} />}
+                    title={t('services.title')}
+                    subtitle={t('services.subtitle')}
+                    actions={
+                        <button
+                            onClick={fetchData}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors self-end sm:self-auto"
+                        >
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
             {/* Schedule Configuration */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -318,6 +324,7 @@ export default function ServicesPage() {
                     )}
                 </div>
             </div>
-        </div>
+            </div>
+        </PageLayout>
     );
 }

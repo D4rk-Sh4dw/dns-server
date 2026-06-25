@@ -7,6 +7,7 @@ import {
     RefreshCw, Search, X, Activity, Shield, Globe, Clock, Tag,
     ChevronDown, ChevronUp, Router
 } from 'lucide-react';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface Device {
     id: string;
@@ -232,21 +233,25 @@ export default function TopologyPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Network Topology</h1>
-                    <p className="text-gray-400 text-sm md:text-base">DNS client topology based on DHCP leases and configured clients.</p>
-                </div>
-                <button
-                    onClick={fetchData}
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                    disabled={loading}
-                >
-                    <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                </button>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Network className="text-blue-400" size={22} />}
+                    title="Network Topology"
+                    subtitle="DNS client topology based on DHCP leases and configured clients."
+                    actions={
+                        <button
+                            onClick={fetchData}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            disabled={loading}
+                        >
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
             {error && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 flex items-center gap-2">
@@ -521,6 +526,7 @@ export default function TopologyPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }

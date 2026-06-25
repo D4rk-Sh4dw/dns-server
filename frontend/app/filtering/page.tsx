@@ -11,6 +11,7 @@ import {
     LayoutGrid, LayoutList
 } from 'lucide-react';
 import Link from 'next/link';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 // --- Interfaces ---
 
@@ -128,19 +129,24 @@ export default function FilteringPage() {
     useEffect(() => { fetchData(); }, []);
 
     return (
-        <div className="p-4 md:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('filtering.title')}</h1>
-                    <p className="text-gray-400 text-sm md:text-base">{t('filtering.subtitle')}</p>
-                </div>
-                <button
-                    onClick={fetchData}
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                >
-                    <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                </button>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Filter className="text-blue-400" size={22} />}
+                    title={t('filtering.title')}
+                    subtitle={t('filtering.subtitle')}
+                    actions={
+                        <button
+                            onClick={fetchData}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6">
 
             {/* Tabs */}
             <div className="flex space-x-1 bg-gray-900/50 p-1 rounded-xl border border-gray-800 w-fit">
@@ -182,7 +188,7 @@ export default function FilteringPage() {
                 )}
 
             </div>
-        </div>
+        </PageLayout>
     );
 }
 

@@ -3,7 +3,8 @@
 import { useTranslation } from '@/lib/i18n-context';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, Plus, Trash2, Check, Server, Globe, AlertCircle, Save, X, Shield, Lock } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, Check, Server, Globe, AlertCircle, Save, X, Shield, Lock, Network } from 'lucide-react';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface Zone {
     name: string;
@@ -322,21 +323,24 @@ export default function ForwardingPage() {
     }, []);
 
     return (
-        <div className="p-4 md:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">{t('forwarding.title')}</h1>
-                    <p className="text-gray-400 text-sm md:text-base">{t('forwarding.subtitle')}</p>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={fetchData}
-                        className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
+        <PageLayout
+            header={
+                <PageHeader
+                    icon={<Network className="text-blue-400" size={22} />}
+                    title={t('forwarding.title')}
+                    subtitle={t('forwarding.subtitle')}
+                    actions={
+                        <button
+                            onClick={fetchData}
+                            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    }
+                />
+            }
+        >
+            <div className="space-y-6 md:space-y-8">
 
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3">
@@ -378,6 +382,7 @@ export default function ForwardingPage() {
             {activeTab === 'zones' && (
                 <ForwardingZonesTab zones={zones} />
             )}
-        </div>
+            </div>
+        </PageLayout>
     );
 }
