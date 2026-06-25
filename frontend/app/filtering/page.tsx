@@ -188,6 +188,7 @@ export default function FilteringPage() {
                 )}
 
             </div>
+        </div>
         </PageLayout>
     );
 }

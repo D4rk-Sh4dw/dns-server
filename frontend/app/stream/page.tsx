@@ -7,7 +7,7 @@ import {
     Shield, ShieldCheck, ShieldAlert, ArrowRightLeft,
     X, Activity, Clock, Globe, Server, ChevronDown, ChevronUp
 } from 'lucide-react';
-import PageLayout, { PageHeader } from './components/PageLayout';
+import PageLayout, { PageHeader } from '../components/PageLayout';
 
 interface StreamQuery {
     time: string;

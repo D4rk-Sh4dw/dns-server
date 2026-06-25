@@ -219,6 +219,7 @@ export default function SettingsPage() {
 
             <CloudflareSettings />
         </div>
+        </PageLayout>
     );
 }
 
